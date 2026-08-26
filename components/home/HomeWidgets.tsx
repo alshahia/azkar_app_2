@@ -218,6 +218,15 @@ export const AsmaulHusnaWidget: React.FC = () => {
 
     const nextName = () => setIndex((prev) => (prev + 1) % names.length);
     const prevName = () => setIndex((prev) => (prev - 1 + names.length) % names.length);
+    // The refresh-icon button: jump to a random name other than the current one
+    const randomName = () => {
+        if (names.length < 2) return;
+        setIndex((prev) => {
+            let next = prev;
+            while (next === prev) next = Math.floor(Math.random() * names.length);
+            return next;
+        });
+    };
 
     if (loading) {
         return (
@@ -250,7 +259,7 @@ export const AsmaulHusnaWidget: React.FC = () => {
                     <button onClick={prevName} className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 dark:bg-gray-800 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors">
                         <ChevronRightIcon className="w-5 h-5 text-gray-400" />
                     </button>
-                    <button onClick={nextName} className="w-12 h-12 flex items-center justify-center rounded-full bg-white dark:bg-gray-700 shadow-md hover:shadow-lg text-primary-500 transition-all active:scale-95">
+                    <button onClick={randomName} aria-label="اسم عشوائي" className="w-12 h-12 flex items-center justify-center rounded-full bg-white dark:bg-gray-700 shadow-md hover:shadow-lg text-primary-500 transition-all active:scale-95">
                         <ArrowPathIcon className="w-6 h-6" />
                     </button>
                     <button onClick={nextName} className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 dark:bg-gray-800 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors">

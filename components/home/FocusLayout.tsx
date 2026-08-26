@@ -1,9 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { ShareIcon, HeartIcon, ClipboardIcon, PlayIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { ShareIcon, HeartIcon, ClipboardIcon, PlayIcon, StopIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
 import { useTranslation } from '../../hooks/useTranslation';
+import { shareText, copyText } from '../../utils/share';
+import { audioService } from '../../services/AudioService';
 
 interface FocusLayoutProps {
     allAzkar: any[];
@@ -12,9 +14,11 @@ interface FocusLayoutProps {
 }
 
 const FocusLayout: React.FC<FocusLayoutProps> = ({ onRefresh, currentZikr }) => {
-    const { favorites, toggleFavorite, fontSize } = useAppContext();
+    const { favorites, toggleFavorite, fontSize, voiceName, apiKey } = useAppContext();
     const { t } = useTranslation();
     const [animate, setAnimate] = useState(false);
+    const [copied, setCopied] = useState(false);
+    const [isPlayingAudio, setIsPlayingAudio] = useState(false);
 
     useEffect(() => {
         setAnimate(true);
@@ -23,6 +27,31 @@ const FocusLayout: React.FC<FocusLayoutProps> = ({ onRefresh, currentZikr }) => 
     }, [currentZikr]);
 
     const isFavorite = favorites.includes(currentZikr.id);
+
+    const handleShare = () => shareText(currentZikr.categoryName || 'أذكار', currentZikr.arabic);
+
+    const handleCopy = async () => {
+        if (await copyText(currentZikr.arabic)) {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        }
+    };
+
+    const handlePlay = async () => {
+        if (isPlayingAudio) {
+            audioService.stop();
+            setIsPlayingAudio(false);
+            return;
+        }
+        try {
+            setIsPlayingAudio(true);
+            await audioService.playZikrAudio(currentZikr.arabic, voiceName, apiKey);
+        } catch {
+            // Missing key or offline: stay silent, controller state resets below.
+        } finally {
+            setIsPlayingAudio(false);
+        }
+    };
 
     // Dynamic Font Sizes
     const getArabicClass = (level: number) => {
@@ -44,7 +73,7 @@ const FocusLayout: React.FC<FocusLayoutProps> = ({ onRefresh, currentZikr }) => 
                             {currentZikr.categoryName}
                         </span>
                         <div className="flex space-x-2 rtl:space-x-reverse">
-                            <button onClick={() => toggleFavorite(currentZikr.id)} className="text-gray-400 hover:text-red-500 transition-colors">
+                            <button onClick={() => toggleFavorite(currentZikr.id)} aria-label={isFavorite ? 'إزالة من المفضلة' : 'إضافة للمفضلة'} className="text-gray-400 hover:text-red-500 transition-colors">
                                 {isFavorite ? <HeartSolid className="w-6 h-6 text-red-500" /> : <HeartIcon className="w-6 h-6" />}
                             </button>
                         </div>
@@ -63,17 +92,17 @@ const FocusLayout: React.FC<FocusLayoutProps> = ({ onRefresh, currentZikr }) => 
                     )}
 
                     <div className="flex justify-around items-center pt-4 border-t border-gray-100 dark:border-gray-700">
-                        <button className="flex flex-col items-center text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                        <button onClick={handleShare} aria-label="مشاركة" className="flex flex-col items-center text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
                             <ShareIcon className="w-5 h-5 mb-1" />
-                            <span className="text-[10px]">Share</span>
+                            <span className="text-[10px]">مشاركة</span>
                         </button>
-                        <button className="flex flex-col items-center text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
-                            <ClipboardIcon className="w-5 h-5 mb-1" />
-                            <span className="text-[10px]">Copy</span>
+                        <button onClick={handleCopy} aria-label="نسخ" className="flex flex-col items-center text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                            {copied ? <HeartSolid className="w-5 h-5 mb-1 text-primary-500" /> : <ClipboardIcon className="w-5 h-5 mb-1" />}
+                            <span className="text-[10px]">{copied ? 'تم النسخ' : 'نسخ'}</span>
                         </button>
-                        <button className="flex flex-col items-center text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
-                            <PlayIcon className="w-5 h-5 mb-1" />
-                            <span className="text-[10px]">Play</span>
+                        <button onClick={handlePlay} aria-label={isPlayingAudio ? 'إيقاف' : 'تشغيل الصوت'} className="flex flex-col items-center text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                            {isPlayingAudio ? <StopIcon className="w-5 h-5 mb-1" /> : <PlayIcon className="w-5 h-5 mb-1" />}
+                            <span className="text-[10px]">{isPlayingAudio ? 'إيقاف' : 'تشغيل'}</span>
                         </button>
                     </div>
                 </div>

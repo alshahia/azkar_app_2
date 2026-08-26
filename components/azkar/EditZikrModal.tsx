@@ -15,6 +15,16 @@ interface EditZikrModalProps {
 
 const EditZikrModal: React.FC<EditZikrModalProps> = ({ isOpen, onClose, zikr, onSave, onDelete }) => {
     const { darkMode } = useAppContext();
+
+    // Close on Escape while open
+    useEffect(() => {
+        if (!isOpen) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [isOpen, onClose]);
     const [arabic, setArabic] = useState(zikr.arabic);
     const [translation, setTranslation] = useState(zikr.translation || '');
     const [reference, setReference] = useState(zikr.reference || '');
@@ -78,8 +88,11 @@ const EditZikrModal: React.FC<EditZikrModalProps> = ({ isOpen, onClose, zikr, on
             className={`fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 ${darkMode ? 'dark' : ''}`} 
             onClick={onClose}
         >
-            <div 
-                className="bg-white dark:bg-[#1A3129] w-full max-w-sm rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh] animate-fade-in-up transition-colors duration-300" 
+            <div
+                role="dialog"
+                aria-modal="true"
+                aria-label="تعديل الذكر"
+                className="bg-white dark:bg-[#1A3129] w-full max-w-sm rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh] animate-fade-in-up transition-colors duration-300"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}

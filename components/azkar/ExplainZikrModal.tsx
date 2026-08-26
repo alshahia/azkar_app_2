@@ -19,6 +19,16 @@ const ExplainZikrModal: React.FC<ExplainZikrModalProps> = ({ isOpen, onClose, zi
     // Monotonic request id: stale responses never overwrite newer ones
     const requestIdRef = useRef(0);
 
+    // Close on Escape while open
+    useEffect(() => {
+        if (!isOpen) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [isOpen, onClose]);
+
     useEffect(() => {
         if (isOpen && zikrText) {
             fetchExplanation();
@@ -75,7 +85,10 @@ const ExplainZikrModal: React.FC<ExplainZikrModalProps> = ({ isOpen, onClose, zi
             className={`fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4 ${darkMode ? 'dark' : ''}`}
             onClick={onClose}
         >
-            <div 
+            <div
+                role="dialog"
+                aria-modal="true"
+                aria-label="شرح الذكر"
                 className="bg-white dark:bg-[#1A3129] w-full max-w-lg sm:rounded-2xl rounded-t-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-slide-up-mobile sm:animate-fade-in-up transition-colors duration-300"
                 onClick={e => e.stopPropagation()}
             >

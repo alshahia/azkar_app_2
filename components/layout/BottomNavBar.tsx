@@ -21,6 +21,7 @@ const NavItem: React.FC<{
   return (
     <button 
       onClick={onClick} 
+      aria-current={isActive ? 'page' : undefined}
       className="group flex flex-col items-center justify-center w-full space-y-1.5 py-2 transition-all relative"
     >
       <div className={`p-1 rounded-xl transition-all duration-300 ${isActive ? 'bg-primary-50 dark:bg-primary-900/20 -translate-y-1' : ''}`}>

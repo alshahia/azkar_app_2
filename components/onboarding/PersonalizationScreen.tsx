@@ -94,7 +94,7 @@ const PersonalizationScreen: React.FC = () => {
                     <div className="flex justify-between items-center bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-none shadow-sm p-4 rounded-lg transition-colors">
                         <span className="font-medium text-gray-900 dark:text-white">{t('personalize_reminder_enable')}</span>
                         <label className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" checked={reminders} onChange={() => setReminders(!reminders)} className="sr-only peer" />
+                            <input type="checkbox" checked={reminders} onChange={() => setReminders(!reminders)} aria-label="تفعيل التذكيرات" className="sr-only peer" />
                             <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content[''] after:absolute after:top-[2px] after:left-[2px] rtl:after:right-[2px] rtl:after:left-auto after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
                         </label>
                     </div>

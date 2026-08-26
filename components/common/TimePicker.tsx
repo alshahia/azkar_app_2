@@ -17,6 +17,16 @@ const TimePicker: React.FC<TimePickerProps> = ({ isOpen, onClose, onSave, initia
     const [minutesOfDay, setMinutesOfDay] = useState(5 * 60 + 30);
     const [activeInput, setActiveInput] = useState<'hour' | 'minute'>('hour');
 
+    // Close on Escape while open
+    useEffect(() => {
+        if (!isOpen) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [isOpen, onClose]);
+
     // Derived 12h display values
     const period: 'AM' | 'PM' = minutesOfDay >= 720 ? 'PM' : 'AM';
     const hour12 = Math.floor((minutesOfDay % 720) / 60) || 12;
@@ -88,9 +98,18 @@ const TimePicker: React.FC<TimePickerProps> = ({ isOpen, onClose, onSave, initia
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 text-black">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 w-full max-w-xs">
-                <h2 className="text-lg font-medium text-gray-600 dark:text-gray-300 mb-4">{view === 'clock' ? 'Select time' : 'Enter time'}</h2>
+        <div
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 text-black"
+            onClick={onClose}
+        >
+            <div
+                role="dialog"
+                aria-modal="true"
+                aria-label="اختر الوقت"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 w-full max-w-xs"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <h2 className="text-lg font-medium text-gray-600 dark:text-gray-300 mb-4">{view === 'clock' ? 'اختر الوقت' : 'أدخل الوقت'}</h2>
                 
                 <div className="flex items-center justify-center space-x-4">
                     {view === 'clock' ? (
@@ -124,8 +143,8 @@ const TimePicker: React.FC<TimePickerProps> = ({ isOpen, onClose, onSave, initia
                         {view === 'clock' ? <PencilSquareIcon className="w-6 h-6" /> : <ClockIcon className="w-6 h-6" />}
                     </button>
                     <div className="space-x-4">
-                        <button onClick={onClose} className="font-semibold text-primary-500">Cancel</button>
-                        <button onClick={handleSave} className="font-semibold text-primary-500">OK</button>
+                        <button onClick={onClose} className="font-semibold text-primary-500">إلغاء</button>
+                        <button onClick={handleSave} className="font-semibold text-primary-500">موافق</button>
                     </div>
                 </div>
             </div>

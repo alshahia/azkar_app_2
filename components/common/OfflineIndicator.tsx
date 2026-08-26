@@ -45,7 +45,7 @@ const OfflineIndicator: React.FC = () => {
     if (!isOffline) return null;
 
     return (
-        <div className="bg-red-500/90 backdrop-blur-sm text-white px-4 py-1 text-[10px] font-bold text-center flex items-center justify-center space-x-2 rtl:space-x-reverse absolute top-0 left-0 w-full z-50 animate-slide-down">
+        <div role="status" aria-live="polite" className="bg-red-500/90 backdrop-blur-sm text-white px-4 py-1 text-[10px] font-bold text-center flex items-center justify-center space-x-2 rtl:space-x-reverse absolute top-0 left-0 w-full z-50 animate-slide-down">
             <WifiIcon className="w-3 h-3" />
             <span>لا يوجد اتصال بالإنترنت - يتم عرض المحتوى المحفوظ</span>
         </div>

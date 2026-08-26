@@ -6,6 +6,7 @@ import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { StopIcon, SunIcon, MoonIcon } from '@heroicons/react/24/solid';
 import { useTranslation } from '../../hooks/useTranslation';
 import { audioService } from '../../services/AudioService';
+import { shareText } from '../../utils/share';
 
 interface AzkarDayScreenProps {
     isEmbedded?: boolean;
@@ -107,7 +108,7 @@ const AzkarDayScreen: React.FC<AzkarDayScreenProps> = ({ isEmbedded = false }) =
             <div className={`flex flex-col ${isEmbedded ? 'h-auto' : 'h-full justify-center p-4 text-center'}`}>
                 <div className="bg-[#1A3129] p-6 rounded-lg">
                     <h2 className="text-xl font-bold text-white mb-2">{t('azkar_day_title')}</h2>
-                    <p className="text-gray-400">No Azkar loaded for today.</p>
+                    <p className="text-gray-400">لا توجد أذكار محملة لهذا اليوم.</p>
                 </div>
             </div>
         );
@@ -181,6 +182,7 @@ const AzkarDayScreen: React.FC<AzkarDayScreenProps> = ({ isEmbedded = false }) =
                 <div className="flex justify-around items-center mt-6 border-t border-gray-700 pt-4">
                     <button 
                         onClick={handlePlayAudio} 
+                        aria-label={isPlaying ? 'إيقاف الصوت' : 'تشغيل الصوت'}
                         className={`flex-1 py-4 transition-colors ${isPlaying || isAudioLoading ? 'text-primary-500' : 'text-gray-400 hover:text-white'}`}
                         disabled={isAudioLoading}
                     >
@@ -193,7 +195,7 @@ const AzkarDayScreen: React.FC<AzkarDayScreenProps> = ({ isEmbedded = false }) =
                         )}
                     </button>
                     <div className="w-px h-8 bg-gray-700"></div>
-                    <button className="flex-1 py-4 text-gray-400 hover:text-white transition-colors">
+                    <button onClick={() => shareText(activeCategory?.title || 'أذكار اليوم', currentZikr.arabic)} aria-label="مشاركة" className="flex-1 py-4 text-gray-400 hover:text-white transition-colors">
                         <ICONS.ShareIcon className="w-6 h-6 mx-auto" />
                     </button>
                     <div className="w-px h-8 bg-gray-700"></div>

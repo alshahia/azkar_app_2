@@ -5,8 +5,9 @@ import { translations } from '../translations';
 export const useTranslation = () => {
     const { language } = useAppContext();
     
-    const t = (key: keyof typeof translations['en']): string => {
-        return translations[language][key] || translations['en'][key];
+    // Arabic-only by product decision: unknown keys degrade to the key itself.
+    const t = (key: keyof typeof translations['ar']): string => {
+        return translations[language][key] ?? String(key);
     };
 
     return { t, language };

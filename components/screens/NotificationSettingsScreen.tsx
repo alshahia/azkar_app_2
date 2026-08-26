@@ -194,7 +194,7 @@ const NotificationSettingsScreen: React.FC = () => {
                             </div>
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" checked={prayerNotificationsEnabled} onChange={handleTogglePrayer} className="sr-only peer" />
+                            <input type="checkbox" checked={prayerNotificationsEnabled} onChange={handleTogglePrayer} aria-label="مواقيت الصلاة" className="sr-only peer" />
                             <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] rtl:after:right-[2px] rtl:after:left-auto after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
                         </label>
                     </div>
@@ -213,7 +213,7 @@ const NotificationSettingsScreen: React.FC = () => {
                             <span className="font-bold text-gray-900 dark:text-white">أذكار الصباح</span>
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" checked={morningReminderEnabled} onChange={handleToggleMorning} className="sr-only peer" />
+                            <input type="checkbox" checked={morningReminderEnabled} onChange={handleToggleMorning} aria-label="أذكار الصباح" className="sr-only peer" />
                             <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] rtl:after:right-[2px] rtl:after:left-auto after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
                         </label>
                     </div>
@@ -241,7 +241,7 @@ const NotificationSettingsScreen: React.FC = () => {
                             <span className="font-bold text-gray-900 dark:text-white">أذكار المساء</span>
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" checked={eveningReminderEnabled} onChange={handleToggleEvening} className="sr-only peer" />
+                            <input type="checkbox" checked={eveningReminderEnabled} onChange={handleToggleEvening} aria-label="أذكار المساء" className="sr-only peer" />
                             <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] rtl:after:right-[2px] rtl:after:left-auto after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
                         </label>
                     </div>

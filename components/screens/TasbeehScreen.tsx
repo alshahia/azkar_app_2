@@ -5,6 +5,7 @@ import { ArrowLeftIcon, ArrowPathIcon, SpeakerWaveIcon, SpeakerXMarkIcon, CheckC
 import { ChevronRightIcon, ChevronLeftIcon } from '@heroicons/react/24/solid';
 import { useTranslation } from '../../hooks/useTranslation';
 import { HapticService } from '../../services/HapticService';
+import { playTick } from '../../utils/tickSound';
 
 const TasbeehScreen: React.FC = () => {
     const { navigate, categories, incrementProgress } = useAppContext();
@@ -35,10 +36,9 @@ const TasbeehScreen: React.FC = () => {
         // Haptic Feedback
         HapticService.medium();
 
-        // Sound (Simple tick if enabled)
+        // Sound (synthesised tick, no asset needed)
         if (soundEnabled) {
-            // In a real app, play a tick sound. 
-            // new Audio('/sounds/tick.mp3').play().catch(() => {});
+            playTick();
         }
 
         const newCount = count + 1;
@@ -89,7 +89,7 @@ const TasbeehScreen: React.FC = () => {
         <div className="h-full flex flex-col bg-gray-50 dark:bg-[#12241C] relative overflow-hidden">
             {/* Header */}
             <header className="flex items-center justify-between p-4 z-10">
-                <button onClick={() => navigate('home')} className="p-2 bg-white/50 dark:bg-black/20 rounded-full backdrop-blur-sm">
+                <button onClick={() => navigate('home')} aria-label="رجوع" className="p-2 bg-white/50 dark:bg-black/20 rounded-full backdrop-blur-sm">
                     <ArrowLeftIcon className="w-6 h-6 text-gray-900 dark:text-white rtl:rotate-180" />
                 </button>
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">المسبحة الإلكترونية</h1>

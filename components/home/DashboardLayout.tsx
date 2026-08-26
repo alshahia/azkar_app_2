@@ -37,7 +37,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onRefresh, currentZik
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary-500 to-primary-300"></div>
                 <div className="flex justify-between items-start">
                     <span className="bg-primary-100 dark:bg-primary-500/20 text-primary-600 dark:text-primary-400 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">
-                        Featured
+                        مميز لك
                     </span>
                     <button onClick={onRefresh}>
                         <ArrowPathIcon className="w-5 h-5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-white transition-colors" />
@@ -68,7 +68,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onRefresh, currentZik
                         {isMorning ? <SunIcon className="w-6 h-6" /> : <MoonIcon className="w-6 h-6" />}
                     </div>
                     <div className="text-right rtl:text-left w-full">
-                        <p className="text-gray-500 dark:text-gray-300 text-xs font-medium uppercase">{isMorning ? 'Start your day' : 'End your day'}</p>
+                        <p className="text-gray-500 dark:text-gray-300 text-xs font-medium uppercase">{isMorning ? 'ابدأ يومك' : 'اختم يومك'}</p>
                         <p className="text-gray-900 dark:text-white font-bold text-lg">{isMorning ? t('home_dashboard_morning') : t('home_dashboard_evening')}</p>
                     </div>
                 </button>
