@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Azkar App</string>
+    <string name="title_activity_main">Azkar App</string>
+    <string name="package_name">com.azkar.app</string>
+    <string name="custom_url_scheme">com.azkar.app</string>
+</resources>

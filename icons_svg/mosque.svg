@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><g transform="translate(256, 256) scale(-1, 1) translate(-256, -256)">
+  <defs>
+    <!-- Glow Filter for the Neon Effect -->
+    <filter id="neon-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.4  0 0 0 0 1  0 0 0 0 0.6  0 0 0 1 0" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background: Rotated Diamond Shape -->
+  <rect x="106" y="106" width="300" height="300" rx="40" transform="rotate(45 256 256)" fill="#101f1a" opacity="0.6"/>
+
+  <!-- Background: Main Rounded Square -->
+  <rect x="86" y="86" width="340" height="340" rx="60" fill="#15221d" stroke="#1f3a2f" stroke-width="4"/>
+
+  <!-- Main Icon Group -->
+  <g stroke="#6affb0" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#neon-glow)">
+    
+    <!-- Base Line -->
+    <line x1="140" y1="390" x2="372" y2="390"/>
+
+    <!-- Center Building Block -->
+    <rect x="196" y="310" width="120" height="80"/>
+
+    <!-- Center Arches (Doorways) -->
+    <!-- Left Arch -->
+    <path d="M208 390 V 355 A 15 15 0 0 1 238 355 V 390"/>
+    <!-- Middle Arch (Slightly larger) -->
+    <path d="M244 390 V 350 A 18 18 0 0 1 280 350 V 390"/>
+    <!-- Right Arch -->
+    <path d="M286 390 V 355 A 15 15 0 0 1 316 355 V 390"/>
+
+    <!-- Central Dome -->
+    <!-- Dome Base Rim -->
+    <line x1="210" y1="310" x2="302" y2="310" stroke-width="6"/>
+    <!-- Dome Shape -->
+    <path d="M210 310 C 200 270, 220 230, 256 215 C 292 230, 312 270, 302 310"/>
+
+    <!-- Crescent Moon and Star -->
+    <!-- Stick -->
+    <line x1="256" y1="215" x2="256" y2="195"/>
+    <!-- Crescent -->
+    <path d="M256 195 A 28 28 0 1 1 235 155 A 22 22 0 1 0 256 195 Z" fill="none"/>
+    <!-- Star -->
+    <polygon points="272,158 275,165 282,165 277,170 279,177 272,173 265,177 267,170 262,165 269,165" fill="#6affb0" stroke="none"/>
+
+    <!-- Left Minaret -->
+    <g>
+      <!-- Lower Shaft -->
+      <path d="M152 390 L 152 300"/>
+      <path d="M180 390 L 180 300"/>
+      <!-- Balcony -->
+      <path d="M148 300 H 184 L 188 285 H 144 L 148 300 Z"/>
+      <!-- Upper Shaft -->
+      <path d="M156 285 V 220"/>
+      <path d="M176 285 V 220"/>
+      <!-- Window in Upper Shaft -->
+      <path d="M160 250 A 6 6 0 0 1 172 250 V 260 H 160 Z" stroke-width="5"/>
+      <!-- Minaret Dome -->
+      <path d="M154 220 C 150 205, 155 190, 166 185 C 177 190, 182 205, 178 220 Z"/>
+      <!-- Finial -->
+      <line x1="166" y1="185" x2="166" y2="175"/>
+    </g>
+
+    <!-- Right Minaret (Mirrored/Translated) -->
+    <g transform="translate(180, 0)">
+      <!-- Lower Shaft -->
+      <path d="M152 390 L 152 300"/>
+      <path d="M180 390 L 180 300"/>
+      <!-- Balcony -->
+      <path d="M148 300 H 184 L 188 285 H 144 L 148 300 Z"/>
+      <!-- Upper Shaft -->
+      <path d="M156 285 V 220"/>
+      <path d="M176 285 V 220"/>
+      <!-- Window in Upper Shaft -->
+      <path d="M160 250 A 6 6 0 0 1 172 250 V 260 H 160 Z" stroke-width="5"/>
+      <!-- Minaret Dome -->
+      <path d="M154 220 C 150 205, 155 190, 166 185 C 177 190, 182 205, 178 220 Z"/>
+      <!-- Finial -->
+      <line x1="166" y1="185" x2="166" y2="175"/>
+    </g>
+
+  </g>
+</g></svg>

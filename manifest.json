@@ -1,0 +1,23 @@
+
+{
+  "short_name": "Azkar",
+  "name": "Azkar Daily App",
+  "icons": [
+    {
+      "src": "/images/icon.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/images/icon.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#12241C",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#12241C",
+  "orientation": "portrait"
+}

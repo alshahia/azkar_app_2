@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><g>
+  <defs>
+    <!-- Soft Glow Filter for the Neon Effect -->
+    <filter id="neon-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 18 -7" result="goo"/>
+      <feComposite in="SourceGraphic" in2="goo" operator="over"/>
+    </filter>
+    
+    <!-- Gradient for Background -->
+    <radialGradient id="bg-gradient" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#1a2e22"/>
+      <stop offset="100%" stop-color="#08110b"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background Layer -->
+  <rect width="512" height="512" fill="#050a07"/>
+  
+  <!-- Subtle Diamond Shape in Background -->
+  <rect x="106" y="106" width="300" height="300" rx="40" transform="rotate(45 256 256)" fill="#0f2418" opacity="0.6"/>
+  
+  <!-- Main Rounded Container -->
+  <rect x="64" y="64" width="384" height="384" rx="60" fill="url(#bg-gradient)" stroke="#1f3d2e" stroke-width="2"/>
+
+  <!-- Main Content Group -->
+  <g stroke="#4fffa0" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#neon-glow)">
+    
+    <!-- Glass of Water -->
+    <g transform="translate(280, 110)">
+      <!-- Rim -->
+      <ellipse cx="45" cy="15" rx="45" ry="12"/>
+      <!-- Body -->
+      <path d="M 0 15 L 10 110 Q 15 135 45 135 Q 75 135 80 110 L 90 15"/>
+      <!-- Water Level -->
+      <path d="M 8 50 Q 45 70 82 50"/>
+      <!-- Reflection lines -->
+      <path d="M 75 60 L 72 100" stroke-width="3" opacity="0.6" stroke-linecap="round"/>
+      <path d="M 15 60 L 18 90" stroke-width="3" opacity="0.6" stroke-linecap="round"/>
+    </g>
+
+    <!-- Bowl of Dates -->
+    <g transform="translate(130, 160)">
+      <!-- Bowl Body -->
+      <path d="M 0 30 Q 0 85 68 85 Q 136 85 136 30"/>
+      <!-- Bowl Rim Front -->
+      <path d="M 0 30 Q 68 60 136 30"/>
+      <!-- Bowl Base -->
+      <path d="M 35 88 Q 68 100 101 88"/>
+      
+      <!-- Dates inside -->
+      <!-- Date 1 (Left) -->
+      <path d="M 15 25 Q 10 10 30 5 Q 50 0 60 15 Q 65 30 45 35 Q 25 40 15 25 Z"/>
+      <path d="M 25 15 Q 35 12 45 20" stroke-width="3" opacity="0.7"/>
+      
+      <!-- Date 2 (Center Back) -->
+      <path d="M 50 15 Q 55 -5 80 0 Q 105 5 100 25 Q 95 40 70 35 Q 45 30 50 15 Z"/>
+      <path d="M 65 10 Q 75 10 85 20" stroke-width="3" opacity="0.7"/>
+      
+      <!-- Date 3 (Right) -->
+      <path d="M 85 35 Q 90 20 110 25 Q 130 30 125 45 Q 120 60 100 55 Q 80 50 85 35 Z"/>
+      <path d="M 95 35 Q 105 35 115 40" stroke-width="3" opacity="0.7"/>
+    </g>
+
+    <!-- Loose Date (Falling/Sitting) -->
+    <g transform="translate(225, 245) rotate(10)">
+      <path d="M 5 15 Q 0 0 25 -5 Q 50 -10 55 5 Q 60 20 35 25 Q 10 30 5 15 Z"/>
+      <path d="M 15 10 Q 28 8 40 15" stroke-width="3" opacity="0.7"/>
+    </g>
+ </g>
+</g>   
+</svg>

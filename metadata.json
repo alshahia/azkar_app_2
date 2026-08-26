@@ -1,0 +1,5 @@
+{
+  "name": "Azkar App",
+  "description": "A mobile-first web application for daily Islamic remembrances (Azkar). Users can browse categories, track their progress, manage favorites, and personalize their experience with features like dark mode and notification reminders.",
+  "requestFramePermissions": []
+}

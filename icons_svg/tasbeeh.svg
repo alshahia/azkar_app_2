@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><g>
+  <defs>
+    <!-- Soft Glow Filter for the Neon Effect -->
+    <filter id="neon-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.3  0 0 0 0 1  0 0 0 0 0.6  0 0 0 1 0" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Bead Symbol -->
+    <symbol id="bead" viewBox="0 0 20 20">
+      <circle cx="10" cy="10" r="7" fill="none" stroke="#5dfc96" stroke-width="2.5"/>
+    </symbol>
+  </defs>
+
+  <!-- Background Layer 1: Rotated Diamond -->
+  <rect x="106" y="106" width="300" height="300" rx="40" transform="rotate(45 256 256)" fill="#0b1d16"/>
+
+  <!-- Background Layer 2: Main Rounded Panel -->
+  <rect x="116" y="116" width="280" height="280" rx="50" fill="#152e24"/>
+
+  <!-- Main Content Group -->
+  <g filter="url(#neon-glow)">
+    
+    <!-- The Loop of Beads -->
+    <!-- Right Side (Going Up) -->
+    <use href="#bead" x="246" y="365" width="20" height="20"/>
+    <use href="#bead" x="263" y="360" width="20" height="20"/>
+    <use href="#bead" x="280" y="350" width="20" height="20"/>
+    <use href="#bead" x="295" y="336" width="20" height="20"/>
+    <use href="#bead" x="308" y="319" width="20" height="20"/>
+    <use href="#bead" x="316" y="300" width="20" height="20"/>
+    <use href="#bead" x="320" y="280" width="20" height="20"/>
+    <use href="#bead" x="318" y="260" width="20" height="20"/>
+    <use href="#bead" x="310" y="241" width="20" height="20"/>
+    <use href="#bead" x="298" y="224" width="20" height="20"/>
+    <use href="#bead" x="282" y="210" width="20" height="20"/>
+    <use href="#bead" x="264" y="202" width="20" height="20"/>
+    
+    <!-- Top Center -->
+    <use href="#bead" x="246" y="200" width="20" height="20"/>
+    
+    <!-- Left Side (Going Down) -->
+    <use href="#bead" x="228" y="202" width="20" height="20"/>
+    <use href="#bead" x="210" y="210" width="20" height="20"/>
+    <use href="#bead" x="194" y="224" width="20" height="20"/>
+    <use href="#bead" x="182" y="241" width="20" height="20"/>
+    <use href="#bead" x="174" y="260" width="20" height="20"/>
+    <use href="#bead" x="172" y="280" width="20" height="20"/>
+    <use href="#bead" x="176" y="300" width="20" height="20"/>
+    <use href="#bead" x="184" y="319" width="20" height="20"/>
+    <use href="#bead" x="197" y="336" width="20" height="20"/>
+    <use href="#bead" x="212" y="350" width="20" height="20"/>
+    <use href="#bead" x="229" y="360" width="20" height="20"/>
+
+    <!-- Imam Bead (Connector) -->
+    <path d="M256 385 L256 405" stroke="#5dfc96" stroke-width="2.5" stroke-linecap="round"/>
+    <ellipse cx="256" cy="395" rx="6" ry="9" fill="none" stroke="#5dfc96" stroke-width="2.5"/>
+    <circle cx="256" cy="382" r="4" fill="#5dfc96"/>
+
+    <!-- Tassel -->
+    <g transform="translate(256, 410)">
+      <!-- Knot -->
+      <circle cx="0" cy="0" r="3" fill="none" stroke="#5dfc96" stroke-width="2"/>
+      <!-- Strands -->
+      <path d="M0 3 Q -5 10 -8 20" fill="none" stroke="#5dfc96" stroke-width="2" stroke-linecap="round"/>
+      <path d="M0 3 Q 0 12 0 22" fill="none" stroke="#5dfc96" stroke-width="2" stroke-linecap="round"/>
+      <path d="M0 3 Q 5 10 8 20" fill="none" stroke="#5dfc96" stroke-width="2" stroke-linecap="round"/>
+    </g>
+  </g>
+</g></svg>

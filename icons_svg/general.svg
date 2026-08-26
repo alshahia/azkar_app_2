@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512">
+  <defs>
+    <!-- Glow Filter for Neon Effect -->
+    <filter id="neon-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.3  0 0 0 0 1  0 0 0 0 0.6  0 0 0 1 0" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Gradient for Background -->
+    <radialGradient id="bg-grad" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#1a332a"/>
+      <stop offset="100%" stop-color="#0b1410"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background Layer -->
+  <rect width="512" height="512" fill="#08100d"/>
+  
+  <!-- Decorative Background Shapes -->
+  <g transform="translate(256, 256)">
+    <!-- Diamond Shape -->
+    <rect x="-200" y="-200" width="400" height="400" rx="40" transform="rotate(45)" fill="#0f221b" opacity="0.6"/>
+    <!-- Rounded Square -->
+    <rect x="-180" y="-180" width="360" height="360" rx="60" fill="#13261e" stroke="#1f3d30" stroke-width="2"/>
+  </g>
+
+  <!-- Main Illustration Group -->
+  <g stroke="#50ff90" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#neon-glow)">
+    
+    <!-- Crescent Moon -->
+    <path d="M 230 140 A 40 40 0 1 1 265 205 A 32 32 0 1 0 230 140 Z" fill="#50ff90" stroke="none"/>
+    
+    <!-- Star -->
+    <polygon points="275,145 280,158 294,158 283,167 287,180 275,172 263,180 267,167 256,158 270,158" fill="#50ff90" stroke="none"/>
+
+    <!-- The Book (Quran) -->
+    <g transform="translate(0, 10)">
+      <!-- Book Outline -->
+      <path d="M 160 330 Q 256 360 352 330 L 340 390 Q 256 420 172 390 Z" stroke-width="5"/>
+      <!-- Spine -->
+      <path d="M 256 360 L 256 420" stroke-width="3"/>
+      <!-- Pages Lines (Left) -->
+      <path d="M 175 345 Q 210 355 245 355" stroke-width="2"/>
+      <path d="M 172 355 Q 210 365 245 365" stroke-width="2"/>
+      <path d="M 169 365 Q 210 375 245 375" stroke-width="2"/>
+      <path d="M 166 375 Q 210 385 245 385" stroke-width="2"/>
+      <!-- Pages Lines (Right) -->
+      <path d="M 337 345 Q 302 355 267 355" stroke-width="2"/>
+      <path d="M 340 355 Q 302 365 267 365" stroke-width="2"/>
+      <path d="M 343 365 Q 302 375 267 375" stroke-width="2"/>
+      <path d="M 346 375 Q 302 385 267 385" stroke-width="2"/>
+    </g>
+
+    <!-- Left Hand -->
+    <path d="M 250 360 C 250 360 240 300 245 270 C 246 250 230 250 230 270 L 225 300 M 230 270 C 230 270 225 230 210 230 C 200 230 200 250 205 280 M 210 230 C 210 230 190 200 175 210 C 165 220 175 250 185 280 M 175 210 C 175 210 155 200 145 220 C 140 230 150 260 165 300 C 175 330 200 350 200 350"/>
+    
+    <!-- Right Hand -->
+    <path d="M 262 360 C 262 360 272 300 267 270 C 266 250 282 250 282 270 L 287 300 M 282 270 C 282 270 287 230 302 230 C 312 230 312 250 307 280 M 302 230 C 302 230 322 200 337 210 C 347 220 337 250 327 280 M 337 210 C 337 210 357 200 367 220 C 372 230 362 260 347 300 C 337 330 312 350 312 350"/>
+
+    <!-- Prayer Beads (Tasbih) -->
+    <g stroke="none" fill="#50ff90">
+      <!-- Bead String Path Visualization (Invisible, used for placement logic) -->
+      <!-- Draped over right hand fingers and hanging down -->
+      
+      <!-- Loop over fingers -->
+      <circle cx="310" cy="240" r="4"/>
+      <circle cx="320" cy="235" r="4"/>
+      <circle cx="330" cy="238" r="4"/>
+      <circle cx="340" cy="245" r="4"/>
+      <circle cx="348" cy="255" r="4"/>
+      
+      <!-- Hanging down right side -->
+      <circle cx="355" cy="268" r="4"/>
+      <circle cx="360" cy="282" r="4"/>
+      <circle cx="362" cy="296" r="4"/>
+      <circle cx="360" cy="310" r="4"/>
+      <circle cx="355" cy="322" r="4"/>
+      <circle cx="348" cy="332" r="4"/>
+      
+      <!-- Curving towards center -->
+      <circle cx="338" cy="340" r="4"/>
+      <circle cx="328" cy="345" r="4"/>
+      <circle cx="318" cy="348" r="4"/>
+      <circle cx="308" cy="345" r="4"/>
+      <circle cx="300" cy="338" r="4"/>
+      
+      <!-- Hanging Tassel/End -->
+      <circle cx="295" cy="328" r="4"/>
+      <circle cx="292" cy="318" r="4"/>
+      <circle cx="290" cy="308" r="4"/>
+      
+      <!-- The Tassel -->
+      <path d="M 300 338 L 295 360 L 285 370 L 305 370 L 295 360" stroke="#50ff90" stroke-width="2" fill="none"/>
+      <line x1="295" y1="360" x2="290" y2="375" stroke="#50ff90" stroke-width="1.5"/>
+      <line x1="295" y1="360" x2="295" y2="378" stroke="#50ff90" stroke-width="1.5"/>
+      <line x1="295" y1="360" x2="300" y2="375" stroke="#50ff90" stroke-width="1.5"/>
+    </g>
+  </g>
+</svg>

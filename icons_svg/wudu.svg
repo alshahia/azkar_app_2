@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><g>
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#05100c"/>
+      <stop offset="100%" stop-color="#0f221a"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" fill="url(#bgGrad)"/>
+
+  <!-- Decorative Diamond -->
+  <g transform="translate(256 256) rotate(45)">
+    <rect x="-180" y="-180" width="360" height="360" rx="40" fill="#132b21" opacity="0.5"/>
+  </g>
+
+  <!-- Main Container -->
+  <rect x="86" y="86" width="340" height="340" rx="60" fill="#162e24" stroke="#1f4032" stroke-width="2"/>
+
+  <!-- Icon Content -->
+  <g stroke="#5affb0" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)">
+    
+    <!-- Pitcher (Ewer) -->
+    <path d="M340 125               C340 125 330 115 345 115               C360 115 350 125 350 125               L355 130               C375 135 385 150 385 170               C385 195 365 210 345 205               C325 200 320 180 310 165               L305 160               C315 140 335 135 355 130"/>
+    <!-- Pitcher Handle -->
+    <path d="M385 155 C410 145 420 170 415 185 C410 200 395 200 380 195"/>
+    <!-- Liquid inside pitcher line -->
+    <path d="M350 170 C365 175 380 170 385 165" stroke-width="3" opacity="0.8"/>
+
+    <!-- Water Stream -->
+    <path d="M305 160 C290 160 295 200 290 230"/>
+    <path d="M310 165 C300 180 305 210 300 250"/>
+
+    <!-- Hands -->
+    <!-- Top/Right Hand (fingers) -->
+    <path d="M170 230               C210 250 240 230 260 230               C280 230 300 240 320 250               C330 255 330 265 320 270"/>
+    
+    <!-- Bottom/Left Hand (palm and thumb) -->
+    <path d="M140 265               C180 265 220 250 250 270               C270 285 290 285 300 280               C315 275 335 285 325 300               C315 315 280 330 250 330               C200 330 180 315 145 315"/>
+             
+    <!-- Thumb detail -->
+    <path d="M220 260 C230 250 250 250 270 260" stroke-width="4"/>
+    <!-- Finger detail -->
+    <path d="M280 285 C290 290 310 290 320 285" stroke-width="4"/>
+
+    <!-- Splash/Water in hands -->
+    <path d="M260 250 C270 245 280 255 290 250" stroke-width="3"/>
+    <path d="M250 260 C260 255 270 265 280 260" stroke-width="3"/>
+
+    <!-- Drips -->
+    <!-- Left Drip -->
+    <path d="M250 330 C250 350 245 360 245 370 C245 378 255 378 255 370 C255 360 260 350 265 330"/>
+    <circle cx="250" cy="390" r="3" fill="#5affb0" stroke="none"/>
+
+    <!-- Center Drip (Long) -->
+    <path d="M275 330 C275 360 270 380 270 400 C270 410 280 410 280 400 C280 380 285 350 290 330"/>
+    
+    <!-- Right Drip -->
+    <path d="M305 325 C305 340 310 350 310 360 C310 368 320 368 320 360 C320 350 315 330 315 320"/>
+    <circle cx="315" cy="380" r="3" fill="#5affb0" stroke="none"/>
+
+  </g>
+</g></svg>

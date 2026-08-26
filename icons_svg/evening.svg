@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><g>
+  <defs>
+    <!-- Glow Filter for the Neon Effect -->
+    <filter id="neon-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Star Definition -->
+    <path id="star" d="M0,-10 L2.3,-3.1 L9.5,-3.1 L3.7,1.1 L5.9,8.1 L0,3.8 L-5.9,8.1 L-3.7,1.1 L-9.5,-3.1 L-2.3,-3.1 Z"/>
+  </defs>
+
+  <!-- Background Container -->
+  <rect width="512" height="512" rx="80" fill="#0f1a15"/>
+  
+  <!-- Main Content Group -->
+  <g filter="url(#neon-glow)" fill="none" stroke="#6affaa" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    
+    <!-- Moon (Filled) -->
+    <path d="M190,120 A45,45 0 1,1 175,200 A35,35 0 1,0 190,120 Z" fill="#6affaa" stroke="none" transform="translate(10, 10)"/>
+
+    <!-- Stars (Filled) -->
+    <g fill="#6affaa" stroke="none">
+      <use href="#star" transform="translate(215, 150) scale(1.8)"/>
+      <use href="#star" transform="translate(295, 130) scale(1.2)"/>
+      <use href="#star" transform="translate(355, 150) scale(1.4)"/>
+      <use href="#star" transform="translate(315, 180) scale(1.6)"/>
+      <use href="#star" transform="translate(360, 205) scale(1.0)"/>
+      <use href="#star" transform="translate(270, 155) scale(0.8)"/>
+      <use href="#star" transform="translate(155, 225) scale(0.9)"/>
+    </g>
+
+    <!-- House Roof -->
+    <path d="M160,270 L256,195 L352,270"/>
+    <path d="M160,270 L170,280" stroke-width="8"/> <!-- Eave detail left -->
+    <path d="M352,270 L342,280" stroke-width="8"/> <!-- Eave detail right -->
+    
+    <!-- Chimney -->
+    <path d="M300,230 L300,210 L325,210 L325,250"/>
+
+    <!-- Central Window/Door -->
+    <rect x="236" y="265" width="40" height="45" rx="4"/>
+
+    <!-- Book Structure -->
+    <g transform="translate(0, 10)">
+      <!-- Book Outline -->
+      <!-- Left Page Outline -->
+      <path d="M256,325 L170,285 L140,355 L256,395"/>
+      <!-- Right Page Outline -->
+      <path d="M256,325 L342,285 L372,355 L256,395"/>
+      
+      <!-- Book Cover/Thickness (Bottom) -->
+      <path d="M140,355 L140,365 L256,405 L372,365 L372,355"/>
+      
+      <!-- Spine Curve -->
+      <path d="M256,325 L256,395" stroke-width="6"/>
+      <path d="M256,395 L256,405" stroke-width="6"/>
+
+      <!-- Inner Page Lines (Left) -->
+      <g stroke-width="5">
+        <path d="M240,335 L175,305"/>
+        <path d="M240,350 L170,318"/>
+        <path d="M240,365 L165,331"/>
+        <path d="M240,380 L160,344"/>
+      </g>
+
+      <!-- Inner Page Lines (Right) -->
+      <g stroke-width="5">
+        <path d="M272,335 L337,305"/>
+        <path d="M272,350 L342,318"/>
+        <path d="M272,365 L347,331"/>
+        <path d="M272,380 L352,344"/>
+      </g>
+    </g>
+  </g>
+</g></svg>

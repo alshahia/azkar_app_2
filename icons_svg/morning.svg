@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><g>
+  <defs>
+    <!-- Glow Filter for the Neon Effect -->
+    <filter id="neon-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Background Color -->
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a2a20"/>
+      <stop offset="100%" stop-color="#0f1812"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Main Background Container -->
+  <rect x="40" y="40" width="432" height="432" rx="80" fill="url(#bg-grad)"/>
+  
+  <!-- Content Group -->
+  <g filter="url(#neon-glow)" stroke="#5aff90" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    
+    <!-- Sun Rays -->
+    <g id="sun-rays">
+      <line x1="256" y1="120" x2="256" y2="145"/> <!-- Top -->
+      <line x1="210" y1="130" x2="222" y2="152"/>
+      <line x1="170" y1="155" x2="192" y2="170"/>
+      <line x1="145" y1="195" x2="170" y2="195"/>
+      <line x1="302" y1="130" x2="290" y2="152"/>
+      <line x1="342" y1="155" x2="320" y2="170"/>
+      <line x1="367" y1="195" x2="342" y2="195"/>
+    </g>
+
+    <!-- Sun Body -->
+    <path d="M 196 210 A 60 60 0 0 1 316 210"/>
+
+    <!-- Window Frame -->
+    <rect x="156" y="210" width="200" height="170"/>
+    
+    <!-- Window Panes (Cross) -->
+    <line x1="256" y1="210" x2="256" y2="380"/>
+    <line x1="156" y1="295" x2="356" y2="295"/>
+
+    <!-- Window Reflections (Top Panes) -->
+    <line x1="180" y1="260" x2="205" y2="235"/>
+    <line x1="195" y1="265" x2="210" y2="250"/>
+    <line x1="307" y1="235" x2="332" y2="260"/>
+    <line x1="302" y1="250" x2="317" y2="265"/>
+
+    <!-- The Book (Foreground) 
+         Using fill to mask the bottom of the window behind it -->
+    <g fill="#0f1812"> 
+      <!-- Book Outline -->
+      <path d="M 256 380                 Q 256 380 256 410                 Q 190 390 146 365                 L 136 315                 Q 190 350 256 350                 Q 322 350 376 315                 L 366 365                 Q 322 390 256 410 Z"/>
+    </g>
+
+    <!-- Inner Page Detail (Thickness/Layers) -->
+    <path d="M 146 365 L 156 325 Q 200 360 256 360 Q 312 360 356 325 L 366 365"/>
+    <path d="M 256 350 L 256 410"/> <!-- Spine Center Line -->
+
+    <!-- Text Lines Left Page -->
+    <path d="M 170 335 Q 200 350 240 350" stroke-width="5"/>
+    <path d="M 165 345 Q 200 360 240 360" stroke-width="5"/>
+    <path d="M 160 355 Q 200 370 240 370" stroke-width="5"/>
+    <path d="M 155 365 Q 200 380 240 380" stroke-width="5"/>
+
+    <!-- Text Lines Right Page -->
+    <path d="M 342 335 Q 312 350 272 350" stroke-width="5"/>
+    <path d="M 347 345 Q 312 360 272 360" stroke-width="5"/>
+    <path d="M 352 355 Q 312 370 272 370" stroke-width="5"/>
+    <path d="M 357 365 Q 312 380 272 380" stroke-width="5"/>
+
+  </g>
+</g></svg>
