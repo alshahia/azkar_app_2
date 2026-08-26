@@ -6,6 +6,11 @@ import { PrayerTimesService } from '../../services/PrayerTimesService';
 
 const WEEKDAYS = ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
 
+// Intl.DateTimeFormat construction is expensive; these render once per module load
+// and are reused for every calendar cell.
+const HIJRI_DAY_FMT = new Intl.DateTimeFormat('en-US-u-ca-islamic-umaqra', { day: 'numeric' });
+const HIJRI_MONTH_DAY_FMT = new Intl.DateTimeFormat('en-US-u-ca-islamic-umaqra', { day: 'numeric', month: 'numeric' });
+
 const HijriCalendarScreen: React.FC = () => {
     const { navigate } = useAppContext();
     const [viewDate, setViewDate] = useState(new Date());
@@ -40,7 +45,7 @@ const HijriCalendarScreen: React.FC = () => {
     };
 
     const getHijriDayNumber = (d: Date) => {
-        const part = new Intl.DateTimeFormat('en-US-u-ca-islamic-umaqra', { day: 'numeric' }).format(d);
+        const part = HIJRI_DAY_FMT.format(d);
         return part;
     };
 
@@ -49,8 +54,7 @@ const HijriCalendarScreen: React.FC = () => {
         // monthIndex is 0-based in getHijriMonthYear, events are 1-based usually or convert
         // Intl month numeric is 1-12 usually.
         // Let's rely on string comparison or numeric from Intl parts direct
-        const fmt = new Intl.DateTimeFormat('en-US-u-ca-islamic-umaqra', { day: 'numeric', month: 'numeric' });
-        const parts = fmt.formatToParts(d);
+        const parts = HIJRI_MONTH_DAY_FMT.formatToParts(d);
         const m = parseInt(parts.find(p => p.type === 'month')?.value || '0');
         const day = parseInt(parts.find(p => p.type === 'day')?.value || '0');
 
@@ -62,7 +66,7 @@ const HijriCalendarScreen: React.FC = () => {
         <div className="h-full flex flex-col bg-gray-50 dark:bg-[#12241C]">
             {/* Header */}
             <header className="flex items-center justify-between p-4 bg-white dark:bg-[#1A3129] shadow-sm z-10">
-                <button onClick={() => navigate('home')} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                <button onClick={() => navigate('home')} aria-label="رجوع" className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
                     <ArrowLeftIcon className="w-6 h-6 text-gray-900 dark:text-white rtl:rotate-180" />
                 </button>
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">التقويم الهجري</h1>

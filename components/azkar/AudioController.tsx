@@ -41,15 +41,26 @@ const AudioController: React.FC<AudioControllerProps> = ({
             return;
         }
 
+        // Throttle React state writes: RAF fires at display refresh (~60/s);
+        // a progress bar only needs ~4 Hz. Frames still tick, states don't.
+        let lastWrite = 0;
+        let lastPaused: boolean | null = null;
         const updateState = () => {
-            const curr = audioService.getCurrentTime();
-            const dur = audioService.getDuration();
+            const now = performance.now();
             const paused = audioService.isPausedState();
-            
-            setProgress(curr);
-            setDuration(dur);
-            setIsPaused(paused);
-            
+
+            if (!paused && now - lastWrite >= 250) {
+                lastWrite = now;
+                setProgress(audioService.getCurrentTime());
+                setDuration(audioService.getDuration());
+            }
+            if (paused !== lastPaused) {
+                lastPaused = paused;
+                setProgress(audioService.getCurrentTime());
+                setDuration(audioService.getDuration());
+                setIsPaused(paused);
+            }
+
             if (!paused) {
                 rafRef.current = requestAnimationFrame(updateState);
             }
