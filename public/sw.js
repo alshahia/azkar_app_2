@@ -1,73 +1,84 @@
-const CACHE_NAME = 'azkar-app-v2';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  'https://cdn.tailwindcss.com',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'
-];
+
+/* Azkar App service worker (v3)
+ * Strategy:
+ *  - Navigations (HTML): network-first with cache fallback -> updates ship
+ *    immediately; offline still boots the app shell.
+ *  - Hashed build assets (/assets/*): cache-first (content-addressed).
+ *  - Other same-origin GETs: stale-while-revalidate.
+ * The old v2 worker cached a Tailwind CDN URL and a font stylesheet this app
+ * never loaded; that list is gone, and old caches are purged on activate.
+ */
+const CACHE_NAME = 'azkar-v3';
+const APP_SHELL = ['/', '/index.html', '/manifest.json', '/images/icon-192.png'];
 
 self.addEventListener('install', event => {
-  // Force the waiting service worker to become the active service worker.
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => {
-        // We try to cache core assets, but don't fail install if some are missing in dev
-        return cache.addAll(urlsToCache).catch(err => console.log('Optional cache missing', err));
-      })
+      .then(cache => Promise.allSettled(APP_SHELL.map(url => cache.add(url))))
   );
 });
 
 self.addEventListener('activate', event => {
-  // Tell the active service worker to take control of the page immediately.
-  event.waitUntil(self.clients.claim());
-  
-  // Clean up old caches
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
-  );
+  event.waitUntil((async () => {
+    const names = await caches.keys();
+    await Promise.all(names.filter(n => n !== CACHE_NAME).map(n => caches.delete(n)));
+    await self.clients.claim();
+  })());
 });
 
 self.addEventListener('fetch', event => {
-  // Only cache GET requests
-  if (event.request.method !== 'GET') return;
+  const req = event.request;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return; // never intercept cross-origin
 
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Cache Hit - return response
-        if (response) {
-          return response;
-        }
+  if (url.pathname.startsWith('/assets/')) {
+    event.respondWith(cacheFirst(req));
+    return;
+  }
 
-        return fetch(event.request).then(
-          response => {
-            // Check if we received a valid response
-            // IMPORTANT: We must allow 'cors' type to cache CDN assets (React, Tailwind, Fonts)
-            if(!response || response.status !== 200 || (response.type !== 'basic' && response.type !== 'cors')) {
-              return response;
-            }
+  if (req.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html') {
+    event.respondWith(networkFirstShell(req));
+    return;
+  }
 
-            // Clone the response
-            var responseToCache = response.clone();
-
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-              });
-
-            return response;
-          }
-        );
-      })
-  );
+  event.respondWith(staleWhileRevalidate(req));
 });
+
+async function cacheFirst(req) {
+  const cached = await caches.match(req);
+  if (cached) return cached;
+  const res = await fetch(req);
+  if (res && res.status === 200) {
+    const cache = await caches.open(CACHE_NAME);
+    cache.put(req, res.clone());
+  }
+  return res;
+}
+
+async function networkFirstShell(req) {
+  try {
+    const fresh = await fetch(req);
+    if (fresh && fresh.status === 200) {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put('/index.html', fresh.clone());
+    }
+    return fresh;
+  } catch (e) {
+    const cached = (await caches.match(req)) || (await caches.match('/index.html'));
+    if (cached) return cached;
+    throw e;
+  }
+}
+
+async function staleWhileRevalidate(req) {
+  const cached = await caches.match(req);
+  const refresh = fetch(req).then(res => {
+    if (res && res.status === 200) {
+      caches.open(CACHE_NAME).then(c => c.put(req, res.clone()));
+    }
+    return res;
+  }).catch(() => undefined);
+  return cached || (await refresh) || Response.error();
+}

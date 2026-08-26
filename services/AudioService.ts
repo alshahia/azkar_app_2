@@ -47,10 +47,10 @@ class AudioService {
               artist: "تطبيق أذكار",
               album: "الأذكار اليومية",
               artwork: [
-                  { src: '/images/icon.png', sizes: '96x96', type: 'image/png' },
-                  { src: '/images/icon.png', sizes: '128x128', type: 'image/png' },
-                  { src: '/images/icon.png', sizes: '192x192', type: 'image/png' },
-                  { src: '/images/icon.png', sizes: '512x512', type: 'image/png' },
+                  { src: '/images/icon-192.png', sizes: '96x96', type: 'image/png' },
+                  { src: '/images/icon-192.png', sizes: '128x128', type: 'image/png' },
+                  { src: '/images/icon-192.png', sizes: '192x192', type: 'image/png' },
+                  { src: '/images/icon-512.png', sizes: '512x512', type: 'image/png' },
               ]
           });
           

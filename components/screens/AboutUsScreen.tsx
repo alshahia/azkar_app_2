@@ -19,7 +19,7 @@ const AboutUsScreen: React.FC = () => {
 
             <div className="flex-grow overflow-y-auto text-center space-y-6 px-4">
                 <div className="my-8">
-                    <img src="/images/icon.png" alt="App Logo" className="w-24 h-24 mx-auto mb-4 rounded-2xl shadow-lg" />
+                    <img src="/images/icon-192.png" alt="App Logo" className="w-24 h-24 mx-auto mb-4 rounded-2xl shadow-lg" />
                     <h2 className="text-xl font-bold text-primary-600 dark:text-primary-400">تطبيق أذكار</h2>
                     <p className="text-gray-500 dark:text-gray-400 text-sm">الإصدار 1.0.0</p>
                 </div>

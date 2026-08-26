@@ -1,4 +1,4 @@
-﻿import { CapacitorConfig } from '@capacitor/cli';
+import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.azkar.app',
@@ -11,8 +11,7 @@ const config: CapacitorConfig = {
   plugins: {
     LocalNotifications: {
       smallIcon: 'ic_stat_icon_config_sample',
-      iconColor: '#10b981',
-      sound: 'adhan.wav'
+      iconColor: '#10b981'
     },
     SplashScreen: {
       launchShowDuration: 3000,

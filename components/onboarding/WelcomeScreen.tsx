@@ -26,8 +26,8 @@ const WelcomeScreen: React.FC = () => {
             className="h-full flex flex-col justify-between p-6 bg-cover bg-center transition-all duration-500" 
             style={{ 
                 backgroundImage: darkMode 
-                    ? "linear-gradient(to bottom, rgba(18, 36, 28, 0.8), rgba(18, 36, 28, 1)), url('/images/background_dark.png')" 
-                    : "linear-gradient(to bottom, rgba(255, 255, 255, 0.85), rgba(236, 253, 245, 1)), url('/images/background_light.png')" 
+                    ? "linear-gradient(to bottom, rgba(18, 36, 28, 0.8), rgba(18, 36, 28, 1)), url('/images/background_dark.webp')" 
+                    : "linear-gradient(to bottom, rgba(255, 255, 255, 0.85), rgba(236, 253, 245, 1)), url('/images/background_light.webp')" 
             }}
         >
             <div>

@@ -48,7 +48,6 @@ export const NotificationService = {
                             allowWhileIdle: true,
                             every: 'day' // Ensure repeats daily
                         },
-                        sound: 'adhan.wav',
                         attachments: [],
                         actionTypeId: "",
                         extra: { categoryId }
@@ -84,7 +83,6 @@ export const NotificationService = {
                     body: `حان الآن موعد صلاة ${p.name}`,
                     id: 100 + p.idOffset,
                     schedule: { at: time, allowWhileIdle: true },
-                    sound: 'adhan.wav',
                     extra: { type: 'prayer', prayer: p.key }
                 });
             }
@@ -98,7 +96,6 @@ export const NotificationService = {
                 body: `حان الآن موعد صلاة ${p.name}`,
                 id: 105 + p.idOffset,
                 schedule: { at: time, allowWhileIdle: true },
-                sound: 'adhan.wav',
                 extra: { type: 'prayer', prayer: p.key }
             });
         });
