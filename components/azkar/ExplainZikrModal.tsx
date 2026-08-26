@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { XMarkIcon, SparklesIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { useAppContext } from '../../context/AppContext';
@@ -16,18 +16,22 @@ const ExplainZikrModal: React.FC<ExplainZikrModalProps> = ({ isOpen, onClose, zi
     const [explanation, setExplanation] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    // Monotonic request id: stale responses never overwrite newer ones
+    const requestIdRef = useRef(0);
 
     useEffect(() => {
         if (isOpen && zikrText) {
             fetchExplanation();
         } else {
-            // Reset state on close
+            // Reset state on close; also invalidate any in-flight request
+            requestIdRef.current++;
             setExplanation(null);
             setError(null);
         }
     }, [isOpen, zikrText]);
 
     const fetchExplanation = async () => {
+        const requestId = ++requestIdRef.current;
         setLoading(true);
         setError(null);
         try {
@@ -38,16 +42,29 @@ const ExplainZikrModal: React.FC<ExplainZikrModalProps> = ({ isOpen, onClose, zi
                 throw new Error("API_KEY_MISSING");
             }
 
-            const result = await GeminiService.explainZikr(zikrText, effectiveKey);
+            // Hard cap so the spinner can never spin forever
+            const timeoutPromise = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error("TIMEOUT")), 30000)
+            );
+
+            const result = await Promise.race([
+                GeminiService.explainZikr(zikrText, effectiveKey),
+                timeoutPromise
+            ]);
+
+            if (requestId !== requestIdRef.current) return; // A newer request superseded this one
             setExplanation(result);
         } catch (err: any) {
-            if (err.message === "API_KEY_MISSING") {
-                setError("يرجى إضافة مفتاح Google API في الإعدادات لاستخدام ميزة الشرح الذكي.");
+            if (requestId !== requestIdRef.current) return; // Stale failure — ignore
+            if (err.message === "API_KEY_MISSING" || err.message === "OFFLINE_AND_NOT_CACHED") {
+                setError(err.message);
             } else {
-                setError("حدث خطأ أثناء الاتصال. يرجى التحقق من الإنترنت أو المحاولة لاحقاً.");
+                setError("GENERIC_ERROR");
             }
         } finally {
-            setLoading(false);
+            if (requestId === requestIdRef.current) {
+                setLoading(false);
+            }
         }
     };
 
@@ -92,8 +109,12 @@ const ExplainZikrModal: React.FC<ExplainZikrModalProps> = ({ isOpen, onClose, zi
                             <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-full mb-4 text-red-500">
                                 <ExclamationTriangleIcon className="w-10 h-10" />
                             </div>
-                            <p className="text-red-600 dark:text-red-400 mb-6 px-4 font-medium">{error}</p>
-                            {error.includes("API") && (
+                            <p className="text-red-600 dark:text-red-400 mb-6 px-4 font-medium">
+                                {error === "API_KEY_MISSING" || error === "OFFLINE_AND_NOT_CACHED"
+                                    ? "يرجى إضافة مفتاح Google API في الإعدادات لاستخدام ميزة الشرح الذكي."
+                                    : "حدث خطأ أثناء الاتصال. يرجى التحقق من الإنترنت أو المحاولة لاحقاً."}
+                            </p>
+                            {(error === "API_KEY_MISSING" || error === "OFFLINE_AND_NOT_CACHED") && (
                                 <button 
                                     className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-6 py-2 rounded-full text-sm font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" 
                                     onClick={onClose}

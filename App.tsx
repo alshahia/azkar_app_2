@@ -74,6 +74,11 @@ const LoadingFallback = () => (
     </div>
 );
 
+const getLocalDateKey = () => {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+};
+
 const App: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [screen, setScreen] = useState<Screen>('welcome');
@@ -97,7 +102,7 @@ const App: React.FC = () => {
     const [language, setLanguage] = useState<AppLanguage>('ar');
     const [homeLayout, setHomeLayout] = useState<HomeLayout>(defaultPreferences.homeLayout);
     const [apiKey, setApiKey] = useState<string>(defaultPreferences.apiKey || '');
-    const [voiceName, setVoiceName] = useState<string>(defaultPreferences.voiceName || 'Kore');
+    const [voiceName, setVoiceName] = useState<string>(defaultPreferences.voiceName);
     const [audioAutoSave, setAudioAutoSave] = useState<boolean>(defaultPreferences.audioAutoSave);
     const [audioLoopDefault, setAudioLoopDefault] = useState<boolean>(defaultPreferences.audioLoopDefault);
     const [hapticsEnabled, setHapticsEnabled] = useState<boolean>(defaultPreferences.hapticsEnabled);
@@ -150,7 +155,7 @@ const App: React.FC = () => {
                 setLanguage(prefs.language);
                 setHomeLayout(prefs.homeLayout);
                 setApiKey(prefs.apiKey || '');
-                setVoiceName(prefs.voiceName || 'Kore');
+                setVoiceName(prefs.voiceName || defaultPreferences.voiceName);
                 setAudioAutoSave(prefs.audioAutoSave ?? defaultPreferences.audioAutoSave);
                 setAudioLoopDefault(prefs.audioLoopDefault ?? defaultPreferences.audioLoopDefault);
                 setHapticsEnabled(prefs.hapticsEnabled ?? defaultPreferences.hapticsEnabled);
@@ -281,65 +286,96 @@ const App: React.FC = () => {
         };
     }, [screen]);
 
+    const restoreNotifications = useCallback(async () => {
+        const parseTime = (timeStr: string) => {
+            const [time, period] = timeStr.split(' ');
+            let [hours, minutes] = time.split(':').map(Number);
+            if (period === 'PM' && hours !== 12) hours += 12;
+            if (period === 'AM' && hours === 12) hours = 0;
+            return { hours, minutes };
+        };
+
+        if (morningReminderEnabled) {
+            const { hours, minutes } = parseTime(morningReminderTime);
+            await NotificationService.scheduleReminder(1, hours, minutes, "أذكار الصباح", "حان موعد قراءة أذكار الصباح", "morning");
+        }
+
+        if (eveningReminderEnabled) {
+            const { hours, minutes } = parseTime(eveningReminderTime);
+            await NotificationService.scheduleReminder(2, hours, minutes, "أذكار المساء", "حان موعد قراءة أذكار المساء", "evening");
+        }
+
+        for (const reminder of customReminders) {
+            if (reminder.enabled) {
+                const { hours, minutes } = parseTime(reminder.time);
+                await NotificationService.scheduleReminder(
+                    reminder.id,
+                    hours,
+                    minutes,
+                    reminder.categoryTitle,
+                    `حان موعد قراءة ${reminder.categoryTitle}`,
+                    reminder.categoryId
+                );
+            }
+        }
+
+        if (prayerNotificationsEnabled && location) {
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+
+            const todayTimes = PrayerTimesService.getPrayerTimes(today, location);
+            const tomorrowTimes = PrayerTimesService.getPrayerTimes(tomorrow, location);
+
+            await NotificationService.schedulePrayerReminders(todayTimes, tomorrowTimes);
+        } else {
+            await NotificationService.cancelPrayerReminders();
+        }
+    }, [morningReminderEnabled, morningReminderTime, eveningReminderEnabled, eveningReminderTime, customReminders, prayerNotificationsEnabled, location]);
+
     // Restore and Sync Notifications when preferences change
     useEffect(() => {
         if (!isLoading) {
-            const restoreNotifications = async () => {
-                const parseTime = (timeStr: string) => {
-                    const [time, period] = timeStr.split(' ');
-                    let [hours, minutes] = time.split(':').map(Number);
-                    if (period === 'PM' && hours !== 12) hours += 12;
-                    if (period === 'AM' && hours === 12) hours = 0;
-                    return { hours, minutes };
-                };
-
-                if (morningReminderEnabled) {
-                    const { hours, minutes } = parseTime(morningReminderTime);
-                    await NotificationService.scheduleReminder(1, hours, minutes, "أذكار الصباح", "حان موعد قراءة أذكار الصباح", "morning");
-                }
-
-                if (eveningReminderEnabled) {
-                    const { hours, minutes } = parseTime(eveningReminderTime);
-                    await NotificationService.scheduleReminder(2, hours, minutes, "أذكار المساء", "حان موعد قراءة أذكار المساء", "evening");
-                }
-
-                for (const reminder of customReminders) {
-                    if (reminder.enabled) {
-                        const { hours, minutes } = parseTime(reminder.time);
-                        await NotificationService.scheduleReminder(
-                            reminder.id, 
-                            hours, 
-                            minutes, 
-                            reminder.categoryTitle, 
-                            `حان موعد قراءة ${reminder.categoryTitle}`,
-                            reminder.categoryId
-                        );
-                    }
-                }
-
-                if (prayerNotificationsEnabled && location) {
-                    const today = new Date();
-                    const tomorrow = new Date(today);
-                    tomorrow.setDate(tomorrow.getDate() + 1);
-                    
-                    const todayTimes = PrayerTimesService.getPrayerTimes(today, location);
-                    const tomorrowTimes = PrayerTimesService.getPrayerTimes(tomorrow, location);
-                    
-                    await NotificationService.schedulePrayerReminders(todayTimes, tomorrowTimes);
-                } else {
-                    await NotificationService.cancelPrayerReminders();
-                }
-            };
             restoreNotifications();
         }
-    }, [isLoading, morningReminderEnabled, morningReminderTime, eveningReminderEnabled, eveningReminderTime, customReminders, prayerNotificationsEnabled, location]);
+    }, [isLoading, restoreNotifications]);
+
+    // Re-sync scheduled notifications when the app returns to the foreground (fresh prayer times)
+    useEffect(() => {
+        let appStateListener: PluginListenerHandle | null = null;
+        let cancelled = false;
+        if (Capacitor.isNativePlatform()) {
+            CapApp.addListener('appStateChange', (state) => {
+                if (state.isActive && !isLoading) {
+                    restoreNotifications();
+                }
+            }).then(handle => {
+                if (cancelled) {
+                    handle.remove();
+                } else {
+                    appStateListener = handle;
+                }
+            }).catch(() => {});
+        }
+
+        return () => {
+            cancelled = true;
+            if (appStateListener) {
+                appStateListener.remove();
+            }
+        };
+    }, [isLoading, restoreNotifications]);
 
     const updateProgress = (zikrId: number, count: number) => {
         setProgress(prev => ({ ...prev, [zikrId]: count }));
     };
+
+    const incrementProgress = (zikrId: number, by: number = 1) => {
+        setProgress(prev => ({ ...prev, [zikrId]: (prev[zikrId] || 0) + by }));
+    };
     
     const incrementStreak = useCallback(() => {
-        const today = new Date().toISOString().split('T')[0]; 
+        const today = getLocalDateKey(); // Local date key; toISOString() is UTC and mis-dates near midnight
         
         setStats(current => {
             if (current.lastActiveDate === today) return current;
@@ -372,7 +408,7 @@ const App: React.FC = () => {
     };
     
     const toggleDarkMode = () => setDarkMode(prev => !prev);
-    const toggleNotifications = () => setNotifications(prev => !prev);
+    const toggleNotifications = (enabled?: boolean) => setNotifications(prev => enabled === undefined ? !prev : enabled);
     const toggleHaptics = () => setHapticsEnabled(prev => !prev);
     
     const navigate = (newScreen: Screen, params: any = null) => {
@@ -455,7 +491,7 @@ const App: React.FC = () => {
             eveningReminderEnabled, setEveningReminderEnabled,
             eveningReminderTime, setEveningReminderTime,
             fontSize, setFontSize, 
-            progress, updateProgress, 
+            progress, updateProgress, incrementProgress, 
             language, setLanguage, 
             homeLayout, setHomeLayout, 
             categories, refreshData, editZikr, deleteZikr,

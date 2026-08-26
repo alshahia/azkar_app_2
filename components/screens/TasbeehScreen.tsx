@@ -7,7 +7,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { HapticService } from '../../services/HapticService';
 
 const TasbeehScreen: React.FC = () => {
-    const { navigate, categories, updateProgress, progress } = useAppContext();
+    const { navigate, categories, incrementProgress } = useAppContext();
     const { t } = useTranslation();
     
     // Get Tasbeeh Category Items
@@ -44,10 +44,9 @@ const TasbeehScreen: React.FC = () => {
         const newCount = count + 1;
         setCount(newCount);
 
-        // Update global progress for this zikr
+        // Update global progress for this zikr (atomic accumulate)
         if (currentZikr) {
-            const currentTotal = progress[currentZikr.id] || 0;
-            updateProgress(currentZikr.id, currentTotal + 1);
+            incrementProgress(currentZikr.id);
         }
 
         // Target Reached Haptic

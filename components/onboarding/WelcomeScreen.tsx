@@ -2,6 +2,7 @@
 import React from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { useTranslation } from '../../hooks/useTranslation';
+import { getStorage } from '../../data/storage';
 
 const WelcomeScreen: React.FC = () => {
     const { navigate, darkMode } = useAppContext();
@@ -14,6 +15,11 @@ const WelcomeScreen: React.FC = () => {
             <p className="text-sm text-gray-600 dark:text-gray-300 transition-colors">{description}</p>
         </div>
     );
+
+    const handleSkip = async () => {
+        await getStorage().setOnboardingComplete();
+        navigate('home');
+    };
     
     return (
         <div 
@@ -26,7 +32,7 @@ const WelcomeScreen: React.FC = () => {
         >
             <div>
                 <div className="text-right">
-                    <button onClick={() => navigate('home')} className="text-gray-500 dark:text-gray-300 font-medium">{t('welcome_skip')}</button>
+                    <button onClick={handleSkip} className="text-gray-500 dark:text-gray-300 font-medium">{t('welcome_skip')}</button>
                 </div>
                 <div className="text-center mt-8">
                     <div className="inline-block bg-primary-100 dark:bg-primary-500/20 p-4 rounded-full mb-4 transition-colors">

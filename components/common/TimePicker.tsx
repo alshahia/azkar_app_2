@@ -13,27 +13,32 @@ const formatTimePart = (part: number): string => part.toString().padStart(2, '0'
 
 const TimePicker: React.FC<TimePickerProps> = ({ isOpen, onClose, onSave, initialTime }) => {
     const [view, setView] = useState<'clock' | 'input'>('clock');
-    const [hour, setHour] = useState(5);
-    const [minute, setMinute] = useState(30);
-    const [period, setPeriod] = useState<'AM' | 'PM'>('AM');
+    // Single source of truth: minutes since midnight (0 - 1439)
+    const [minutesOfDay, setMinutesOfDay] = useState(5 * 60 + 30);
     const [activeInput, setActiveInput] = useState<'hour' | 'minute'>('hour');
+
+    // Derived 12h display values
+    const period: 'AM' | 'PM' = minutesOfDay >= 720 ? 'PM' : 'AM';
+    const hour12 = Math.floor((minutesOfDay % 720) / 60) || 12;
+    const minutePart = minutesOfDay % 60;
 
     useEffect(() => {
         if (isOpen) {
             const [time, initialPeriod] = initialTime.split(' ');
-            const [initialHour, initialMinute] = time.split(':');
-            setHour(parseInt(initialHour, 10));
-            setMinute(parseInt(initialMinute, 10));
-            setPeriod(initialPeriod as 'AM' | 'PM');
+            const [rawHour, rawMinute] = time.split(':').map(Number);
+            let hour24 = Number.isFinite(rawHour) ? rawHour % 24 : 0;
+            const minute = Number.isFinite(rawMinute) ? rawMinute : 0;
+            hour24 = hour24 % 12; // Normalize 12h clock values (12 -> 0)
+            let total = hour24 * 60 + minute;
+            if (initialPeriod === 'PM') total += 720;
+            setMinutesOfDay(((total % 1440) + 1440) % 1440);
             setActiveInput('hour');
             setView('clock');
         }
     }, [isOpen, initialTime]);
-    
+
     const handleSave = () => {
-        const twelveHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-        const finalPeriod = hour >= 12 && hour < 24 ? 'PM' : 'AM';
-        const finalTime = `${formatTimePart(twelveHour)}:${formatTimePart(minute)} ${period}`;
+        const finalTime = `${formatTimePart(hour12)}:${formatTimePart(minutePart)} ${period}`;
         onSave(finalTime);
     };
     
@@ -44,11 +49,12 @@ const TimePicker: React.FC<TimePickerProps> = ({ isOpen, onClose, onSave, initia
 
         const handleSelect = (num: number) => {
             if (activeInput === 'hour') {
-                const newHour24 = period === 'PM' && num !== 12 ? num + 12 : period === 'AM' && num === 12 ? 0 : num;
-                setHour(newHour24);
+                // num is 1..12; normalize 12 -> 0 while respecting the active period
+                const base = (num % 12) * 60 + (period === 'PM' ? 720 : 0);
+                setMinutesOfDay(base + minutePart);
                 setActiveInput('minute');
             } else {
-                setMinute(num);
+                setMinutesOfDay(Math.floor(minutesOfDay / 60) * 60 + num);
             }
         };
 
@@ -56,7 +62,7 @@ const TimePicker: React.FC<TimePickerProps> = ({ isOpen, onClose, onSave, initia
             <div className="relative w-64 h-64 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center my-4">
                 {numbers.map((num, i) => {
                     const angle = (i / 12) * 360 - 90;
-                    const isSelected = activeInput === 'hour' ? (hour % 12 || 12) === num : minute === num;
+                    const isSelected = activeInput === 'hour' ? hour12 === num : minutePart === num;
                     return (
                         <button
                             key={num}
@@ -90,24 +96,24 @@ const TimePicker: React.FC<TimePickerProps> = ({ isOpen, onClose, onSave, initia
                     {view === 'clock' ? (
                         <div className="flex items-center text-5xl font-light dark:text-white">
                            <button onClick={() => setActiveInput('hour')} className={`px-3 py-1 rounded-md ${activeInput === 'hour' ? 'bg-primary-100 dark:bg-primary-800' : ''}`}>
-                                {formatTimePart(period === 'PM' && hour > 12 ? hour - 12 : (hour === 0 || hour === 12) ? 12 : hour)}
+                                {formatTimePart(hour12)}
                             </button>
                             <span>:</span>
                             <button onClick={() => setActiveInput('minute')} className={`px-3 py-1 rounded-md ${activeInput === 'minute' ? 'bg-primary-100 dark:bg-primary-800' : ''}`}>
-                                {formatTimePart(minute)}
+                                {formatTimePart(minutePart)}
                             </button>
                         </div>
                     ) : (
                          <div className="flex items-center space-x-2">
-                             <input type="number" value={formatTimePart(period === 'PM' && hour > 12 ? hour - 12 : (hour === 0 || hour === 12) ? 12 : hour)} onChange={e => setHour(Math.max(1, Math.min(12, parseInt(e.target.value) || 0)))} className="w-16 p-2 text-center text-2xl bg-gray-100 dark:bg-gray-700 rounded-md dark:text-white" />
+                             <input type="number" value={formatTimePart(hour12)} onChange={e => { const h = Math.max(1, Math.min(12, parseInt(e.target.value) || 0)); setMinutesOfDay((h % 12) * 60 + (period === 'PM' ? 720 : 0) + minutePart); }} className="w-16 p-2 text-center text-2xl bg-gray-100 dark:bg-gray-700 rounded-md dark:text-white" />
                               <span className="text-2xl dark:text-white">:</span>
-                             <input type="number" value={formatTimePart(minute)} onChange={e => setMinute(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))} className="w-16 p-2 text-center text-2xl bg-gray-100 dark:bg-gray-700 rounded-md dark:text-white" />
+                             <input type="number" value={formatTimePart(minutePart)} onChange={e => setMinutesOfDay(Math.floor(minutesOfDay / 60) * 60 + Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))} className="w-16 p-2 text-center text-2xl bg-gray-100 dark:bg-gray-700 rounded-md dark:text-white" />
                          </div>
                     )}
                     
                     <div className="flex flex-col border border-gray-300 dark:border-gray-600 rounded-md overflow-hidden">
-                        <button onClick={() => setPeriod('AM')} className={`px-3 py-2 text-sm font-medium ${period === 'AM' ? 'bg-primary-500 text-white' : 'dark:text-white'}`}>AM</button>
-                        <button onClick={() => setPeriod('PM')} className={`px-3 py-2 text-sm font-medium border-t border-gray-300 dark:border-gray-600 ${period === 'PM' ? 'bg-primary-500 text-white' : 'dark:text-white'}`}>PM</button>
+                        <button onClick={() => setMinutesOfDay(period === 'PM' ? minutesOfDay - 720 : minutesOfDay)} className={`px-3 py-2 text-sm font-medium ${period === 'AM' ? 'bg-primary-500 text-white' : 'dark:text-white'}`}>AM</button>
+                        <button onClick={() => setMinutesOfDay(period === 'AM' ? minutesOfDay + 720 : minutesOfDay)} className={`px-3 py-2 text-sm font-medium border-t border-gray-300 dark:border-gray-600 ${period === 'PM' ? 'bg-primary-500 text-white' : 'dark:text-white'}`}>PM</button>
                     </div>
                 </div>
 

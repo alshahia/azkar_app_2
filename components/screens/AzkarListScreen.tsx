@@ -15,7 +15,7 @@ interface AzkarListScreenProps {
 }
 
 const AzkarListScreen: React.FC<AzkarListScreenProps> = ({ category, initialScrollToId }) => {
-  const { navigate, progress, updateProgress, voiceName, apiKey, audioLoopDefault } = useAppContext();
+  const { navigate, incrementProgress, voiceName, apiKey, audioLoopDefault } = useAppContext();
   const { t } = useTranslation();
   
   // -- View Mode State --
@@ -203,8 +203,7 @@ const AzkarListScreen: React.FC<AzkarListScreenProps> = ({ category, initialScro
   };
 
   const handleGlobalAccumulate = (id: number, amountToAdd: number) => {
-      const currentTotal = progress[id] || 0;
-      updateProgress(id, currentTotal + amountToAdd);
+      incrementProgress(id, amountToAdd);
   };
 
   const handleBack = () => {

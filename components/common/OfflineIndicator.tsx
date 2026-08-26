@@ -9,17 +9,23 @@ const OfflineIndicator: React.FC = () => {
 
     useEffect(() => {
         let networkListener: PluginListenerHandle | null = null;
+        let cancelled = false;
 
         // Initialize status
         Network.getStatus().then(status => {
-            setIsOffline(!status.connected);
+            if (!cancelled) setIsOffline(!status.connected);
         }).catch(() => {});
 
         // Listen for changes via Capacitor Network plugin
         Network.addListener('networkStatusChange', status => {
-            setIsOffline(!status.connected);
+            if (!cancelled) setIsOffline(!status.connected);
         }).then(handle => {
-            networkListener = handle;
+            // Unmount may land before the handle resolves — remove it immediately then
+            if (cancelled) {
+                handle.remove();
+            } else {
+                networkListener = handle;
+            }
         }).catch(() => {});
 
         // Web event fallbacks
@@ -29,6 +35,7 @@ const OfflineIndicator: React.FC = () => {
         window.addEventListener('offline', handleOffline);
 
         return () => {
+            cancelled = true;
             if (networkListener) networkListener.remove();
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);

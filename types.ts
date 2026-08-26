@@ -134,7 +134,7 @@ export interface AppContextType {
   theme: AppTheme;
   setTheme: (theme: AppTheme) => void;
   notifications: boolean;
-  toggleNotifications: () => void;
+  toggleNotifications: (enabled?: boolean) => void;
   
   // Detailed Notification Settings
   morningReminderEnabled: boolean;
@@ -150,6 +150,7 @@ export interface AppContextType {
   setFontSize: (size: number) => void;
   progress: ProgressState;
   updateProgress: (zikrId: number, count: number) => void;
+  incrementProgress: (zikrId: number, by?: number) => void;
   language: AppLanguage;
   setLanguage: (lang: AppLanguage) => void;
   homeLayout: HomeLayout;

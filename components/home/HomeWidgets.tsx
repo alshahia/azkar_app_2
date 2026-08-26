@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ShareIcon, ArrowPathIcon, ChevronLeftIcon, ChevronRightIcon, ArrowsPointingOutIcon, SparklesIcon, MoonIcon, SunIcon, BookOpenIcon } from '@heroicons/react/24/outline';
 import { MosqueIcon } from '../common/CustomIcons';
 import { useAppContext } from '../../context/AppContext';
@@ -7,6 +7,7 @@ import { getQuotesRepository, getSalawatRepository } from '../../data/repository
 import { Quote, Salawat } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 import Skeleton from '../common/Skeleton';
+import { GLOBAL_TASBEEH_ID } from '../../constants';
 
 // --- Helper: Container Wrapper ---
 const WidgetContainer: React.FC<{ children: React.ReactNode, title?: string, icon?: React.ReactNode, className?: string, headerAction?: React.ReactNode }> = ({ children, title, icon, className = "", headerAction }) => (
@@ -264,7 +265,7 @@ export const AsmaulHusnaWidget: React.FC = () => {
 // --- 3. Tasbeeh Widget ---
 export const TasbeehWidget: React.FC = () => {
     const { t } = useTranslation();
-    const { updateProgress, progress, navigate } = useAppContext();
+    const { incrementProgress, navigate } = useAppContext();
     const [count, setCount] = useState(0);
     const target = 33;
     const progressPercent = Math.min((count / target) * 100, 100);
@@ -278,8 +279,8 @@ export const TasbeehWidget: React.FC = () => {
     const handleTap = () => {
         if (count < target) {
             setCount(c => c + 1);
-            const genericTasbeehId = 99999; 
-            updateProgress(genericTasbeehId, (progress[genericTasbeehId] || 0) + 1);
+            // Atomic accumulate under a shared pseudo-id for the global tasbeeh counter
+            incrementProgress(GLOBAL_TASBEEH_ID, 1);
         } else {
             setCount(0);
             setPhraseIndex(p => (p + 1) % phrases.length);
@@ -360,13 +361,34 @@ export const SalawatWidget: React.FC = () => {
     const repo = useMemo(() => getSalawatRepository(), []);
     const [currentSalawat, setCurrentSalawat] = useState<Salawat | null>(null);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const staleRef = useRef(false);
+
+    useEffect(() => {
+        staleRef.current = false;
+        return () => {
+            staleRef.current = true;
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        };
+    }, []);
 
     const refreshSalawat = async () => {
         setLoading(true);
-        setTimeout(async () => {
-            const item = await repo.getRandom();
-            setCurrentSalawat(item);
-            setLoading(false);
+        setLoadError(false);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(async () => {
+            try {
+                const item = await repo.getRandom();
+                if (staleRef.current) return;
+                setCurrentSalawat(item);
+                setLoading(false);
+            } catch (error) {
+                console.error("Failed to load salawat:", error);
+                if (staleRef.current) return;
+                setLoadError(true);
+                setLoading(false);
+            }
         }, 300);
     };
 
@@ -376,6 +398,19 @@ export const SalawatWidget: React.FC = () => {
 
     const handleShare = () => {
         if(currentSalawat) navigate('shareEditor', { text: currentSalawat.text, source: 'الصلاة على النبي' });
+    }
+
+    if (!loading && loadError) {
+        return (
+            <WidgetContainer className="bg-gradient-to-b from-primary-400 to-primary-600 dark:from-primary-800 dark:to-primary-900 border-none text-white text-center">
+                <div className="py-2 flex flex-col items-center">
+                    <h3 className="text-2xl font-bold text-yellow-300 mb-4 drop-shadow-sm">{t('home_widget_salawat')}</h3>
+                    <button onClick={refreshSalawat} className="bg-white/20 hover:bg-white/30 p-3 rounded-full backdrop-blur-sm transition-all active:scale-95">
+                        <ArrowPathIcon className="w-6 h-6 text-white" />
+                    </button>
+                </div>
+            </WidgetContainer>
+        );
     }
 
     if (loading || !currentSalawat) {
@@ -418,13 +453,34 @@ export const InfoWidget: React.FC = () => {
     const repo = useMemo(() => getQuotesRepository(), []);
     const [currentQuote, setCurrentQuote] = useState<Quote | null>(null);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const staleRef = useRef(false);
+
+    useEffect(() => {
+        staleRef.current = false;
+        return () => {
+            staleRef.current = true;
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        };
+    }, []);
 
     const refreshQuote = async () => {
         setLoading(true);
-        setTimeout(async () => {
-            const item = await repo.getRandom();
-            setCurrentQuote(item);
-            setLoading(false);
+        setLoadError(false);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(async () => {
+            try {
+                const item = await repo.getRandom();
+                if (staleRef.current) return;
+                setCurrentQuote(item);
+                setLoading(false);
+            } catch (error) {
+                console.error("Failed to load quote:", error);
+                if (staleRef.current) return;
+                setLoadError(true);
+                setLoading(false);
+            }
         }, 300);
     };
 
@@ -434,6 +490,18 @@ export const InfoWidget: React.FC = () => {
 
     const handleShare = () => {
         if(currentQuote) navigate('shareEditor', { text: currentQuote.text, source: currentQuote.author });
+    }
+
+    if (!loading && loadError) {
+        return (
+            <WidgetContainer className="bg-gradient-to-b from-primary-400 to-primary-600 dark:from-primary-800 dark:to-primary-900 border-none text-white text-center">
+                <div className="py-2 flex justify-center">
+                    <button onClick={refreshQuote} className="bg-white/20 hover:bg-white/30 p-3 rounded-full backdrop-blur-sm transition-all active:scale-95">
+                        <ArrowPathIcon className="w-6 h-6 text-white" />
+                    </button>
+                </div>
+            </WidgetContainer>
+        );
     }
 
     if (loading || !currentQuote) {

@@ -48,14 +48,23 @@ const SettingsScreen: React.FC = () => {
 
         if (confirm('هل أنت متأكد؟ سيؤدي هذا لاستبدال جميع بياناتك الحالية بالبيانات الموجودة في الملف.')) {
             const reader = new FileReader();
+            reader.onerror = () => {
+                console.error('Restore failed reading backup file');
+                alert('فشل استعادة البيانات. الملف قد يكون تالفاً.');
+            };
             reader.onload = async (event) => {
                 const content = event.target?.result as string;
                 if (content) {
-                    const success = await getStorage().importData(content);
-                    if (success) {
-                        alert('تم استعادة البيانات بنجاح. سيتم إعادة تحميل التطبيق.');
-                        window.location.reload();
-                    } else {
+                    try {
+                        const success = await getStorage().importData(content);
+                        if (success) {
+                            alert('تم استعادة البيانات بنجاح. سيتم إعادة تحميل التطبيق.');
+                            window.location.reload();
+                        } else {
+                            alert('فشل استعادة البيانات. الملف قد يكون تالفاً.');
+                        }
+                    } catch (error) {
+                        console.error('Restore failed:', error);
                         alert('فشل استعادة البيانات. الملف قد يكون تالفاً.');
                     }
                 }

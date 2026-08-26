@@ -29,18 +29,21 @@ const FocusModeView: React.FC<FocusModeViewProps> = ({
     onPlay,
     onStop
 }) => {
-    const { favorites, toggleFavorite, fontSize } = useAppContext();
+    const { favorites, toggleFavorite, fontSize, incrementProgress } = useAppContext();
     
     // Find the first incomplete zikr to start with, or defaults to 0
     const firstIncompleteIndex = azkar.findIndex(z => (sessionProgress[z.id] || 0) < z.count);
     const [currentIndex, setCurrentIndex] = useState(firstIncompleteIndex >= 0 ? firstIncompleteIndex : 0);
 
     const currentZikr = azkar[currentIndex];
-    const sessionCount = sessionProgress[currentZikr.id] || 0;
-    const remaining = Math.max(0, currentZikr.count - sessionCount);
-    const isCompleted = sessionCount >= currentZikr.count;
-    const isFavorite = favorites.includes(currentZikr.id);
-    const isPlaying = playingZikrId === currentZikr.id;
+
+    // Crash guard: clamp/reset the index whenever the azkar array shrinks below it
+    useEffect(() => {
+        if (azkar.length > 0 && currentIndex >= azkar.length) {
+            const resetIndex = azkar.findIndex(z => (sessionProgress[z.id] || 0) < z.count);
+            setCurrentIndex(resetIndex >= 0 ? resetIndex : 0);
+        }
+    }, [azkar, currentIndex, sessionProgress]);
 
     // Sync with audio: If external audio engine moves to a new ID, switch to it
     useEffect(() => {
@@ -51,6 +54,17 @@ const FocusModeView: React.FC<FocusModeViewProps> = ({
             }
         }
     }, [playingZikrId, azkar]);
+
+    // Defensive early-return: never dereference an out-of-range current zikr
+    if (!currentZikr) {
+        return null;
+    }
+
+    const sessionCount = sessionProgress[currentZikr.id] || 0;
+    const remaining = Math.max(0, currentZikr.count - sessionCount);
+    const isCompleted = sessionCount >= currentZikr.count;
+    const isFavorite = favorites.includes(currentZikr.id);
+    const isPlaying = playingZikrId === currentZikr.id;
 
     const handleNext = () => {
         HapticService.light();
@@ -73,7 +87,8 @@ const FocusModeView: React.FC<FocusModeViewProps> = ({
         HapticService.light();
 
         onUpdateSession(currentZikr.id, sessionCount + 1);
-        onGlobalAccumulate(currentZikr.id, 1);
+        // Atomic accumulate: computed absolute writes drop rapid taps within one commit
+        incrementProgress(currentZikr.id, 1);
     };
 
     const handlePlayClick = (e: React.MouseEvent) => {

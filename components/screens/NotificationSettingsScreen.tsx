@@ -38,18 +38,23 @@ const NotificationSettingsScreen: React.FC = () => {
     const handleToggleMorning = async () => {
         const newState = !morningReminderEnabled;
         setMorningReminderEnabled(newState);
-        
-        if (newState) {
-            const granted = await NotificationService.requestPermissions();
-            if (granted) {
-                const { hours, minutes } = parseTime(morningReminderTime);
-                NotificationService.scheduleReminder(1, hours, minutes, "أذكار الصباح", "حان موعد قراءة أذكار الصباح", "morning");
+
+        try {
+            if (newState) {
+                const granted = await NotificationService.requestPermissions();
+                if (granted) {
+                    const { hours, minutes } = parseTime(morningReminderTime);
+                    NotificationService.scheduleReminder(1, hours, minutes, "أذكار الصباح", "حان موعد قراءة أذكار الصباح", "morning");
+                } else {
+                    setMorningReminderEnabled(false); // Revert if no permission
+                    alert("يرجى تفعيل الإشعارات من إعدادات الهاتف.");
+                }
             } else {
-                setMorningReminderEnabled(false); // Revert if no permission
-                alert("يرجى تفعيل الإشعارات من إعدادات الهاتف.");
+                NotificationService.cancelReminder(1);
             }
-        } else {
-            NotificationService.cancelReminder(1);
+        } catch (error) {
+            console.error("Failed to toggle morning reminder:", error);
+            setMorningReminderEnabled(!newState); // Revert optimistic state on failure
         }
     };
 
@@ -57,17 +62,22 @@ const NotificationSettingsScreen: React.FC = () => {
         const newState = !eveningReminderEnabled;
         setEveningReminderEnabled(newState);
 
-        if (newState) {
-            const granted = await NotificationService.requestPermissions();
-            if (granted) {
-                const { hours, minutes } = parseTime(eveningReminderTime);
-                NotificationService.scheduleReminder(2, hours, minutes, "أذكار المساء", "حان موعد قراءة أذكار المساء", "evening");
+        try {
+            if (newState) {
+                const granted = await NotificationService.requestPermissions();
+                if (granted) {
+                    const { hours, minutes } = parseTime(eveningReminderTime);
+                    NotificationService.scheduleReminder(2, hours, minutes, "أذكار المساء", "حان موعد قراءة أذكار المساء", "evening");
+                } else {
+                    setEveningReminderEnabled(false);
+                    alert("يرجى تفعيل الإشعارات من إعدادات الهاتف.");
+                }
             } else {
-                setEveningReminderEnabled(false);
-                alert("يرجى تفعيل الإشعارات من إعدادات الهاتف.");
+                NotificationService.cancelReminder(2);
             }
-        } else {
-            NotificationService.cancelReminder(2);
+        } catch (error) {
+            console.error("Failed to toggle evening reminder:", error);
+            setEveningReminderEnabled(!newState); // Revert optimistic state on failure
         }
     };
 
@@ -80,47 +90,56 @@ const NotificationSettingsScreen: React.FC = () => {
         const newState = !prayerNotificationsEnabled;
         setPrayerNotificationsEnabled(newState);
 
-        if (newState) {
-             const granted = await NotificationService.requestPermissions();
-             if (!granted) {
-                setPrayerNotificationsEnabled(false);
-                alert("يرجى تفعيل الإشعارات من إعدادات الهاتف.");
-             }
-             // Scheduling happens in App.tsx useEffect based on this state change
+        try {
+            if (newState) {
+                 const granted = await NotificationService.requestPermissions();
+                 if (!granted) {
+                    setPrayerNotificationsEnabled(false);
+                    alert("يرجى تفعيل الإشعارات من إعدادات الهاتف.");
+                 }
+                 // Scheduling happens in App.tsx useEffect based on this state change
+            }
+        } catch (error) {
+            console.error("Failed to toggle prayer notifications:", error);
+            setPrayerNotificationsEnabled(!newState); // Revert optimistic state on failure
         }
     };
 
     const handleAddCustomReminder = async () => {
-        const granted = await NotificationService.requestPermissions();
-        if (!granted) {
-            alert("يرجى تفعيل الإشعارات أولاً.");
-            return;
+        try {
+            const granted = await NotificationService.requestPermissions();
+            if (!granted) {
+                alert("يرجى تفعيل الإشعارات أولاً.");
+                return;
+            }
+
+            const cat = categories.find(c => c.id === selectedCategory);
+            if (!cat) return;
+
+            const reminderId = Date.now(); // Simple unique ID
+            const { hours, minutes } = parseTime(customTime);
+
+            await NotificationService.scheduleReminder(
+                reminderId,
+                hours,
+                minutes,
+                cat.title,
+                `حان موعد قراءة ${cat.title}`,
+                cat.id
+            );
+
+            const newReminder: CustomReminder = {
+                id: reminderId,
+                categoryId: cat.id,
+                categoryTitle: cat.title,
+                time: customTime,
+                enabled: true
+            };
+
+            addCustomReminder(newReminder);
+        } catch (error) {
+            console.error("Failed to add custom reminder:", error);
         }
-
-        const cat = categories.find(c => c.id === selectedCategory);
-        if (!cat) return;
-
-        const reminderId = Date.now(); // Simple unique ID
-        const { hours, minutes } = parseTime(customTime);
-
-        await NotificationService.scheduleReminder(
-            reminderId, 
-            hours, 
-            minutes, 
-            cat.title, 
-            `حان موعد قراءة ${cat.title}`,
-            cat.id
-        );
-
-        const newReminder: CustomReminder = {
-            id: reminderId,
-            categoryId: cat.id,
-            categoryTitle: cat.title,
-            time: customTime,
-            enabled: true
-        };
-
-        addCustomReminder(newReminder);
     };
 
     const handleSaveTime = (newTime: string) => {

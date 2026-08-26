@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { ICONS } from '../../constants';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
@@ -17,6 +17,8 @@ const AzkarDayScreen: React.FC<AzkarDayScreenProps> = ({ isEmbedded = false }) =
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isAudioLoading, setIsAudioLoading] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
+    // Tracks whether TTS playback started this mount; isPlaying state goes stale inside cleanup closures
+    const playbackStartedRef = useRef(false);
     
     // Determine time of day (Morning: 4am - 5pm, Evening: 5pm - 4am)
     const isMorning = useMemo(() => {
@@ -39,6 +41,16 @@ const AzkarDayScreen: React.FC<AzkarDayScreenProps> = ({ isEmbedded = false }) =
             }
         };
     }, [currentIndex]);
+
+    // Unmount safety: the cleanup above can read a stale isPlaying closure,
+    // so always stop here once playback actually started
+    useEffect(() => {
+        return () => {
+            if (playbackStartedRef.current) {
+                audioService.stop();
+            }
+        };
+    }, []);
 
     // Dynamic font size classes based on level 1-8
     const getArabicClass = (level: number) => {
@@ -70,6 +82,7 @@ const AzkarDayScreen: React.FC<AzkarDayScreenProps> = ({ isEmbedded = false }) =
             const playbackPromise = audioService.playZikrAudio(currentZikr.arabic, voiceName, apiKey);
             setIsAudioLoading(false);
             setIsPlaying(true);
+            playbackStartedRef.current = true;
             
             await playbackPromise;
             

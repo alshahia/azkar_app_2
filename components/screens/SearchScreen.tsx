@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { ArrowLeftIcon, MagnifyingGlassIcon, ChevronRightIcon, DocumentTextIcon, FolderIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -13,12 +13,23 @@ const SearchScreen: React.FC = () => {
     const [results, setResults] = useState<{ categories: Category[], azkar: UserZikr[] }>({ categories: [], azkar: [] });
     const [activeTab, setActiveTab] = useState<'all' | 'categories' | 'azkar'>('all');
 
+    const requestSeqRef = useRef(0);
+
     useEffect(() => {
         const delayDebounceFn = setTimeout(async () => {
             if (query.trim().length > 1) {
-                const res = await azkarRepository.search(query);
-                setResults(res);
+                const seq = ++requestSeqRef.current;
+                try {
+                    const res = await azkarRepository.search(query);
+                    if (seq === requestSeqRef.current) {
+                        setResults(res);
+                    }
+                } catch (error) {
+                    console.error("Search failed:", error);
+                    // Keep previous results intact on failure
+                }
             } else {
+                requestSeqRef.current++;
                 setResults({ categories: [], azkar: [] });
             }
         }, 300);

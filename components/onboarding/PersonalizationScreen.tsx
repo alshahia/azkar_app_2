@@ -11,7 +11,8 @@ const PersonalizationScreen: React.FC = () => {
         navigate, 
         setFontSize: setContextFontSize, 
         setMorningReminderEnabled,
-        setMorningReminderTime
+        setMorningReminderTime,
+        toggleNotifications
     } = useAppContext();
     const { t } = useTranslation();
     const [fontSizeValue, setFontSizeValue] = useState(2); 
@@ -28,11 +29,8 @@ const PersonalizationScreen: React.FC = () => {
 
     const handleSave = async () => {
         setContextFontSize(fontSizeValue);
-        
-        // Sync context
-        setMorningReminderEnabled(reminders);
-        setMorningReminderTime(reminderTime);
 
+        let remindersGranted = reminders;
         if (reminders) {
             const permission = await NotificationService.requestPermissions();
             if (permission) {
@@ -44,9 +42,18 @@ const PersonalizationScreen: React.FC = () => {
                 
                 // Schedule Morning Reminder (ID 1) with 'morning' categoryId
                 NotificationService.scheduleReminder(1, hours, minutes, "أذكار الصباح", "حان موعد قراءة أذكار الصباح", "morning");
+            } else {
+                remindersGranted = false;
             }
         } else {
             NotificationService.cancelReminder(1);
+        }
+
+        // Truthful persistence: reminders stay enabled only when permission was granted
+        setMorningReminderEnabled(remindersGranted);
+        setMorningReminderTime(reminderTime);
+        if (!remindersGranted) {
+            toggleNotifications(false);
         }
         
         await getStorage().setOnboardingComplete();

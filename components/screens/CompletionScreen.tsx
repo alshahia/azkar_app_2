@@ -1,5 +1,5 @@
 
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { CheckIcon, HomeIcon, ChartBarIcon, SparklesIcon, FireIcon } from '@heroicons/react/24/solid';
@@ -17,8 +17,13 @@ const CompletionScreen: React.FC<CompletionScreenProps> = ({ categoryId }) => {
     // Calculate reads just for this category in the last session (estimate based on category count)
     const sessionReads = category ? category.azkar.reduce((acc, z) => acc + z.count, 0) : 0;
 
+    // Ref guard so StrictMode double-invocation never double-counts stats
+    const statsUpdatedRef = useRef(false);
+
     // Trigger streak update and total reads update on mount
     useEffect(() => {
+        if (statsUpdatedRef.current) return;
+        statsUpdatedRef.current = true;
         if (sessionReads > 0) {
             incrementStreak();
             incrementTotalReads(sessionReads);

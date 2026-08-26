@@ -127,3 +127,6 @@ export const ICON_MAPPING: { [key: string]: React.ComponentType<{ className?: st
 export const ICONS = {
     SunIcon, MoonIcon, StarIcon, CloudIcon, BookOpenIcon, HomeIcon, SpeakerWaveIcon, BuildingLibraryIcon, SparklesIcon, CakeIcon, BeakerIcon, HandThumbUpIcon, UserPlusIcon, SquaresPlusIcon, TrophyIcon, GlobeAltIcon, ChatBubbleBottomCenterTextIcon, ChatBubbleOvalLeftEllipsisIcon, KeyIcon, ArrowDownIcon, ArrowUpIcon, UsersIcon, LifebuoyIcon, UserMinusIcon, HeartIcon, ShieldCheckIcon, FireIcon, HandRaisedIcon, FingerPrintIcon, GiftIcon, ScaleIcon, HomeModernIcon, InboxIcon, ArrowPathIcon, CheckBadgeIcon, AcademicCapIcon, PlayIcon, ShareIcon, PencilIcon, TasbeehZikrIcon: TasbeehIcon
 };
+
+// Pseudo zikr id used by the global Tasbeeh widget counter
+export const GLOBAL_TASBEEH_ID = 99999;

@@ -38,7 +38,7 @@ const ZikrCard: React.FC<ZikrCardProps> = ({
     onPlayRequest,
     onStopRequest
 }) => {
-    const { favorites, toggleFavorite, fontSize, editZikr, deleteZikr, navigate } = useAppContext();
+    const { favorites, toggleFavorite, fontSize, editZikr, deleteZikr, navigate, incrementProgress } = useAppContext();
     const { t } = useTranslation();
     
     const [isCompleting, setIsCompleting] = useState(false);
@@ -74,7 +74,8 @@ const ZikrCard: React.FC<ZikrCardProps> = ({
 
         const newCount = sessionCount + 1;
         onUpdateSession(zikr.id, newCount);
-        onGlobalAccumulate(zikr.id, 1);
+        // Atomic accumulate: computed absolute writes drop rapid taps within one commit
+        incrementProgress(zikr.id, 1);
     };
 
     const handlePlayClick = (e: React.MouseEvent) => {

@@ -5,7 +5,7 @@ import { BellIcon, ClockIcon, HeartIcon, QuestionMarkCircleIcon } from '@heroico
 import { useTranslation } from '../../hooks/useTranslation';
 
 const NotificationsScreen: React.FC = () => {
-  const { navigate } = useAppContext();
+  const { navigate, toggleNotifications } = useAppContext();
   const { t } = useTranslation();
 
   const FeatureItem: React.FC<{ icon: React.ElementType, title: string, description: string }> = ({ icon: Icon, title, description }) => (
@@ -45,13 +45,13 @@ const NotificationsScreen: React.FC = () => {
             <div className="w-2.5 h-2.5 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
         </div>
         <button
-          onClick={() => navigate('personalize')}
+          onClick={() => { toggleNotifications(true); navigate('personalize'); }}
           className="w-full bg-primary-500 hover:bg-primary-600 text-white font-bold py-4 rounded-full transition-all transform active:scale-95 mb-4 shadow-lg shadow-primary-500/30"
         >
           {t('notifications_button_yes')}
         </button>
         <button
-          onClick={() => navigate('personalize')}
+          onClick={() => { toggleNotifications(false); navigate('personalize'); }}
           className="text-gray-500 dark:text-gray-400 font-medium hover:text-gray-700 dark:hover:text-gray-200"
         >
           {t('notifications_button_no')}
