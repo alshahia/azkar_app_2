@@ -1,41 +1,27 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { ArrowLeftIcon, ChevronLeftIcon, ChevronRightIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { PrayerTimesService } from '../../services/PrayerTimesService';
+import { addHijriMonths, hijriPartsOf } from '../../utils/hijri';
 
 const WEEKDAYS = ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
-
-// Intl.DateTimeFormat construction is expensive; these render once per module load
-// and are reused for every calendar cell.
-const HIJRI_DAY_FMT = new Intl.DateTimeFormat('en-US-u-ca-islamic-umaqra', { day: 'numeric' });
-const HIJRI_MONTH_DAY_FMT = new Intl.DateTimeFormat('en-US-u-ca-islamic-umaqra', { day: 'numeric', month: 'numeric' });
 
 const HijriCalendarScreen: React.FC = () => {
     const { navigate } = useAppContext();
     const [viewDate, setViewDate] = useState(new Date());
-    const [calendarData, setCalendarData] = useState<{days: (Date|null)[], title: string}>({ days: [], title: '' });
+    // Derived directly during render - no effect/setState cycle needed
+    const calendarData = useMemo(
+        () => PrayerTimesService.getHijriMonthGrid(viewDate),
+        [viewDate]
+    );
     const [today] = useState(new Date());
 
-    useEffect(() => {
-        const data = PrayerTimesService.getHijriMonthGrid(viewDate);
-        setCalendarData(data);
-    }, [viewDate]);
-
     const changeMonth = (delta: number) => {
-        const newDate = new Date(viewDate);
-        // Moving roughly 29 days should shift Hijri month usually, 
-        // but to be safe and land in middle of next month to avoid edge cases of 29 vs 30 days
-        newDate.setDate(newDate.getDate() + (delta * 29));
-        // Verify we actually changed Hijri month, if not add more
-        const currentMonth = PrayerTimesService.getHijriMonthYear(viewDate).month;
-        const newMonth = PrayerTimesService.getHijriMonthYear(newDate).month;
-        
-        if (currentMonth === newMonth) {
-             newDate.setDate(newDate.getDate() + (delta * 2));
-        }
-        
-        setViewDate(newDate);
+        // Land exactly on the first day of the previous/next Hijri month,
+        // using real Umm al-Qura month boundaries instead of +/-29-day guesses.
+        const next = addHijriMonths(viewDate, delta);
+        if (next) setViewDate(next);
     };
 
     const isSameDate = (d1: Date, d2: Date) => {
@@ -45,21 +31,14 @@ const HijriCalendarScreen: React.FC = () => {
     };
 
     const getHijriDayNumber = (d: Date) => {
-        const part = HIJRI_DAY_FMT.format(d);
-        return part;
+        return String(hijriPartsOf(d)?.day ?? '');
     };
 
     const getEventForDate = (d: Date) => {
-        const hParts = PrayerTimesService.getHijriMonthYear(d);
-        // monthIndex is 0-based in getHijriMonthYear, events are 1-based usually or convert
-        // Intl month numeric is 1-12 usually.
-        // Let's rely on string comparison or numeric from Intl parts direct
-        const parts = HIJRI_MONTH_DAY_FMT.formatToParts(d);
-        const m = parseInt(parts.find(p => p.type === 'month')?.value || '0');
-        const day = parseInt(parts.find(p => p.type === 'day')?.value || '0');
-
+        const parts = hijriPartsOf(d);
+        if (!parts) return undefined;
         const events = PrayerTimesService.getIslamicEvents();
-        return events.find(e => e.month === m && e.day === day);
+        return events.find(e => e.month === parts.month && e.day === parts.day);
     };
 
     return (
@@ -81,7 +60,7 @@ const HijriCalendarScreen: React.FC = () => {
                 <div className="text-center">
                     <h2 className="text-2xl font-bold font-serif mb-1">{calendarData.title}</h2>
                     <p className="text-sm opacity-80 font-mono">
-                        {viewDate.toLocaleString('default', { month: 'long', year: 'numeric' })} (ميلادي)
+                        {viewDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })} (ميلادي)
                     </p>
                 </div>
                 <button onClick={() => changeMonth(1)} className="p-2 hover:bg-white/20 rounded-full transition-colors">

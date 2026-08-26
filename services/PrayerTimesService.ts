@@ -3,6 +3,7 @@ import { Coordinates, CalculationMethod, PrayerTimes, Madhab, Qibla } from 'adha
 import { LocationCoordinates } from '../types';
 import { Geolocation } from '@capacitor/geolocation';
 import { Capacitor } from '@capacitor/core';
+import { formatHijriArabic, hijriPartsOf, hijriMonthNameOf, getHijriMonthGrid as buildHijriMonthGrid } from '../utils/hijri';
 
 export const PrayerTimesService = {
     /**
@@ -117,59 +118,20 @@ export const PrayerTimesService = {
      * Get Hijri Date String
      */
     getHijriDate(date: Date): string {
-        try {
-            return new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-            }).format(date);
-        } catch {
-            try {
-                return new Intl.DateTimeFormat('ar-SA-u-ca-islamic', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric'
-                }).format(date);
-            } catch {
-                return date.toLocaleDateString('ar-SA');
-            }
-        }
+        return formatHijriArabic(date);
     },
 
     /**
      * Helper to get Hijri Month and Year components
      */
     getHijriMonthYear(date: Date): { month: string, year: string, monthIndex: number } {
-        try {
-            const locales = ['ar-SA-u-ca-islamic-umalqura', 'ar-SA-u-ca-islamic'];
-            let parts: Intl.DateTimeFormatPart[] = [];
-            for (const locale of locales) {
-                try {
-                    parts = new Intl.DateTimeFormat(locale, {
-                        month: 'numeric',
-                        year: 'numeric'
-                    }).formatToParts(date);
-                    break;
-                } catch { /* try next */ }
-            }
-
-            const monthIndex = parseInt(parts.find(p => p.type === 'month')?.value || '1') - 1;
-            const year = parts.find(p => p.type === 'year')?.value || '';
-
-            let arabicMonth = '';
-            for (const locale of ['ar-SA-u-ca-islamic-umalqura', 'ar-SA-u-ca-islamic']) {
-                try {
-                    arabicMonth = new Intl.DateTimeFormat(locale, { month: 'long' }).format(date);
-                    break;
-                } catch { /* try next */ }
-            }
-            if (!arabicMonth) arabicMonth = String(monthIndex + 1);
-
-            return { month: arabicMonth, year, monthIndex };
-        } catch (e) {
-            console.error('getHijriMonthYear error:', e);
+        const parts = hijriPartsOf(date);
+        if (!parts) {
+            // No Islamic calendar in this engine: fall back to Gregorian numbers
             return { month: String(date.getMonth() + 1), year: String(date.getFullYear()), monthIndex: date.getMonth() };
         }
+        const arabicMonth = hijriMonthNameOf(date) ?? String(parts.month);
+        return { month: arabicMonth, year: String(parts.year), monthIndex: parts.month - 1 };
     },
 
     /**
@@ -178,66 +140,7 @@ export const PrayerTimesService = {
      */
     getHijriMonthGrid(refDate: Date) {
         try {
-            const locales = ['en-US-u-ca-islamic-umalqura', 'en-US-u-ca-islamic'];
-            let fmt: Intl.DateTimeFormat | null = null;
-            for (const locale of locales) {
-                try {
-                    fmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'numeric', year: 'numeric' });
-                    // Test it works
-                    fmt.formatToParts(refDate);
-                    break;
-                } catch { fmt = null; }
-            }
-
-            if (!fmt) {
-                // Fallback: return simple Gregorian grid
-                const days: (Date | null)[] = [];
-                const start = new Date(refDate.getFullYear(), refDate.getMonth(), 1);
-                const end = new Date(refDate.getFullYear(), refDate.getMonth() + 1, 0);
-                const startDay = (start.getDay() + 1) % 7;
-                for (let i = 0; i < startDay; i++) days.push(null);
-                const cur = new Date(start);
-                while (cur <= end) { days.push(new Date(cur)); cur.setDate(cur.getDate() + 1); }
-                return { days, title: this.getHijriDate(refDate) };
-            }
-
-            const parts = fmt.formatToParts(refDate);
-            const targetMonth = parts.find(p => p.type === 'month')?.value;
-
-            let startDate = new Date(refDate);
-            let safety = 0;
-            while (safety < 35) {
-                const prev = new Date(startDate);
-                prev.setDate(prev.getDate() - 1);
-                const pMonth = fmt.formatToParts(prev).find(p => p.type === 'month')?.value;
-                if (pMonth !== targetMonth) break;
-                startDate = prev;
-                safety++;
-            }
-
-            let endDate = new Date(refDate);
-            safety = 0;
-            while (safety < 35) {
-                const next = new Date(endDate);
-                next.setDate(next.getDate() + 1);
-                const nMonth = fmt.formatToParts(next).find(p => p.type === 'month')?.value;
-                if (nMonth !== targetMonth) break;
-                endDate = next;
-                safety++;
-            }
-
-            const days: (Date | null)[] = [];
-            const startDayOfWeek = startDate.getDay();
-            const satBasedStart = (startDayOfWeek + 1) % 7;
-            for (let i = 0; i < satBasedStart; i++) days.push(null);
-
-            const current = new Date(startDate);
-            while (current <= endDate) {
-                days.push(new Date(current));
-                current.setDate(current.getDate() + 1);
-            }
-
-            return { days, title: this.getHijriDate(refDate).split(' ').slice(1).join(' ') };
+            return buildHijriMonthGrid(refDate) ?? { days: [] as (Date | null)[], title: '' };
         } catch (e) {
             console.error('getHijriMonthGrid error:', e);
             return { days: [] as (Date | null)[], title: '' };
