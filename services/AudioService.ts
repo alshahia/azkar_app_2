@@ -114,7 +114,9 @@ class AudioService {
 
       // 2. If not found, fetch from API
       if (!base64Audio) {
-          const keyToUse = userApiKey || process.env.API_KEY;
+          // Bring-your-own-key is the only path: build-time env injection would
+          // bake a secret into the client bundle.
+          const keyToUse = userApiKey;
           if (!keyToUse) throw new Error("API_KEY_MISSING");
 
           if (!navigator.onLine) {
