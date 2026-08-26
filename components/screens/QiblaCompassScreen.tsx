@@ -90,7 +90,7 @@ const QiblaCompassScreen: React.FC = () => {
                     if (response === 'granted') {
                         setPermissionGranted(true);
                         window.addEventListener('deviceorientation', (event: any) => {
-                            let compass = typeof event.webkitCompassHeading === 'number'
+                            const compass = typeof event.webkitCompassHeading === 'number'
                                 ? event.webkitCompassHeading
                                 : (360 - (event.alpha || 0)) % 360;
                             if (!isNaN(compass)) setHeading(compass);

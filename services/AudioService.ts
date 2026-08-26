@@ -296,7 +296,7 @@ class AudioService {
       if (!this.isPlaying || !this.audioContext) return 0;
       
       // Calculate based on context time
-      let curr = (this.audioContext.currentTime - this.startTime); 
+      const curr = (this.audioContext.currentTime - this.startTime); 
       
       // Clamping
       if (curr > this.getDuration()) return this.getDuration();

@@ -196,7 +196,7 @@ export const PrayerTimesService = {
                 const end = new Date(refDate.getFullYear(), refDate.getMonth() + 1, 0);
                 const startDay = (start.getDay() + 1) % 7;
                 for (let i = 0; i < startDay; i++) days.push(null);
-                let cur = new Date(start);
+                const cur = new Date(start);
                 while (cur <= end) { days.push(new Date(cur)); cur.setDate(cur.getDate() + 1); }
                 return { days, title: this.getHijriDate(refDate) };
             }
@@ -231,7 +231,7 @@ export const PrayerTimesService = {
             const satBasedStart = (startDayOfWeek + 1) % 7;
             for (let i = 0; i < satBasedStart; i++) days.push(null);
 
-            let current = new Date(startDate);
+            const current = new Date(startDate);
             while (current <= endDate) {
                 days.push(new Date(current));
                 current.setDate(current.getDate() + 1);

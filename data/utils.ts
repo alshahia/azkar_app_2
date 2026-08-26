@@ -38,7 +38,11 @@ export const parseCount = (count: number | string | null | undefined): number =>
     if (s.includes('34')) return 34;
     if (s.includes('33')) return 33;
     // s is normalized: مائة -> مايه and مئة -> ميه (hamza-ya/taa rules).
-    if (s.includes('مائة') || s.includes('مائه') || s.includes('مايه') || s.includes('مئة') || s.includes('مئه') || s.includes('ميه') || s.includes('100')) return 100;
+    // Word-bounded match so unrelated words that merely CONTAIN these letter
+    // sequences (e.g. رقميه contains ميه) are not misread as "hundred".
+    const padded = ' ' + s + ' ';
+    const HUNDRED_RE = / (?:\u0645\u0627\u0626\u0629|\u0645\u0627\u0626\u0647|\u0645\u0627\u064a\u0647|\u0645\u0626\u0629|\u0645\u0626\u0647|\u0645\u064a\u0647) /;
+    if (s.includes('100') || HUNDRED_RE.test(padded)) return 100;
     // Decades must be tested before their cardinal roots ('ثلاثين' contains 'ثلاث').
     if (s.includes('عشرين')) return 20;
     if (s.includes('ثلاثين')) return 30;
