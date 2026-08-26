@@ -71,7 +71,9 @@ export type Screen =
   | 'shareEditor';
 
 export type ProgressState = {
-    [zikrId: number]: number; // key is zikr.id, value is completion count
+    // Keys stringify on every JSON/storage round-trip, so the signature is
+    // string-based; numeric zikr ids coerce transparently on access.
+    [zikrId: string]: number;
 };
 
 export type AppLanguage = 'ar';

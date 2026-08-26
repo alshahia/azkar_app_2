@@ -1,4 +1,6 @@
 
+import { normalizeArabic } from './arabic';
+
 export interface RawZikr {
     arabic: string;
     transliteration: string | null;
@@ -8,6 +10,60 @@ export interface RawZikr {
     count: number;
 }
 
+/**
+ * Parses repetition counts that arrive either as numbers or as strings
+ * ("3", "100", "ثلاثاً", "ثلاث عشرة", "مائة", Eastern digits "٣٤"...).
+ *
+ * IMPORTANT: the ladder below is ordered longest/most-specific first.
+ * Earlier revisions matched generic substrings first, which silently turned
+ * "ثلاثين" (30) and "ثلاث عشرة" (13) into 3 and made "33"/"34" unreachable.
+ */
+export const parseCount = (count: number | string | null | undefined): number => {
+    if (typeof count === 'number') {
+        return Number.isFinite(count) && count > 0 ? Math.floor(count) : 1;
+    }
+    if (typeof count !== 'string') return 1;
+
+    const trimmed = count.trim();
+    if (!trimmed) return 1;
+
+    const western = parseInt(trimmed, 10);
+    if (!Number.isNaN(western)) return western;
+
+    const s = normalizeArabic(trimmed);
+
+    const eastern = parseInt(s, 10);
+    if (!Number.isNaN(eastern)) return eastern;
+
+    if (s.includes('34')) return 34;
+    if (s.includes('33')) return 33;
+    // s is normalized: مائة -> مايه and مئة -> ميه (hamza-ya/taa rules).
+    if (s.includes('مائة') || s.includes('مائه') || s.includes('مايه') || s.includes('مئة') || s.includes('مئه') || s.includes('ميه') || s.includes('100')) return 100;
+    // Decades must be tested before their cardinal roots ('ثلاثين' contains 'ثلاث').
+    if (s.includes('عشرين')) return 20;
+    if (s.includes('ثلاثين')) return 30;
+    if (s.includes('اربعين')) return 40;
+    if (s.includes('خمسين')) return 50;
+    if (s.includes('سبعين')) return 70;
+    if (s.includes('تسعين')) return 90;
+    // "-ashara" teens: the leading cardinal disambiguates (ثلاث عشرة = 13 ...).
+    if (s.includes('عشر')) {
+        if (s.includes('ثلاث')) return 13;
+        if (s.includes('اربع')) return 14;
+        if (s.includes('خمس')) return 15;
+        if (s.includes('ست')) return 16;
+        if (s.includes('سبع')) return 17;
+        if (s.includes('ثمان')) return 18;
+        if (s.includes('تسع')) return 19;
+        return 10;
+    }
+    if (s.includes('ثلاث')) return 3;
+    if (s.includes('اربع')) return 4;
+    if (s.includes('خمس')) return 5;
+    if (s.includes('سبع')) return 7;
+    return 1;
+};
+
 export const z = (
     arabic: string,
     translation: string | null = null,
@@ -15,38 +71,11 @@ export const z = (
     count: number | string | null = 1,
     benefit: string | null = null,
     transliteration: string | null = null
-): RawZikr => {
-    let parsedCount = 1;
-
-    if (count === null || count === undefined) {
-        parsedCount = 1;
-    } else if (typeof count === 'number') {
-        parsedCount = count;
-    } else if (typeof count === 'string') {
-        // Handle "01", "1"
-        const cleanStr = count.trim();
-        const parsed = parseInt(cleanStr, 10);
-        
-        if (!isNaN(parsed)) {
-            parsedCount = parsed;
-        } else {
-             // Handle Arabic text counts found in the JSON
-             if (cleanStr.includes('ثلاث') || cleanStr.includes('3')) parsedCount = 3;
-             else if (cleanStr.includes('سبع') || cleanStr.includes('7')) parsedCount = 7;
-             else if (cleanStr.includes('عشر') || cleanStr.includes('10')) parsedCount = 10;
-             else if (cleanStr.includes('مائة') || cleanStr.includes('مئة') || cleanStr.includes('100')) parsedCount = 100;
-             else if (cleanStr.includes('33')) parsedCount = 33;
-             else if (cleanStr.includes('34')) parsedCount = 34;
-             else parsedCount = 1; // Default fallback
-        }
-    }
-
-    return {
-        arabic,
-        transliteration,
-        translation,
-        benefit,
-        reference,
-        count: parsedCount
-    };
-};
+): RawZikr => ({
+    arabic,
+    transliteration,
+    translation,
+    benefit,
+    reference,
+    count: parseCount(count)
+});

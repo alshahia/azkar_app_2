@@ -49,4 +49,8 @@ export interface StorageAdapter {
     // Data Management
     exportData(): Promise<string>; // Returns JSON string
     importData(jsonData: string): Promise<boolean>; // Returns success
+
+    // Internal migration flags (one-time data migrations)
+    getFlag(key: string): Promise<boolean>;
+    setFlag(key: string): Promise<void>;
 }

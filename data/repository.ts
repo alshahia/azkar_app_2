@@ -2,6 +2,7 @@ import { Quote, Salawat } from '../types';
 import { STATIC_QUOTES } from './static/quotes';
 import { STATIC_SALAWAT } from './static/salawat';
 import { getStorage } from './storage';
+import { makeEntityId } from './ids';
 
 /**
  * QUOTES REPOSITORY
@@ -27,7 +28,7 @@ export const getQuotesRepository = () => {
         
         add: async (text: string, author: string): Promise<Quote> => {
             const newQuote: Quote = {
-                id: Date.now(),
+                id: makeEntityId(),
                 text,
                 author
             };
@@ -59,7 +60,7 @@ export const getSalawatRepository = () => {
         
         add: async (text: string): Promise<Salawat> => {
             const newSalawat: Salawat = {
-                id: Date.now(),
+                id: makeEntityId(),
                 text
             };
             await storage.addUserSalawat(newSalawat);

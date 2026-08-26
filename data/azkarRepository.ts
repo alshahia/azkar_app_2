@@ -1,6 +1,7 @@
 
 import { Category, UserZikr, UserCategory } from '../types';
-import { STATIC_AZKAR_DATA } from './static/azkar';
+import { STATIC_AZKAR_DATA, STATIC_ZIKR_IDS } from './static/azkar';
+import { normalizeArabic } from './arabic';
 import { ICON_MAPPING } from '../constants';
 import { getStorage } from './storage';
 
@@ -56,28 +57,35 @@ export const azkarRepository = {
     },
 
     search: async (query: string): Promise<{ categories: Category[], azkar: UserZikr[] }> => {
-        const lowerQuery = query.toLowerCase().trim();
-        if (!lowerQuery) return { categories: [], azkar: [] };
+        const rawQuery = query.trim();
+        if (!rawQuery) return { categories: [], azkar: [] };
+
+        // Diacritic-insensitive matching: the corpus is fully vocalized while
+        // users type bare text ("سبحان الله" must find "سُبْحَانَ اللَّهِ").
+        const normalizedQuery = normalizeArabic(rawQuery);
 
         const allCategories = await azkarRepository.getAllCategories();
-        
-        // Filter Categories
-        const matchedCategories = allCategories.filter(c => c.title.toLowerCase().includes(lowerQuery));
 
-        // Filter Azkar (flattened)
-        const matchedAzkar: UserZikr[] = [];
+        // Filter Categories (normalized on both sides)
+        const matchedCategories = allCategories.filter(
+            c => normalizeArabic(c.title).includes(normalizedQuery)
+        );
+
+        // Filter Azkar (flattened). Runtime contents are always full UserZikr
+        // (repository enriches static entries); Category.azkar types them as
+        // the narrower Zikr, hence the single explicit cast at the boundary.
+        type ZikrWithContext = UserZikr & { categoryTitle?: string };
+        const matchedAzkar: ZikrWithContext[] = [];
+        const rawLower = rawQuery.toLowerCase();
         allCategories.forEach(cat => {
-            cat.azkar.forEach((z: any) => {
-                const textMatch = z.arabic.includes(lowerQuery);
-                const translationMatch = z.translation && z.translation.toLowerCase().includes(lowerQuery);
-                const refMatch = z.reference && z.reference.toLowerCase().includes(lowerQuery);
-                
+            cat.azkar.forEach(zBase => {
+                const z = zBase as UserZikr;
+                const textMatch = normalizeArabic(z.arabic).includes(normalizedQuery);
+                const translationMatch = !!z.translation && z.translation.toLowerCase().includes(rawLower);
+                const refMatch = !!z.reference && z.reference.toLowerCase().includes(rawLower);
+
                 if (textMatch || translationMatch || refMatch) {
-                    matchedAzkar.push({
-                        ...z,
-                        // Ensure context exists
-                        categoryTitle: cat.title 
-                    });
+                    matchedAzkar.push({ ...z, categoryTitle: cat.title });
                 }
             });
         });
@@ -142,10 +150,13 @@ export const azkarRepository = {
             if (targetZikr.originalStaticId) {
                 await storage.unhideStaticZikr(targetZikr.originalStaticId);
             }
-        } else {
+        } else if (STATIC_ZIKR_IDS.has(id)) {
             // It's a static zikr being hidden directly
             // (e.g. user just pressed delete on a built-in zikr without editing it first)
             await storage.hideStaticZikr(id);
+        } else {
+            // Unknown/garbage id: never suppress blindly.
+            console.warn('deleteZikr: id not found in user or static data, ignored:', id);
         }
     }
 };

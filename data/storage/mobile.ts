@@ -2,110 +2,170 @@
 import { StorageAdapter } from './interface';
 import { UserPreferences, ProgressState, Quote, Salawat, UserZikr, UserCategory, UserStats } from '../../types';
 import { defaultPreferences, defaultStats } from './defaults';
+import { validateBackup, normalizeUserZikr } from '../backup';
 import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from '@capacitor-community/sqlite';
 
 export class MobileStorage implements StorageAdapter {
     private sqlite: SQLiteConnection;
     private db: SQLiteDBConnection | null = null;
     private readonly DB_NAME = 'azkar_db';
+    private initPromise: Promise<void> | null = null;
 
     constructor() {
         this.sqlite = new SQLiteConnection(CapacitorSQLite);
     }
 
-    async initialize(): Promise<void> {
+    /**
+     * Idempotent initialization. Every public method goes through ensureDb(),
+     * so callers no longer need to know whether initialize() ran first.
+     */
+    initialize(): Promise<void> {
+        if (!this.initPromise) {
+            this.initPromise = this.doInitialize().catch(error => {
+                console.error('SQLite initialization failed:', error);
+                try {
+                    if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('azkar-storage-error'));
+                    }
+                } catch {}
+                throw error;
+            });
+        }
+        return this.initPromise;
+    }
+
+    private async doInitialize(): Promise<void> {
+        const db = await this.sqlite.createConnection(this.DB_NAME, false, 'no-encryption', 1, false);
+        await db.open();
+
+        await db.execute(`
+            CREATE TABLE IF NOT EXISTS kv_store (
+                key TEXT PRIMARY KEY,
+                value TEXT
+            );
+        `);
+
+        await db.execute(`
+            CREATE TABLE IF NOT EXISTS user_quotes (
+                id TEXT PRIMARY KEY,
+                text TEXT,
+                author TEXT,
+                source TEXT
+            );
+        `);
+
+        await db.execute(`
+            CREATE TABLE IF NOT EXISTS user_salawat (
+                id TEXT PRIMARY KEY,
+                text TEXT,
+                description TEXT
+            );
+        `);
+
+        await db.execute(`
+            CREATE TABLE IF NOT EXISTS user_categories (
+                id TEXT PRIMARY KEY,
+                title TEXT
+            );
+        `);
+
+        // Fresh installs get the full shape immediately.
+        await db.execute(`
+            CREATE TABLE IF NOT EXISTS user_azkar (
+                id INTEGER PRIMARY KEY,
+                categoryId TEXT,
+                arabic TEXT,
+                transliteration TEXT,
+                translation TEXT,
+                benefit TEXT,
+                reference TEXT,
+                count INTEGER,
+                isCustom INTEGER DEFAULT 1,
+                originalStaticId INTEGER
+            );
+        `);
+
+        await db.execute(`
+            CREATE TABLE IF NOT EXISTS hidden_static_azkar (
+                id INTEGER PRIMARY KEY
+            );
+        `);
+
+        await db.execute(`
+            CREATE TABLE IF NOT EXISTS audio_cache (
+                key TEXT PRIMARY KEY,
+                data TEXT
+            );
+        `);
+
+        await this.applySchemaMigrations(db);
+        this.db = db;
+    }
+
+    /**
+     * Versioned schema migrations (PRAGMA user_version).
+     * Step 0 -> 1: add originalStaticId for databases created before that
+     * column existed. Harmless on fresh installs (column already present).
+     */
+    private async applySchemaMigrations(db: SQLiteDBConnection): Promise<void> {
+        let version = 0;
         try {
-            this.db = await this.sqlite.createConnection(this.DB_NAME, false, 'no-encryption', 1, false);
-            await this.db.open();
+            const res = await db.query('PRAGMA user_version');
+            const row = res && res.values && res.values[0];
+            if (row) {
+                version = Number(row.user_version !== undefined ? row.user_version : Object.values(row)[0]) || 0;
+            }
+        } catch (e) {
+            console.error('Could not read user_version, assuming 0:', e);
+        }
 
-            await this.db.execute(`
-                CREATE TABLE IF NOT EXISTS kv_store (
-                    key TEXT PRIMARY KEY,
-                    value TEXT
-                );
-            `);
+        const migrations: Array<(db: SQLiteDBConnection) => Promise<void>> = [
+            async (db) => {
+                try {
+                    await db.execute('ALTER TABLE user_azkar ADD COLUMN originalStaticId INTEGER');
+                } catch {
+                    // Column already exists on fresh installs - not an error.
+                }
+            }
+        ];
 
-            await this.db.execute(`
-                CREATE TABLE IF NOT EXISTS user_quotes (
-                    id TEXT PRIMARY KEY,
-                    text TEXT,
-                    author TEXT,
-                    source TEXT
-                );
-            `);
-
-            await this.db.execute(`
-                CREATE TABLE IF NOT EXISTS user_salawat (
-                    id TEXT PRIMARY KEY,
-                    text TEXT,
-                    description TEXT
-                );
-            `);
-
-             // Table for User Categories
-            await this.db.execute(`
-                CREATE TABLE IF NOT EXISTS user_categories (
-                    id TEXT PRIMARY KEY,
-                    title TEXT
-                );
-            `);
-
-            // Table for User Azkar - Updated with originalStaticId
-            await this.db.execute(`
-                CREATE TABLE IF NOT EXISTS user_azkar (
-                    id INTEGER PRIMARY KEY,
-                    categoryId TEXT,
-                    arabic TEXT,
-                    transliteration TEXT,
-                    translation TEXT,
-                    benefit TEXT,
-                    reference TEXT,
-                    count INTEGER,
-                    isCustom INTEGER DEFAULT 1,
-                    originalStaticId INTEGER
-                );
-            `);
-
-            // Table for Hidden Static Azkar IDs
-            await this.db.execute(`
-                CREATE TABLE IF NOT EXISTS hidden_static_azkar (
-                    id INTEGER PRIMARY KEY
-                );
-            `);
-
-            // Table for Audio Caching
-            await this.db.execute(`
-                CREATE TABLE IF NOT EXISTS audio_cache (
-                    key TEXT PRIMARY KEY,
-                    data TEXT
-                );
-            `);
-
-        } catch (error) {
-            console.error('SQLite initialization failed:', error);
-            throw error;
+        while (version < migrations.length) {
+            await migrations[version](db);
+            version++;
+            await db.execute('PRAGMA user_version = ' + version);
         }
     }
 
-    private async getKV(key: string): Promise<any | null> {
-        if (!this.db) return null;
-        const res = await this.db.query('SELECT value FROM kv_store WHERE key = ?', [key]);
-        if (res.values && res.values.length > 0) {
-            return JSON.parse(res.values[0].value);
+    /** Resolves with an open connection or rejects STORAGE_UNAVAILABLE. */
+    private async ensureDb(): Promise<SQLiteDBConnection> {
+        if (this.db) return this.db;
+        await this.initialize();
+        if (!this.db) throw new Error('STORAGE_UNAVAILABLE');
+        return this.db;
+    }
+
+    private async getKV<T>(key: string): Promise<T | null> {
+        const db = await this.ensureDb();
+        try {
+            const res = await db.query('SELECT value FROM kv_store WHERE key = ?', [key]);
+            if (res.values && res.values.length > 0) {
+                return JSON.parse(res.values[0].value) as T;
+            }
+        } catch (e) {
+            console.error('Corrupted kv value for ' + key + ', treating as missing.', e);
         }
         return null;
     }
 
-    private async setKV(key: string, value: any): Promise<void> {
-        if (!this.db) return;
+    private async setKV(key: string, value: unknown): Promise<void> {
+        const db = await this.ensureDb();
         const json = JSON.stringify(value);
-        await this.db.run('INSERT OR REPLACE INTO kv_store (key, value) VALUES (?, ?)', [key, json]);
+        await db.run('INSERT OR REPLACE INTO kv_store (key, value) VALUES (?, ?)', [key, json]);
     }
 
     async getPreferences(): Promise<UserPreferences> {
-        const stored = await this.getKV('preferences');
+        const stored = await this.getKV<UserPreferences>('preferences');
         if (stored) {
-            // Ensure defaults for new fields
             return { ...defaultPreferences, ...stored, language: 'ar' };
         }
         return defaultPreferences;
@@ -116,7 +176,7 @@ export class MobileStorage implements StorageAdapter {
     }
 
     async getProgress(): Promise<ProgressState> {
-        return (await this.getKV('progress')) || {};
+        return (await this.getKV<ProgressState>('progress')) || {};
     }
 
     async saveProgress(progress: ProgressState): Promise<void> {
@@ -124,7 +184,7 @@ export class MobileStorage implements StorageAdapter {
     }
 
     async isOnboardingComplete(): Promise<boolean> {
-        const val = await this.getKV('onboarding');
+        const val = await this.getKV<boolean>('onboarding');
         return val === true;
     }
 
@@ -132,46 +192,60 @@ export class MobileStorage implements StorageAdapter {
         await this.setKV('onboarding', true);
     }
 
+    // --- Migration flags ---
+
+    async getFlag(key: string): Promise<boolean> {
+        const val = await this.getKV<boolean>('flag:' + key);
+        return val === true;
+    }
+
+    async setFlag(key: string): Promise<void> {
+        await this.setKV('flag:' + key, true);
+    }
+
+    // --- Dynamic Content ---
+
     async getUserQuotes(): Promise<Quote[]> {
-        if (!this.db) return [];
-        const res = await this.db.query('SELECT * FROM user_quotes');
-        return (res.values as Quote[]) || [];
+        const db = await this.ensureDb();
+        const res = await db.query('SELECT * FROM user_quotes');
+        return ((res.values as Quote[]) || []).map(q => ({ ...q, id: Number(q.id) }));
     }
 
     async addUserQuote(quote: Quote): Promise<void> {
-        if (!this.db) return;
-        await this.db.run(
-            'INSERT INTO user_quotes (id, text, author, source) VALUES (?, ?, ?, ?)', 
-            [quote.id, quote.text, quote.author, quote.source || '']
+        const db = await this.ensureDb();
+        // IGNORE: duplicate ids (e.g. same-millisecond legacy backups) skip instead of throwing.
+        await db.run(
+            'INSERT OR IGNORE INTO user_quotes (id, text, author, source) VALUES (?, ?, ?, ?)',
+            [String(quote.id), quote.text, quote.author, quote.source || '']
         );
     }
 
     async getUserSalawat(): Promise<Salawat[]> {
-        if (!this.db) return [];
-        const res = await this.db.query('SELECT * FROM user_salawat');
-        return (res.values as Salawat[]) || [];
+        const db = await this.ensureDb();
+        const res = await db.query('SELECT * FROM user_salawat');
+        return ((res.values as Salawat[]) || []).map(s => ({ ...s, id: Number(s.id) }));
     }
 
     async addUserSalawat(salawat: Salawat): Promise<void> {
-        if (!this.db) return;
-        await this.db.run(
-            'INSERT INTO user_salawat (id, text, description) VALUES (?, ?, ?)',
-            [salawat.id, salawat.text, salawat.description || '']
+        const db = await this.ensureDb();
+        await db.run(
+            'INSERT OR IGNORE INTO user_salawat (id, text, description) VALUES (?, ?, ?)',
+            [String(salawat.id), salawat.text, salawat.description || '']
         );
     }
 
     // --- User Categories ---
 
     async getUserCategories(): Promise<UserCategory[]> {
-        if (!this.db) return [];
-        const res = await this.db.query('SELECT * FROM user_categories');
+        const db = await this.ensureDb();
+        const res = await db.query('SELECT * FROM user_categories');
         return (res.values as UserCategory[]) || [];
     }
 
     async addUserCategory(category: UserCategory): Promise<void> {
-        if (!this.db) return;
-        await this.db.run(
-            'INSERT INTO user_categories (id, title) VALUES (?, ?)',
+        const db = await this.ensureDb();
+        await db.run(
+            'INSERT OR REPLACE INTO user_categories (id, title) VALUES (?, ?)',
             [category.id, category.title]
         );
     }
@@ -179,8 +253,8 @@ export class MobileStorage implements StorageAdapter {
     // --- User Azkar ---
 
     async getUserAzkar(): Promise<UserZikr[]> {
-        if (!this.db) return [];
-        const res = await this.db.query('SELECT * FROM user_azkar');
+        const db = await this.ensureDb();
+        const res = await db.query('SELECT * FROM user_azkar');
         return (res.values || []).map(z => ({
             ...z,
             isCustom: z.isCustom === 1
@@ -188,67 +262,76 @@ export class MobileStorage implements StorageAdapter {
     }
 
     async addUserZikr(zikr: UserZikr): Promise<void> {
-        if (!this.db) return;
-        // Insert with originalStaticId
-        await this.db.run(
+        const db = await this.ensureDb();
+        await db.run(
             'INSERT INTO user_azkar (id, categoryId, arabic, transliteration, translation, benefit, reference, count, isCustom, originalStaticId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [
-                zikr.id, 
-                zikr.categoryId, 
-                zikr.arabic, 
-                zikr.transliteration || '', 
-                zikr.translation || '', 
-                zikr.benefit || '', 
-                zikr.reference || '', 
-                zikr.count, 
+                zikr.id,
+                zikr.categoryId,
+                zikr.arabic,
+                zikr.transliteration || '',
+                zikr.translation || '',
+                zikr.benefit || '',
+                zikr.reference || '',
+                zikr.count,
                 zikr.isCustom ? 1 : 0,
-                zikr.originalStaticId || null
+                typeof zikr.originalStaticId === 'number' ? zikr.originalStaticId : null
             ]
         );
     }
 
     async updateUserZikr(zikr: UserZikr): Promise<void> {
-        if (!this.db) return;
-        await this.db.run(
-            'UPDATE user_azkar SET categoryId=?, arabic=?, transliteration=?, translation=?, benefit=?, reference=?, count=? WHERE id=?',
-            [zikr.categoryId, zikr.arabic, zikr.transliteration || '', zikr.translation || '', zikr.benefit || '', zikr.reference || '', zikr.count, zikr.id]
+        const db = await this.ensureDb();
+        await db.run(
+            'UPDATE user_azkar SET categoryId=?, arabic=?, transliteration=?, translation=?, benefit=?, reference=?, count=?, isCustom=?, originalStaticId=? WHERE id=?',
+            [
+                zikr.categoryId,
+                zikr.arabic,
+                zikr.transliteration || '',
+                zikr.translation || '',
+                zikr.benefit || '',
+                zikr.reference || '',
+                zikr.count,
+                zikr.isCustom ? 1 : 0,
+                typeof zikr.originalStaticId === 'number' ? zikr.originalStaticId : null,
+                zikr.id
+            ]
         );
     }
 
     async deleteUserZikr(id: number): Promise<void> {
-        if (!this.db) return;
-        await this.db.run('DELETE FROM user_azkar WHERE id = ?', [id]);
+        const db = await this.ensureDb();
+        await db.run('DELETE FROM user_azkar WHERE id = ?', [id]);
     }
 
     // --- Static Overrides ---
 
     async getHiddenZikrIds(): Promise<number[]> {
-        if (!this.db) return [];
-        const res = await this.db.query('SELECT id FROM hidden_static_azkar');
-        return (res.values || []).map(row => row.id);
+        const db = await this.ensureDb();
+        const res = await db.query('SELECT id FROM hidden_static_azkar');
+        return (res.values || []).map(row => Number(row.id));
     }
 
     async hideStaticZikr(id: number): Promise<void> {
-        if (!this.db) return;
-        // Ignore unique constraint violation if exists
-        await this.db.run('INSERT OR IGNORE INTO hidden_static_azkar (id) VALUES (?)', [id]);
+        const db = await this.ensureDb();
+        await db.run('INSERT OR IGNORE INTO hidden_static_azkar (id) VALUES (?)', [id]);
     }
 
     async unhideStaticZikr(id: number): Promise<void> {
-        if (!this.db) return;
-        await this.db.run('DELETE FROM hidden_static_azkar WHERE id = ?', [id]);
+        const db = await this.ensureDb();
+        await db.run('DELETE FROM hidden_static_azkar WHERE id = ?', [id]);
     }
 
     // --- Audio Caching ---
 
     async saveAudio(key: string, base64Data: string): Promise<void> {
-        if (!this.db) return;
-        await this.db.run('INSERT OR REPLACE INTO audio_cache (key, data) VALUES (?, ?)', [key, base64Data]);
+        const db = await this.ensureDb();
+        await db.run('INSERT OR REPLACE INTO audio_cache (key, data) VALUES (?, ?)', [key, base64Data]);
     }
 
     async getAudio(key: string): Promise<string | null> {
-        if (!this.db) return null;
-        const res = await this.db.query('SELECT data FROM audio_cache WHERE key = ?', [key]);
+        const db = await this.ensureDb();
+        const res = await db.query('SELECT data FROM audio_cache WHERE key = ?', [key]);
         if (res.values && res.values.length > 0) {
             return res.values[0].data;
         }
@@ -258,7 +341,7 @@ export class MobileStorage implements StorageAdapter {
     // --- Stats ---
 
     async getStats(): Promise<UserStats> {
-        const stored = await this.getKV('stats');
+        const stored = await this.getKV<UserStats>('stats');
         return stored ? { ...defaultStats, ...stored } : defaultStats;
     }
 
@@ -269,8 +352,9 @@ export class MobileStorage implements StorageAdapter {
     // --- Data Management ---
 
     async exportData(): Promise<string> {
+        const prefs = await this.getPreferences();
         const data = {
-            preferences: await this.getPreferences(),
+            preferences: { ...prefs, apiKey: '' }, // never leak the user's Gemini key into shareable backups
             progress: await this.getProgress(),
             stats: await this.getStats(),
             userQuotes: await this.getUserQuotes(),
@@ -279,49 +363,67 @@ export class MobileStorage implements StorageAdapter {
             userAzkar: await this.getUserAzkar(),
             hiddenStaticIds: await this.getHiddenZikrIds(),
             timestamp: Date.now(),
-            version: 1
+            version: 2
         };
         return JSON.stringify(data, null, 2);
     }
 
+    /**
+     * Validated restore inside a single SQL transaction.
+     * Semantics aligned with WebStorage: sections PRESENT in the backup replace
+     * local data wholesale; absent sections are left untouched. Any failure
+     * rolls the whole transaction back - previous data survives intact.
+     */
     async importData(jsonData: string): Promise<boolean> {
-        if (!this.db) return false;
+        let payload;
         try {
-            const data = JSON.parse(jsonData);
-            if (!data.preferences || !data.progress) throw new Error("Invalid backup file");
+            payload = validateBackup(JSON.parse(jsonData));
+        } catch (e) {
+            console.error('Import failed validation:', e);
+            return false;
+        }
 
-            await this.savePreferences(data.preferences);
-            await this.saveProgress(data.progress);
-            if (data.stats) await this.saveStats(data.stats);
+        const db = await this.ensureDb();
+        await db.beginTransaction();
+        try {
+            if (payload.preferences) {
+                await this.savePreferences({ ...defaultPreferences, ...payload.preferences, language: 'ar' } as UserPreferences);
+            }
+            if (payload.progress) await this.saveProgress(payload.progress);
+            if (payload.stats) await this.saveStats({ ...defaultStats, ...payload.stats });
 
-            // Clear existing custom data before import to avoid conflicts/duplicates?
-            // For now, let's truncate user tables
-            await this.db.execute('DELETE FROM user_quotes');
-            await this.db.execute('DELETE FROM user_salawat');
-            await this.db.execute('DELETE FROM user_categories');
-            await this.db.execute('DELETE FROM user_azkar');
-            await this.db.execute('DELETE FROM hidden_static_azkar');
+            // Replace only the sections the backup actually contains.
+            if (payload.userQuotes) {
+                await db.execute('DELETE FROM user_quotes');
+                for (const q of payload.userQuotes) await this.addUserQuote(q);
+            }
+            if (payload.userSalawat) {
+                await db.execute('DELETE FROM user_salawat');
+                for (const s of payload.userSalawat) await this.addUserSalawat(s);
+            }
+            if (payload.userCategories) {
+                await db.execute('DELETE FROM user_categories');
+                for (const c of payload.userCategories) await this.addUserCategory(c);
+            }
+            if (payload.userAzkar) {
+                await db.execute('DELETE FROM user_azkar');
+                for (const raw of payload.userAzkar) {
+                    const z = normalizeUserZikr(raw);
+                    await this.addUserZikr(z);
+                }
+            }
+            if (payload.hiddenStaticIds) {
+                await db.execute('DELETE FROM hidden_static_azkar');
+                for (const id of payload.hiddenStaticIds) await db.run('INSERT OR IGNORE INTO hidden_static_azkar (id) VALUES (?)', [id]);
+            }
 
-            // Bulk Insert helpers could be used, but loop is safer for types
-            if (Array.isArray(data.userQuotes)) {
-                for (const q of data.userQuotes) await this.addUserQuote(q);
-            }
-            if (Array.isArray(data.userSalawat)) {
-                for (const s of data.userSalawat) await this.addUserSalawat(s);
-            }
-            if (Array.isArray(data.userCategories)) {
-                for (const c of data.userCategories) await this.addUserCategory(c);
-            }
-            if (Array.isArray(data.userAzkar)) {
-                for (const z of data.userAzkar) await this.addUserZikr(z);
-            }
-            if (Array.isArray(data.hiddenStaticIds)) {
-                for (const id of data.hiddenStaticIds) await this.hideStaticZikr(id);
-            }
-
+            await db.commitTransaction();
             return true;
         } catch (e) {
-            console.error("Import failed:", e);
+            console.error('Import failed, rolling back:', e);
+            try { await db.rollbackTransaction(); } catch (rollbackError) {
+                console.error('Rollback itself failed:', rollbackError);
+            }
             return false;
         }
     }

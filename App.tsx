@@ -5,6 +5,7 @@ import { AppContext } from './context/AppContext';
 import MainLayout from './components/layout/MainLayout';
 import OfflineIndicator from './components/common/OfflineIndicator';
 import { getStorage } from './data/storage';
+import { runStorageMigrations } from './data/migrations';
 import { azkarRepository } from './data/azkarRepository';
 import { defaultPreferences, defaultStats } from './data/storage/defaults';
 import { NotificationService } from './services/NotificationService';
@@ -123,7 +124,13 @@ const App: React.FC = () => {
         const loadData = async () => {
             try {
                 await storage.initialize();
-                
+
+                try {
+                    await runStorageMigrations(storage);
+                } catch (migrationError) {
+                    console.error('Storage migration failed; will retry next launch:', migrationError);
+                }
+
                 const prefs = await storage.getPreferences();
                 const prog = await storage.getProgress();
                 const userStats = await storage.getStats();

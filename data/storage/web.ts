@@ -2,6 +2,7 @@
 import { StorageAdapter } from './interface';
 import { UserPreferences, ProgressState, Quote, Salawat, UserZikr, UserCategory, UserStats } from '../../types';
 import { defaultPreferences, defaultStats } from './defaults';
+import { validateBackup, normalizeUserZikr } from '../backup';
 import { get, set } from 'idb-keyval';
 
 const KEYS = {
@@ -15,9 +16,32 @@ const KEYS = {
     HIDDEN_STATIC: 'azkar_hidden_static_ids',
     AUDIO_PREFIX: 'azkar_audio_',
     STATS: 'azkar_user_stats',
+    FLAG_PREFIX: 'azkar_flag_'
+};
+
+/** JSON.parse that never throws: corrupted values fall back instead of
+ *  permanently rejecting every dependent repository call. */
+const readJson = <T>(key: string, fallback: T): T => {
+    try {
+        const stored = localStorage.getItem(key);
+        return stored ? (JSON.parse(stored) as T) : fallback;
+    } catch (e) {
+        console.error('Corrupted stored value for ' + key + ', using fallback.', e);
+        return fallback;
+    }
 };
 
 export class WebStorage implements StorageAdapter {
+    /** Serializes read-modify-write mutations so rapid toggles / multiple tabs
+     *  cannot interleave an await-read between another writer's read and write. */
+    private mutationQueue: Promise<unknown> = Promise.resolve();
+
+    private enqueue<T>(operation: () => Promise<T>): Promise<T> {
+        const result = this.mutationQueue.then(operation, operation);
+        this.mutationQueue = result.catch(() => undefined);
+        return result;
+    }
+
     async initialize(): Promise<void> {
         return Promise.resolve();
     }
@@ -28,7 +52,7 @@ export class WebStorage implements StorageAdapter {
             if (stored) {
                 const parsed = JSON.parse(stored);
                 // Ensure defaults for new fields
-                return { ...defaultPreferences, ...parsed, language: 'ar' }; 
+                return { ...defaultPreferences, ...parsed, language: 'ar' };
             }
         } catch (e) {
             console.error('Error loading preferences', e);
@@ -36,21 +60,30 @@ export class WebStorage implements StorageAdapter {
         return defaultPreferences;
     }
 
-    async savePreferences(prefs: UserPreferences): Promise<void> {
-        localStorage.setItem(KEYS.PREFERENCES, JSON.stringify(prefs));
+    savePreferences(prefs: UserPreferences): Promise<void> {
+        return this.enqueue(async () => {
+            try {
+                localStorage.setItem(KEYS.PREFERENCES, JSON.stringify(prefs));
+            } catch (e) {
+                console.error('Failed saving preferences (quota?)', e);
+                throw e;
+            }
+        });
     }
 
     async getProgress(): Promise<ProgressState> {
-        try {
-            const stored = localStorage.getItem(KEYS.PROGRESS);
-            return stored ? JSON.parse(stored) : {};
-        } catch (e) {
-            return {};
-        }
+        return readJson<ProgressState>(KEYS.PROGRESS, {});
     }
 
-    async saveProgress(progress: ProgressState): Promise<void> {
-        localStorage.setItem(KEYS.PROGRESS, JSON.stringify(progress));
+    saveProgress(progress: ProgressState): Promise<void> {
+        return this.enqueue(async () => {
+            try {
+                localStorage.setItem(KEYS.PROGRESS, JSON.stringify(progress));
+            } catch (e) {
+                console.error('Failed saving progress (quota?)', e);
+                throw e;
+            }
+        });
     }
 
     async isOnboardingComplete(): Promise<boolean> {
@@ -61,86 +94,107 @@ export class WebStorage implements StorageAdapter {
         localStorage.setItem(KEYS.ONBOARDING, 'true');
     }
 
+    // --- Migration flags ---
+
+    async getFlag(key: string): Promise<boolean> {
+        return localStorage.getItem(KEYS.FLAG_PREFIX + key) === 'true';
+    }
+
+    async setFlag(key: string): Promise<void> {
+        localStorage.setItem(KEYS.FLAG_PREFIX + key, 'true');
+    }
+
     // --- Dynamic Content ---
 
     async getUserQuotes(): Promise<Quote[]> {
-        const stored = localStorage.getItem(KEYS.USER_QUOTES);
-        return stored ? JSON.parse(stored) : [];
+        return readJson<Quote[]>(KEYS.USER_QUOTES, []);
     }
 
-    async addUserQuote(quote: Quote): Promise<void> {
-        const current = await this.getUserQuotes();
-        localStorage.setItem(KEYS.USER_QUOTES, JSON.stringify([...current, quote]));
+    addUserQuote(quote: Quote): Promise<void> {
+        return this.enqueue(async () => {
+            const current = await this.getUserQuotes();
+            localStorage.setItem(KEYS.USER_QUOTES, JSON.stringify([...current, quote]));
+        });
     }
 
     async getUserSalawat(): Promise<Salawat[]> {
-        const stored = localStorage.getItem(KEYS.USER_SALAWAT);
-        return stored ? JSON.parse(stored) : [];
+        return readJson<Salawat[]>(KEYS.USER_SALAWAT, []);
     }
 
-    async addUserSalawat(salawat: Salawat): Promise<void> {
-        const current = await this.getUserSalawat();
-        localStorage.setItem(KEYS.USER_SALAWAT, JSON.stringify([...current, salawat]));
+    addUserSalawat(salawat: Salawat): Promise<void> {
+        return this.enqueue(async () => {
+            const current = await this.getUserSalawat();
+            localStorage.setItem(KEYS.USER_SALAWAT, JSON.stringify([...current, salawat]));
+        });
     }
 
     // --- User Categories ---
 
     async getUserCategories(): Promise<UserCategory[]> {
-        const stored = localStorage.getItem(KEYS.USER_CATEGORIES);
-        return stored ? JSON.parse(stored) : [];
+        return readJson<UserCategory[]>(KEYS.USER_CATEGORIES, []);
     }
 
-    async addUserCategory(category: UserCategory): Promise<void> {
-        const current = await this.getUserCategories();
-        localStorage.setItem(KEYS.USER_CATEGORIES, JSON.stringify([...current, category]));
+    addUserCategory(category: UserCategory): Promise<void> {
+        return this.enqueue(async () => {
+            const current = await this.getUserCategories();
+            localStorage.setItem(KEYS.USER_CATEGORIES, JSON.stringify([...current, category]));
+        });
     }
 
     // --- User Azkar ---
 
     async getUserAzkar(): Promise<UserZikr[]> {
-        const stored = localStorage.getItem(KEYS.USER_AZKAR);
-        return stored ? JSON.parse(stored) : [];
+        return readJson<UserZikr[]>(KEYS.USER_AZKAR, []);
     }
 
-    async addUserZikr(zikr: UserZikr): Promise<void> {
-        const current = await this.getUserAzkar();
-        localStorage.setItem(KEYS.USER_AZKAR, JSON.stringify([...current, zikr]));
+    addUserZikr(zikr: UserZikr): Promise<void> {
+        return this.enqueue(async () => {
+            const current = await this.getUserAzkar();
+            localStorage.setItem(KEYS.USER_AZKAR, JSON.stringify([...current, zikr]));
+        });
     }
 
-    async updateUserZikr(zikr: UserZikr): Promise<void> {
-        const current = await this.getUserAzkar();
-        const updated = current.map(z => z.id === zikr.id ? zikr : z);
-        localStorage.setItem(KEYS.USER_AZKAR, JSON.stringify(updated));
+    updateUserZikr(zikr: UserZikr): Promise<void> {
+        return this.enqueue(async () => {
+            const current = await this.getUserAzkar();
+            const updated = current.map(z => z.id === zikr.id ? zikr : z);
+            localStorage.setItem(KEYS.USER_AZKAR, JSON.stringify(updated));
+        });
     }
 
-    async deleteUserZikr(id: number): Promise<void> {
-        const current = await this.getUserAzkar();
-        const filtered = current.filter(z => z.id !== id);
-        localStorage.setItem(KEYS.USER_AZKAR, JSON.stringify(filtered));
+    deleteUserZikr(id: number): Promise<void> {
+        return this.enqueue(async () => {
+            const current = await this.getUserAzkar();
+            const filtered = current.filter(z => z.id !== id);
+            localStorage.setItem(KEYS.USER_AZKAR, JSON.stringify(filtered));
+        });
     }
 
     // --- Static Overrides ---
 
     async getHiddenZikrIds(): Promise<number[]> {
-        const stored = localStorage.getItem(KEYS.HIDDEN_STATIC);
-        return stored ? JSON.parse(stored) : [];
+        return readJson<number[]>(KEYS.HIDDEN_STATIC, []);
     }
 
-    async hideStaticZikr(id: number): Promise<void> {
-        const current = await this.getHiddenZikrIds();
-        if (!current.includes(id)) {
-            localStorage.setItem(KEYS.HIDDEN_STATIC, JSON.stringify([...current, id]));
-        }
+    hideStaticZikr(id: number): Promise<void> {
+        return this.enqueue(async () => {
+            const current = await this.getHiddenZikrIds();
+            if (!current.includes(id)) {
+                localStorage.setItem(KEYS.HIDDEN_STATIC, JSON.stringify([...current, id]));
+            }
+        });
     }
 
-    async unhideStaticZikr(id: number): Promise<void> {
-        const current = await this.getHiddenZikrIds();
-        const updated = current.filter(hiddenId => hiddenId !== id);
-        localStorage.setItem(KEYS.HIDDEN_STATIC, JSON.stringify(updated));
+    unhideStaticZikr(id: number): Promise<void> {
+        return this.enqueue(async () => {
+            const current = await this.getHiddenZikrIds();
+            const updated = current.filter(hiddenId => hiddenId !== id);
+            localStorage.setItem(KEYS.HIDDEN_STATIC, JSON.stringify(updated));
+        });
     }
 
     // --- Audio Caching (IndexedDB) ---
-    
+
     async saveAudio(key: string, base64Data: string): Promise<void> {
         try {
             await set(KEYS.AUDIO_PREFIX + key, base64Data);
@@ -160,7 +214,7 @@ export class WebStorage implements StorageAdapter {
     }
 
     // --- Stats ---
-    
+
     async getStats(): Promise<UserStats> {
         try {
             const stored = localStorage.getItem(KEYS.STATS);
@@ -172,14 +226,19 @@ export class WebStorage implements StorageAdapter {
     }
 
     async saveStats(stats: UserStats): Promise<void> {
-        localStorage.setItem(KEYS.STATS, JSON.stringify(stats));
+        try {
+            localStorage.setItem(KEYS.STATS, JSON.stringify(stats));
+        } catch (e) {
+            console.error('Failed saving stats (quota?)', e);
+        }
     }
 
     // --- Data Management ---
 
     async exportData(): Promise<string> {
+        const prefs = await this.getPreferences();
         const data = {
-            preferences: await this.getPreferences(),
+            preferences: { ...prefs, apiKey: '' }, // never leak the user's Gemini key into shareable backups
             progress: await this.getProgress(),
             stats: await this.getStats(),
             userQuotes: await this.getUserQuotes(),
@@ -188,32 +247,64 @@ export class WebStorage implements StorageAdapter {
             userAzkar: await this.getUserAzkar(),
             hiddenStaticIds: await this.getHiddenZikrIds(),
             timestamp: Date.now(),
-            version: 1
+            version: 2
         };
         return JSON.stringify(data, null, 2);
     }
 
+    /**
+     * Validated restore with rollback.
+     * Semantics (aligned with MobileStorage): a section present in the backup
+     * REPLACES local data wholesale; absent sections leave local data intact.
+     * Nothing is written until validation passes; any write failure restores
+     * the previous values.
+     */
     async importData(jsonData: string): Promise<boolean> {
+        let payload;
         try {
-            const data = JSON.parse(jsonData);
-            
-            // Validate basic structure
-            if (!data.preferences || !data.progress) throw new Error("Invalid backup file");
+            payload = validateBackup(JSON.parse(jsonData));
+        } catch (e) {
+            console.error('Import failed validation:', e);
+            return false;
+        }
 
-            // Restore
-            await this.savePreferences(data.preferences);
-            await this.saveProgress(data.progress);
-            if (data.stats) await this.saveStats(data.stats);
-            
-            if (Array.isArray(data.userQuotes)) localStorage.setItem(KEYS.USER_QUOTES, JSON.stringify(data.userQuotes));
-            if (Array.isArray(data.userSalawat)) localStorage.setItem(KEYS.USER_SALAWAT, JSON.stringify(data.userSalawat));
-            if (Array.isArray(data.userCategories)) localStorage.setItem(KEYS.USER_CATEGORIES, JSON.stringify(data.userCategories));
-            if (Array.isArray(data.userAzkar)) localStorage.setItem(KEYS.USER_AZKAR, JSON.stringify(data.userAzkar));
-            if (Array.isArray(data.hiddenStaticIds)) localStorage.setItem(KEYS.HIDDEN_STATIC, JSON.stringify(data.hiddenStaticIds));
+        const touchedKeys: string[] = [KEYS.PREFERENCES, KEYS.PROGRESS];
+        if (payload.stats) touchedKeys.push(KEYS.STATS);
+        if (payload.userQuotes) touchedKeys.push(KEYS.USER_QUOTES);
+        if (payload.userSalawat) touchedKeys.push(KEYS.USER_SALAWAT);
+        if (payload.userCategories) touchedKeys.push(KEYS.USER_CATEGORIES);
+        if (payload.userAzkar) touchedKeys.push(KEYS.USER_AZKAR);
+        if (payload.hiddenStaticIds) touchedKeys.push(KEYS.HIDDEN_STATIC);
 
+        const snapshot = new Map<string, string | null>();
+        for (const key of touchedKeys) snapshot.set(key, localStorage.getItem(key));
+
+        try {
+            if (payload.preferences) {
+                await this.savePreferences({ ...defaultPreferences, ...payload.preferences, language: 'ar' } as UserPreferences);
+            }
+            if (payload.progress) await this.saveProgress(payload.progress);
+            if (payload.stats) await this.saveStats({ ...defaultStats, ...payload.stats });
+
+            const putRaw = (key: string, value: unknown) =>
+                localStorage.setItem(key, JSON.stringify(value));
+
+            if (payload.userQuotes) putRaw(KEYS.USER_QUOTES, payload.userQuotes);
+            if (payload.userSalawat) putRaw(KEYS.USER_SALAWAT, payload.userSalawat);
+            if (payload.userCategories) putRaw(KEYS.USER_CATEGORIES, payload.userCategories);
+            if (payload.userAzkar) putRaw(KEYS.USER_AZKAR, payload.userAzkar.map(normalizeUserZikr));
+            if (payload.hiddenStaticIds) putRaw(KEYS.HIDDEN_STATIC, payload.hiddenStaticIds);
             return true;
         } catch (e) {
-            console.error("Import failed:", e);
+            console.error('Import failed mid-write, rolling back:', e);
+            for (const [key, value] of snapshot) {
+                try {
+                    if (value === null) localStorage.removeItem(key);
+                    else localStorage.setItem(key, value);
+                } catch (restoreError) {
+                    console.error('Rollback failed for ' + key, restoreError);
+                }
+            }
             return false;
         }
     }
