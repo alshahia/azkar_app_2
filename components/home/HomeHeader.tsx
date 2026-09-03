@@ -3,7 +3,7 @@ import React from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { MorningIcon, EveningIcon } from '../common/CustomIcons';
-import { CalendarDaysIcon, FireIcon } from '@heroicons/react/24/outline';
+import { CalendarDaysIcon, FireIcon, BookOpenIcon } from '@heroicons/react/24/outline';
 
 export const WelcomeCard: React.FC = () => {
     const { t } = useTranslation();
@@ -60,6 +60,13 @@ export const QuickAccessGrid: React.FC = () => {
 
     const items = [
         {
+            id: 'quran',
+            label: t('nav_quran'),
+            gradient: 'from-[#0d9488] to-[#115e59]',
+            icon: <BookOpenIcon className="w-6 h-6" />,
+            onClick: () => navigate('quran')
+        },
+        {
             id: 'morning',
             label: t('home_dashboard_morning'),
             gradient: 'from-[#FF9F43] to-[#FF6B6B]', 
@@ -90,17 +97,17 @@ export const QuickAccessGrid: React.FC = () => {
     ];
 
     return (
-        <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-3 gap-3 mb-8">
             {items.map((item) => (
                 <button
                     key={item.id}
                     onClick={item.onClick}
-                    className={`w-full rounded-[1.5rem] p-5 h-28 flex flex-col justify-between items-start shadow-md hover:shadow-xl active:scale-95 transition-all bg-gradient-to-br ${item.gradient} text-white relative overflow-hidden group`}
+                    className={`w-full rounded-[1.5rem] p-4 h-24 flex flex-col justify-between items-start shadow-md hover:shadow-xl active:scale-95 transition-all bg-gradient-to-br ${item.gradient} text-white relative overflow-hidden group`}
                 >
                     <div className="text-2xl bg-white/20 p-2 rounded-full backdrop-blur-sm group-hover:scale-110 transition-transform">
                         {typeof item.icon === 'string' ? item.icon : item.icon}
                     </div>
-                    <span className="font-bold text-lg leading-none opacity-90 group-hover:opacity-100">
+                    <span className="font-bold text-sm leading-none opacity-90 group-hover:opacity-100">
                         {item.label}
                     </span>
                     {/* Shine effect */}

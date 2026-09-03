@@ -1,5 +1,5 @@
 
-import { UserPreferences, ProgressState, Quote, Salawat, UserZikr, UserCategory, UserStats } from '../../types';
+import { UserPreferences, ProgressState, Quote, Salawat, UserZikr, UserCategory, UserStats, QuranBookmark, QuranLastRead } from '../../types';
 
 export interface StorageAdapter {
     initialize(): Promise<void>;
@@ -49,6 +49,12 @@ export interface StorageAdapter {
     // Data Management
     exportData(): Promise<string>; // Returns JSON string
     importData(jsonData: string): Promise<boolean>; // Returns success
+
+    // Quran
+    getQuranBookmarks(): Promise<QuranBookmark[]>;
+    saveQuranBookmarks(bookmarks: QuranBookmark[]): Promise<void>;
+    getQuranLastRead(): Promise<QuranLastRead | null>;
+    saveQuranLastRead(value: QuranLastRead | null): Promise<void>;
 
     // Internal migration flags (one-time data migrations)
     getFlag(key: string): Promise<boolean>;

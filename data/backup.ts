@@ -1,5 +1,5 @@
 
-import { UserPreferences, ProgressState, Quote, Salawat, UserCategory, UserZikr, UserStats } from '../types';
+import { UserPreferences, ProgressState, Quote, Salawat, UserCategory, UserZikr, UserStats, QuranBookmark, QuranLastRead } from '../types';
 
 /**
  * Shared, strict validation for backup files used by BOTH storage adapters so
@@ -15,6 +15,8 @@ export interface BackupPayload {
     userCategories?: UserCategory[];
     userAzkar?: UserZikr[];
     hiddenStaticIds?: number[];
+    quranBookmarks?: QuranBookmark[];
+    quranLastRead?: QuranLastRead | null;
 }
 
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -60,6 +62,23 @@ export const validateBackup = (raw: unknown): BackupPayload => {
     arr('userAzkar', z => isObj(z) && isNum(z.id as number) && typeof z.arabic === 'string'
         && typeof z.categoryId === 'string');
     arr('hiddenStaticIds', h => isNum(h));
+    if (data.quranBookmarks !== undefined) {
+        if (!Array.isArray(data.quranBookmarks)) throw new Error('INVALID_BACKUP:quranBookmarks');
+        data.quranBookmarks.forEach((b: unknown, i: number) => {
+            if (!isObj(b) || !isNum((b as Record<string, unknown>).surah) || !isNum((b as Record<string, unknown>).ayah)) {
+                throw new Error('INVALID_BACKUP:quranBookmarks:' + i);
+            }
+        });
+        out.quranBookmarks = data.quranBookmarks as QuranBookmark[];
+    }
+    if (data.quranLastRead !== undefined) {
+        if (data.quranLastRead !== null && (!isObj(data.quranLastRead) ||
+            !isNum((data.quranLastRead as Record<string, unknown>).surah) ||
+            !isNum((data.quranLastRead as Record<string, unknown>).ayah))) {
+            throw new Error('INVALID_BACKUP:quranLastRead');
+        }
+        out.quranLastRead = data.quranLastRead as QuranLastRead | null;
+    }
 
     return out;
 };

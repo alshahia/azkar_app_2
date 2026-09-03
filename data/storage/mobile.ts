@@ -1,6 +1,6 @@
 
 import { StorageAdapter } from './interface';
-import { UserPreferences, ProgressState, Quote, Salawat, UserZikr, UserCategory, UserStats } from '../../types';
+import { UserPreferences, ProgressState, Quote, Salawat, UserZikr, UserCategory, UserStats, QuranBookmark, QuranLastRead } from '../../types';
 import { defaultPreferences, defaultStats } from './defaults';
 import { validateBackup, normalizeUserZikr } from '../backup';
 import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from '@capacitor-community/sqlite';
@@ -10,6 +10,10 @@ export class MobileStorage implements StorageAdapter {
     private db: SQLiteDBConnection | null = null;
     private readonly DB_NAME = 'azkar_db';
     private initPromise: Promise<void> | null = null;
+    private static readonly KEYS = {
+        QURAN_BOOKMARKS: 'azkar_quran_bookmarks',
+        QURAN_LAST_READ: 'azkar_quran_last_read',
+    };
 
     constructor() {
         this.sqlite = new SQLiteConnection(CapacitorSQLite);
@@ -349,7 +353,25 @@ export class MobileStorage implements StorageAdapter {
         await this.setKV('stats', stats);
     }
 
-    // --- Data Management ---
+    // --- Quran ---
+
+    async getQuranBookmarks(): Promise<QuranBookmark[]> {
+        return (await this.getKV<QuranBookmark[]>(MobileStorage.KEYS.QURAN_BOOKMARKS)) ?? [];
+    }
+
+    async saveQuranBookmarks(bookmarks: QuranBookmark[]): Promise<void> {
+        await this.setKV(MobileStorage.KEYS.QURAN_BOOKMARKS, bookmarks);
+    }
+
+    async getQuranLastRead(): Promise<QuranLastRead | null> {
+        return (await this.getKV<QuranLastRead | null>(MobileStorage.KEYS.QURAN_LAST_READ)) ?? null;
+    }
+
+    async saveQuranLastRead(value: QuranLastRead | null): Promise<void> {
+        await this.setKV(MobileStorage.KEYS.QURAN_LAST_READ, value);
+    }
+
+// --- Data Management ---
 
     async exportData(): Promise<string> {
         const prefs = await this.getPreferences();
@@ -362,8 +384,10 @@ export class MobileStorage implements StorageAdapter {
             userCategories: await this.getUserCategories(),
             userAzkar: await this.getUserAzkar(),
             hiddenStaticIds: await this.getHiddenZikrIds(),
+            quranBookmarks: await this.getQuranBookmarks(),
+            quranLastRead: await this.getQuranLastRead(),
             timestamp: Date.now(),
-            version: 2
+            version: 3
         };
         return JSON.stringify(data, null, 2);
     }

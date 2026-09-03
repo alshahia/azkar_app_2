@@ -43,7 +43,7 @@ export default {
       fontFamily: {
         sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         serif: ['"Amiri"', 'ui-serif', 'Georgia', 'serif'],
-        quran: ['"Scheherazade New"', 'serif'],
+        quran: ['"Amiri Quran"', '"Scheherazade New"', '"Amiri"', 'serif'],
       }
     }
   },

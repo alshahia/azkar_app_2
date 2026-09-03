@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
-import type { Screen, ProgressState, AppLanguage, HomeLayout, UserPreferences, Category, UserZikr, CustomReminder, LocationCoordinates, UserStats, AppTheme } from './types';
+import type { Screen, ProgressState, AppLanguage, HomeLayout, UserPreferences, Category, UserZikr, CustomReminder, LocationCoordinates, UserStats, AppTheme, QuranBookmark, QuranLastRead } from './types';
 import { AppContext } from './context/AppContext';
 import MainLayout from './components/layout/MainLayout';
 import OfflineIndicator from './components/common/OfflineIndicator';
@@ -42,6 +42,8 @@ const PrayerTimesScreen = React.lazy(() => import('./components/screens/PrayerTi
 const QiblaCompassScreen = React.lazy(() => import('./components/screens/QiblaCompassScreen'));
 const HijriCalendarScreen = React.lazy(() => import('./components/screens/HijriCalendarScreen')); 
 const ShareEditorScreen = React.lazy(() => import('./components/screens/ShareEditorScreen')); 
+const QuranScreen = React.lazy(() => import('./components/screens/QuranScreen'));
+const SurahReaderScreen = React.lazy(() => import('./components/screens/SurahReaderScreen'));
 
 const LoadingFallback = () => (
     <div className="h-full w-full flex items-center justify-center bg-sand-50 dark:bg-midnight-950">
@@ -114,6 +116,10 @@ const App: React.FC = () => {
     
     const [stats, setStats] = useState<UserStats>(defaultStats);
 
+    // Quran state
+    const [quranBookmarks, setQuranBookmarks] = useState<QuranBookmark[]>([]);
+    const [quranLastRead, setQuranLastReadState] = useState<QuranLastRead | null>(null);
+
     const storage = getStorage();
 
     const refreshData = useCallback(async () => {
@@ -140,6 +146,8 @@ const App: React.FC = () => {
                 const prog = await storage.getProgress();
                 const userStats = await storage.getStats();
                 const onboardingDone = await storage.isOnboardingComplete();
+                const quranMarks = await storage.getQuranBookmarks();
+                const quranLast = await storage.getQuranLastRead();
                 
                 await refreshData();
 
@@ -164,7 +172,9 @@ const App: React.FC = () => {
                 setPrayerNotificationsEnabled(prefs.prayerNotificationsEnabled ?? defaultPreferences.prayerNotificationsEnabled);
                 setProgress(prog);
                 setStats(userStats);
-                
+                setQuranBookmarks(quranMarks);
+                setQuranLastReadState(quranLast);
+
                 // Initialize Haptic Service
                 HapticService.setEnabled(prefs.hapticsEnabled ?? defaultPreferences.hapticsEnabled);
                 
@@ -443,6 +453,37 @@ const App: React.FC = () => {
         NotificationService.cancelReminder(id);
     };
 
+    // Quran handlers — preserve dedupe by (surah, ayah) and write-through to storage
+    const addQuranBookmark = async (b: QuranBookmark) => {
+        setQuranBookmarks(prev => {
+            if (prev.some(x => x.surah === b.surah && x.ayah === b.ayah)) return prev;
+            const next = [...prev, b];
+            storage.saveQuranBookmarks(next).catch(err => console.error('saveQuranBookmarks', err));
+            return next;
+        });
+    };
+    const removeQuranBookmark = async (surah: number, ayah: number) => {
+        setQuranBookmarks(prev => {
+            const next = prev.filter(x => !(x.surah === surah && x.ayah === ayah));
+            storage.saveQuranBookmarks(next).catch(err => console.error('saveQuranBookmarks', err));
+            return next;
+        });
+    };
+    const setQuranLastRead = async (l: QuranLastRead) => {
+        setQuranLastReadState(prev => {
+            if (prev && prev.surah === l.surah && prev.ayah === l.ayah) return prev;
+            storage.saveQuranLastRead(l).catch(err => console.error('saveQuranLastRead', err));
+            return l;
+        });
+    };
+    const clearQuranLastRead = async () => {
+        setQuranLastReadState(prev => {
+            if (prev === null) return prev;
+            storage.saveQuranLastRead(null).catch(err => console.error('saveQuranLastRead', err));
+            return null;
+        });
+    };
+
     const renderScreen = () => {
         switch (screen) {
             case 'welcome': return <WelcomeScreen />;
@@ -459,6 +500,8 @@ const App: React.FC = () => {
             case 'qibla': return <QiblaCompassScreen />;
             case 'calendar': return <HijriCalendarScreen />;
             case 'shareEditor': return <ShareEditorScreen data={screenParams} />;
+            case 'quran': return <QuranScreen />;
+            case 'surahReader': return <SurahReaderScreen params={screenParams} />;
             case 'azkarList': {
                 const category = categories.find(c => c.id === screenParams?.categoryId);
                 return category ? <AzkarListScreen category={category} initialScrollToId={screenParams?.initialScrollToId} /> : <CategoriesScreen />;
@@ -474,7 +517,7 @@ const App: React.FC = () => {
         }
     };
 
-    const isMainScreen = ['home', 'categories', 'favorites', 'settings'].includes(screen);
+    const isMainScreen = ['home', 'categories', 'favorites', 'settings', 'quran'].includes(screen);
 
     if (isLoading) {
         return <LoadingFallback />;
@@ -503,7 +546,9 @@ const App: React.FC = () => {
             customReminders, addCustomReminder, removeCustomReminder,
             location, setLocation,
             prayerNotificationsEnabled, setPrayerNotificationsEnabled,
-            stats, incrementStreak, incrementTotalReads
+            stats, incrementStreak, incrementTotalReads,
+            quranBookmarks, addQuranBookmark, removeQuranBookmark,
+            quranLastRead, setQuranLastRead, clearQuranLastRead
         }}>
             <div className={`${darkMode ? 'dark' : ''} h-screen w-screen`} dir="rtl" data-theme={theme}>
                 <div className="bg-sand-50 text-gray-900 dark:bg-midnight-950 dark:text-gray-100 h-full w-full font-sans antialiased overflow-hidden transition-colors duration-300 relative">

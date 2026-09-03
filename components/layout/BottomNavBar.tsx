@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { HomeIcon, ListBulletIcon, HeartIcon, Cog6ToothIcon } from '@heroicons/react/24/solid';
+import { HomeIcon, ListBulletIcon, HeartIcon, Cog6ToothIcon, BookOpenIcon } from '@heroicons/react/24/solid';
 import { useAppContext } from '../../context/AppContext';
 import type { Screen } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -22,7 +22,7 @@ const NavItem: React.FC<{
     <button 
       onClick={onClick} 
       aria-current={isActive ? 'page' : undefined}
-      className="group flex flex-col items-center justify-center w-full space-y-1.5 py-2 transition-all relative"
+      className="group flex flex-col items-center justify-center w-full space-y-1 py-2 transition-all relative"
     >
       <div className={`p-1 rounded-xl transition-all duration-300 ${isActive ? 'bg-primary-50 dark:bg-primary-900/20 -translate-y-1' : ''}`}>
         <Icon className={`h-6 w-6 transition-colors duration-300 ${isActive ? activeColor : inactiveColor}`} />
@@ -43,12 +43,18 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeScreen }) => {
 
   return (
     <div className="bg-white/85 dark:bg-midnight-950/85 backdrop-blur-xl shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)] border-t border-white/50 dark:border-white/5 transition-all duration-300 pb-safe">
-      <div className="flex justify-around items-center h-20 max-w-md mx-auto px-2">
+      <div className="flex justify-around items-center h-18 max-w-md mx-auto px-1">
         <NavItem
           icon={HomeIcon}
           label={t('nav_home')}
           isActive={activeScreen === 'home'}
           onClick={() => navigate('home')}
+        />
+        <NavItem
+          icon={BookOpenIcon}
+          label={t('nav_quran')}
+          isActive={activeScreen === 'quran'}
+          onClick={() => navigate('quran')}
         />
         <NavItem
           icon={ListBulletIcon}

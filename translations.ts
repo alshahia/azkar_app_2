@@ -1,10 +1,11 @@
-﻿
+
 export const translations = {
   ar: {
     // Bottom Nav
     nav_home: 'الرئيسية',
     nav_categories: 'أذكار', // Changed from 'الفئات'
     nav_favorites: 'المفضلة',
+    nav_quran: 'القرآن',
     nav_settings: 'الإعدادات',
 
     // Welcome Screen
@@ -130,5 +131,50 @@ export const translations = {
     report_bug_attachments_cta: 'إرفاق لقطة شاشة',
     report_bug_info: 'سيتم إرسال معلومات الجهاز والتطبيق مع تقريرك لمساعدتنا في حل المشكلة بشكل أسرع.',
     report_bug_submit_button: 'إرسال التقرير',
+
+    // Quran feature
+    quran_title: 'القرآن الكريم',
+    quran_subtitle: 'اقرأ وتأمّل في كتاب الله',
+    quran_search_placeholder: 'ابحث عن سورة بالاسم أو الرقم...',
+    quran_juz_title: 'الأجزاء',
+    quran_resume_title: 'متابعة القراءة',
+    quran_resume_continue: 'تابع من حيث توقفت',
+    quran_resume_clear: 'إزالة آخر موضع وصلت إليه',
+    quran_reader_settings: 'إعدادات القراءة',
+    quran_font_size: 'حجم الخط',
+    quran_font_small: 'صغير',
+    quran_font_large: 'كبير',
+    quran_reciter_label: 'القارئ',
+    quran_offline_banner: 'القرآن متاح بدون إنترنت. تتطلب التلاوة الصوتية اتصالاً.',
+    quran_no_results: 'لا توجد نتائج مطابقة.',
+    quran_ayahs_count: 'آيات',
+    quran_actions_play: 'تشغيل',
+    quran_actions_bookmark: 'حفظ',
+    quran_actions_tafsir: 'التفسير',
+    quran_actions_copy: 'نسخ',
+    quran_actions_share: 'مشاركة',
+    quran_bookmarks: 'العلامات المرجعية',
+    quran_no_bookmarks: 'لا توجد علامات مرجعية بعد.',
+    quran_tafsir_title: 'التفسير الميسر',
+    quran_play_all: 'تشغيل السورة كاملة',
+    quran_loading: 'جاري التحميل...',
+    quran_sajda_recommended: 'مندوبة',
+    quran_sajda_obligatory: 'واجبة',
+
+    // Offline audio cache
+    quran_close: 'إغلاق',
+    quran_audio_offline_title: 'التلاوة دون اتصال',
+    quran_audio_cache_size: 'حجم الذاكرة المؤقتة',
+    quran_audio_cached_files: 'ملف محفوظ',
+    quran_audio_download_surah: 'تنزيل هذه السورة',
+    quran_audio_surah_cached_prefix: 'محفوظ من السورة',
+    quran_audio_download_button: 'تنزيل الآن',
+    quran_audio_downloading: 'جاري التنزيل...',
+    quran_audio_download_done_prefix: 'اكتمل تنزيل',
+    quran_audio_download_done_with_errors_prefix: 'اكتمل تنزيل',
+    quran_audio_failed_count: 'تعذر تنزيل',
+    quran_audio_clear_cache: 'إفراغ الذاكرة المؤقتة',
+    quran_audio_clear_confirm: 'هل تريد إفراغ كل التلاوات المخزّنة؟',
+    quran_audio_autocache_note: 'تُحفظ التلاوة تلقائيًا عند تشغيلها لأول مرة ولا تحتاج لاتصال لاحقًا.',
   }
 };

@@ -1,6 +1,6 @@
 
 import { StorageAdapter } from './interface';
-import { UserPreferences, ProgressState, Quote, Salawat, UserZikr, UserCategory, UserStats } from '../../types';
+import { UserPreferences, ProgressState, Quote, Salawat, UserZikr, UserCategory, UserStats, QuranBookmark, QuranLastRead } from '../../types';
 import { defaultPreferences, defaultStats } from './defaults';
 import { validateBackup, normalizeUserZikr } from '../backup';
 import { get, set } from 'idb-keyval';
@@ -16,7 +16,9 @@ const KEYS = {
     HIDDEN_STATIC: 'azkar_hidden_static_ids',
     AUDIO_PREFIX: 'azkar_audio_',
     STATS: 'azkar_user_stats',
-    FLAG_PREFIX: 'azkar_flag_'
+    FLAG_PREFIX: 'azkar_flag_',
+    QURAN_BOOKMARKS: 'azkar_quran_bookmarks',
+    QURAN_LAST_READ: 'azkar_quran_last_read'
 };
 
 /** JSON.parse that never throws: corrupted values fall back instead of
@@ -213,6 +215,39 @@ export class WebStorage implements StorageAdapter {
         }
     }
 
+    // --- Quran ---
+
+    async getQuranBookmarks(): Promise<QuranBookmark[]> {
+        return readJson<QuranBookmark[]>(KEYS.QURAN_BOOKMARKS, []);
+    }
+
+    saveQuranBookmarks(bookmarks: QuranBookmark[]): Promise<void> {
+        return this.enqueue(async () => {
+            try {
+                localStorage.setItem(KEYS.QURAN_BOOKMARKS, JSON.stringify(bookmarks));
+            } catch (e) {
+                console.error('Failed saving Quran bookmarks', e);
+                throw e;
+            }
+        });
+    }
+
+    async getQuranLastRead(): Promise<QuranLastRead | null> {
+        return readJson<QuranLastRead | null>(KEYS.QURAN_LAST_READ, null);
+    }
+
+    saveQuranLastRead(value: QuranLastRead | null): Promise<void> {
+        return this.enqueue(async () => {
+            try {
+                if (value === null) localStorage.removeItem(KEYS.QURAN_LAST_READ);
+                else localStorage.setItem(KEYS.QURAN_LAST_READ, JSON.stringify(value));
+            } catch (e) {
+                console.error('Failed saving Quran last-read', e);
+                throw e;
+            }
+        });
+    }
+
     // --- Stats ---
 
     async getStats(): Promise<UserStats> {
@@ -246,8 +281,10 @@ export class WebStorage implements StorageAdapter {
             userCategories: await this.getUserCategories(),
             userAzkar: await this.getUserAzkar(),
             hiddenStaticIds: await this.getHiddenZikrIds(),
+            quranBookmarks: await this.getQuranBookmarks(),
+            quranLastRead: await this.getQuranLastRead(),
             timestamp: Date.now(),
-            version: 2
+            version: 3
         };
         return JSON.stringify(data, null, 2);
     }
@@ -275,6 +312,8 @@ export class WebStorage implements StorageAdapter {
         if (payload.userCategories) touchedKeys.push(KEYS.USER_CATEGORIES);
         if (payload.userAzkar) touchedKeys.push(KEYS.USER_AZKAR);
         if (payload.hiddenStaticIds) touchedKeys.push(KEYS.HIDDEN_STATIC);
+        if (payload.quranBookmarks) touchedKeys.push(KEYS.QURAN_BOOKMARKS);
+        if (payload.quranLastRead !== undefined) touchedKeys.push(KEYS.QURAN_LAST_READ);
 
         const snapshot = new Map<string, string | null>();
         for (const key of touchedKeys) snapshot.set(key, localStorage.getItem(key));
@@ -294,6 +333,11 @@ export class WebStorage implements StorageAdapter {
             if (payload.userCategories) putRaw(KEYS.USER_CATEGORIES, payload.userCategories);
             if (payload.userAzkar) putRaw(KEYS.USER_AZKAR, payload.userAzkar.map(normalizeUserZikr));
             if (payload.hiddenStaticIds) putRaw(KEYS.HIDDEN_STATIC, payload.hiddenStaticIds);
+            if (payload.quranBookmarks) putRaw(KEYS.QURAN_BOOKMARKS, payload.quranBookmarks);
+            if (payload.quranLastRead !== undefined) {
+                if (payload.quranLastRead === null) localStorage.removeItem(KEYS.QURAN_LAST_READ);
+                else putRaw(KEYS.QURAN_LAST_READ, payload.quranLastRead);
+            }
             return true;
         } catch (e) {
             console.error('Import failed mid-write, rolling back:', e);

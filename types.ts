@@ -68,7 +68,9 @@ export type Screen =
   | 'prayerTimes'
   | 'qibla'
   | 'calendar'
-  | 'shareEditor';
+  | 'shareEditor'
+  | 'quran'
+  | 'surahReader';
 
 export type ProgressState = {
     // Keys stringify on every JSON/storage round-trip, so the signature is
@@ -186,4 +188,23 @@ export interface AppContextType {
   stats: UserStats;
   incrementStreak: () => void;
   incrementTotalReads: (count: number) => void;
+
+  // Quran
+  quranBookmarks: QuranBookmark[];
+  addQuranBookmark: (b: QuranBookmark) => Promise<void>;
+  removeQuranBookmark: (surah: number, ayah: number) => Promise<void>;
+  quranLastRead: QuranLastRead | null;
+  setQuranLastRead: (l: QuranLastRead) => Promise<void>;
+  clearQuranLastRead: () => Promise<void>;
+}
+
+export interface QuranBookmark {
+  surah: number;
+  ayah: number;
+  createdAt: number;
+}
+
+export interface QuranLastRead {
+  surah: number;
+  ayah: number;
 }
