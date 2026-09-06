@@ -6,6 +6,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import TimePicker from '../common/TimePicker';
 import { NotificationService } from '../../services/NotificationService';
 import { CustomReminder } from '../../types';
+import { useToast } from '../common/Toast';
 
 const NotificationSettingsScreen: React.FC = () => {
     const { navigate, 
@@ -19,6 +20,7 @@ const NotificationSettingsScreen: React.FC = () => {
             location
     } = useAppContext();
     const { t } = useTranslation();
+    const toast = useToast();
 
     const [activePicker, setActivePicker] = useState<'morning' | 'evening' | 'custom' | null>(null);
     
@@ -47,7 +49,7 @@ const NotificationSettingsScreen: React.FC = () => {
                     NotificationService.scheduleReminder(1, hours, minutes, "أذكار الصباح", "حان موعد قراءة أذكار الصباح", "morning");
                 } else {
                     setMorningReminderEnabled(false); // Revert if no permission
-                    alert("يرجى تفعيل الإشعارات من إعدادات الهاتف.");
+                    toast.show(t('error_notifications_denied'), { variant: 'error' });
                 }
             } else {
                 NotificationService.cancelReminder(1);
@@ -70,7 +72,7 @@ const NotificationSettingsScreen: React.FC = () => {
                     NotificationService.scheduleReminder(2, hours, minutes, "أذكار المساء", "حان موعد قراءة أذكار المساء", "evening");
                 } else {
                     setEveningReminderEnabled(false);
-                    alert("يرجى تفعيل الإشعارات من إعدادات الهاتف.");
+                    toast.show(t('error_notifications_denied'), { variant: 'error' });
                 }
             } else {
                 NotificationService.cancelReminder(2);
@@ -83,7 +85,7 @@ const NotificationSettingsScreen: React.FC = () => {
 
     const handleTogglePrayer = async () => {
         if (!location && !prayerNotificationsEnabled) {
-             alert('يرجى تفعيل الموقع أولاً من الصفحة الرئيسية لتحديد أوقات الصلاة.');
+             toast.show(t('error_location_required_for_prayer'), { variant: 'error' });
              return;
         }
 
@@ -95,7 +97,7 @@ const NotificationSettingsScreen: React.FC = () => {
                  const granted = await NotificationService.requestPermissions();
                  if (!granted) {
                     setPrayerNotificationsEnabled(false);
-                    alert("يرجى تفعيل الإشعارات من إعدادات الهاتف.");
+                    toast.show(t('error_notifications_denied'), { variant: 'error' });
                  }
                  // Scheduling happens in App.tsx useEffect based on this state change
             }
@@ -109,7 +111,7 @@ const NotificationSettingsScreen: React.FC = () => {
         try {
             const granted = await NotificationService.requestPermissions();
             if (!granted) {
-                alert("يرجى تفعيل الإشعارات أولاً.");
+                toast.show(t('error_notifications_denied_short'), { variant: 'error' });
                 return;
             }
 
@@ -164,7 +166,7 @@ const NotificationSettingsScreen: React.FC = () => {
     return (
         <div className="p-4 h-full flex flex-col">
             <header className="flex items-center mb-6 relative">
-                <button onClick={() => navigate('settings')} className="p-2 -ml-2 rtl:-mr-2 rtl:ml-0 absolute left-0 rtl:right-0 rtl:left-auto">
+                <button onClick={() => navigate('settings')} aria-label="رجوع" className="p-2 -ml-2 rtl:-mr-2 rtl:ml-0 absolute left-0 rtl:right-0 rtl:left-auto">
                     <ArrowLeftIcon className="w-6 h-6 text-gray-800 dark:text-white rtl:rotate-180" />
                 </button>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white mx-auto">إعدادات الإشعارات</h1>
@@ -182,7 +184,7 @@ const NotificationSettingsScreen: React.FC = () => {
                 </div>
 
                 {/* Prayer Times Section */}
-                <div className="bg-white dark:bg-[#1A3129] rounded-xl p-4 shadow-sm border border-gray-100 dark:border-none">
+                <div className="bg-white dark:bg-[#1A3129] rounded-xl p-4 shadow-sm dark:shadow-none border border-gray-100 dark:border-none">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-3 rtl:space-x-reverse">
                             <div className="bg-primary-100 dark:bg-primary-900/30 p-2 rounded-full">
@@ -204,7 +206,7 @@ const NotificationSettingsScreen: React.FC = () => {
                 </div>
 
                 {/* Morning Section */}
-                <div className="bg-white dark:bg-[#1A3129] rounded-xl p-4 shadow-sm border border-gray-100 dark:border-none">
+                <div className="bg-white dark:bg-[#1A3129] rounded-xl p-4 shadow-sm dark:shadow-none border border-gray-100 dark:border-none">
                     <div className="flex justify-between items-center mb-4">
                         <div className="flex items-center space-x-3 rtl:space-x-reverse">
                             <div className="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-full">
@@ -232,7 +234,7 @@ const NotificationSettingsScreen: React.FC = () => {
                 </div>
 
                 {/* Evening Section */}
-                <div className="bg-white dark:bg-[#1A3129] rounded-xl p-4 shadow-sm border border-gray-100 dark:border-none">
+                <div className="bg-white dark:bg-[#1A3129] rounded-xl p-4 shadow-sm dark:shadow-none border border-gray-100 dark:border-none">
                     <div className="flex justify-between items-center mb-4">
                         <div className="flex items-center space-x-3 rtl:space-x-reverse">
                             <div className="bg-indigo-100 dark:bg-indigo-900/30 p-2 rounded-full">
@@ -262,7 +264,7 @@ const NotificationSettingsScreen: React.FC = () => {
                 {/* Custom Reminders Section */}
                 <h2 className="text-lg font-bold text-primary-600 dark:text-primary-400 mt-6 px-2">تذكيرات مخصصة</h2>
                 
-                <div className="bg-white dark:bg-[#1A3129] rounded-xl p-4 shadow-sm border border-gray-100 dark:border-none">
+                <div className="bg-white dark:bg-[#1A3129] rounded-xl p-4 shadow-sm dark:shadow-none border border-gray-100 dark:border-none">
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">اختر الفئة</label>
@@ -301,13 +303,14 @@ const NotificationSettingsScreen: React.FC = () => {
                 {customReminders.length > 0 && (
                     <div className="space-y-2 mt-4">
                         {customReminders.map(reminder => (
-                            <div key={reminder.id} className="bg-white dark:bg-[#1A3129] p-4 rounded-lg flex justify-between items-center shadow-sm">
+                            <div key={reminder.id} className="bg-white dark:bg-[#1A3129] p-4 rounded-lg flex justify-between items-center shadow-sm dark:shadow-none">
                                 <div>
                                     <p className="font-bold text-gray-900 dark:text-white">{reminder.categoryTitle}</p>
                                     <p className="text-sm text-primary-600 dark:text-primary-400 font-mono">{reminder.time}</p>
                                 </div>
                                 <button 
                                     onClick={() => removeCustomReminder(reminder.id)}
+                                    aria-label="حذف التذكير"
                                     className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
                                 >
                                     <TrashIcon className="w-5 h-5" />

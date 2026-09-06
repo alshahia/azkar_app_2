@@ -75,6 +75,7 @@ const CategoriesScreen: React.FC = () => {
       {/* Floating Action Button for Adding Custom Zikr */}
       <button 
         onClick={() => navigate('addZikr')}
+        aria-label="إضافة ذكر جديد"
         className="absolute bottom-6 left-6 rtl:right-auto rtl:left-6 w-16 h-16 bg-primary-600 hover:bg-primary-700 text-white rounded-2xl shadow-xl shadow-primary-600/30 flex items-center justify-center transition-all hover:scale-105 active:scale-95 z-20 group"
       >
         <PlusIcon className="w-8 h-8 group-hover:rotate-90 transition-transform duration-300" />

@@ -34,6 +34,23 @@ body {
   background-color: rgb(var(--color-primary-500) / 0.5); 
 }
 
+/* prefers-reduced-motion: respect the OS-level accessibility preference.
+   Tailwind keyframes (animate-fade-in-up, animate-pulse, animate-bounce-short,
+   animate-counter-pulse, animate-slide-up-mobile, animate-slide-down,
+   animate-pulse-slow, animate-ping) all collapse to a near-zero duration so
+   vestibular-disorder users get the same visual state without the motion.
+   Framer Motion is handled separately by MotionConfig reducedMotion="user" in App.tsx. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Theme Engine - Default (Emerald) */
 :root {
   --color-primary-50: 236 253 245;

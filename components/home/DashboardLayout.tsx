@@ -33,13 +33,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onRefresh, currentZik
     return (
         <div className="h-full flex flex-col gap-4 pb-4">
             {/* Top Section: Featured Zikr (60%) */}
-            <div className="flex-grow-[3] bg-white dark:bg-[#1A3129] rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between shadow-sm border border-gray-100 dark:border-none transition-colors duration-300">
+            <div className="flex-grow-[3] bg-white dark:bg-[#1A3129] rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-none border border-gray-100 dark:border-none transition-colors duration-300">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary-500 to-primary-300"></div>
                 <div className="flex justify-between items-start">
                     <span className="bg-primary-100 dark:bg-primary-500/20 text-primary-600 dark:text-primary-400 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">
                         مميز لك
                     </span>
-                    <button onClick={onRefresh}>
+                    <button onClick={onRefresh} aria-label="تحديث">
                         <ArrowPathIcon className="w-5 h-5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-white transition-colors" />
                     </button>
                 </div>
@@ -77,7 +77,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onRefresh, currentZik
                 {randomCategory && (
                     <button 
                         onClick={() => navigate('azkarList', { categoryId: randomCategory.id })}
-                        className="bg-white dark:bg-[#1A3129] rounded-2xl p-4 flex flex-col justify-between items-start border border-gray-100 dark:border-primary-500/10 hover:border-primary-200 dark:hover:border-primary-500/30 shadow-sm transition-colors"
+                        className="bg-white dark:bg-[#1A3129] rounded-2xl p-4 flex flex-col justify-between items-start border border-gray-100 dark:border-primary-500/10 hover:border-primary-200 dark:hover:border-primary-500/30 shadow-sm dark:shadow-none transition-colors"
                     >
                         <div className="p-2 rounded-full bg-primary-100 dark:bg-primary-500/20 text-primary-600 dark:text-primary-400">
                             <randomCategory.icon className="w-6 h-6" />

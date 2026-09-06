@@ -1,13 +1,17 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import { flushSync } from 'react-dom';
 import type { Screen, ProgressState, AppLanguage, HomeLayout, UserPreferences, Category, UserZikr, CustomReminder, LocationCoordinates, UserStats, AppTheme, QuranBookmark, QuranLastRead } from './types';
 import { AppContext } from './context/AppContext';
 import MainLayout from './components/layout/MainLayout';
 import OfflineIndicator from './components/common/OfflineIndicator';
+import PrePrayerOverlay from './components/azkar/PrePrayerOverlay';
+import { findUpcomingPrayerWithinWindow, type WatchedPrayer } from './data/prayerWatch';
 import { getStorage } from './data/storage';
 import { runStorageMigrations } from './data/migrations';
 import { azkarRepository } from './data/azkarRepository';
 import { defaultPreferences, defaultStats } from './data/storage/defaults';
+import { computeStreakOutcome, resolveTimezone, type StreakOutcome } from './data/streak';
 import { NotificationService } from './services/NotificationService';
 import { PrayerTimesService } from './services/PrayerTimesService';
 import { HapticService } from './services/HapticService';
@@ -16,8 +20,10 @@ import { App as CapApp } from '@capacitor/app';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Capacitor, PluginListenerHandle } from '@capacitor/core';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import ScreenErrorBoundary from './components/common/ScreenErrorBoundary';
+import { ToastProvider } from './components/common/Toast';
+import { secureKeyStore } from './services/secureKey';
 
 // Lazy Load Screens
 const WelcomeScreen = React.lazy(() => import('./components/onboarding/WelcomeScreen'));
@@ -162,7 +168,8 @@ const App: React.FC = () => {
                 setFontSize(prefs.fontSize);
                 setLanguage(prefs.language);
                 setHomeLayout(prefs.homeLayout);
-                setApiKey(prefs.apiKey || '');
+                // apiKey is persisted in the platform secure store, not in prefs.
+                setApiKey(await secureKeyStore.get());
                 setVoiceName(prefs.voiceName || defaultPreferences.voiceName);
                 setAudioAutoSave(prefs.audioAutoSave ?? defaultPreferences.audioAutoSave);
                 setAudioLoopDefault(prefs.audioLoopDefault ?? defaultPreferences.audioLoopDefault);
@@ -192,19 +199,19 @@ const App: React.FC = () => {
 
     useEffect(() => {
         if (!isLoading) {
-            const prefs: UserPreferences = { 
-                darkMode, 
+            const prefs: UserPreferences = {
+                darkMode,
                 theme,
                 notifications,
                 morningReminderEnabled,
                 morningReminderTime,
                 eveningReminderEnabled,
                 eveningReminderTime,
-                fontSize, 
-                favorites, 
-                language, 
+                fontSize,
+                favorites,
+                language,
                 homeLayout,
-                apiKey,
+                apiKey: '', // apiKey lives in the secure store; storage adapter also strips defensively.
                 voiceName,
                 audioAutoSave,
                 audioLoopDefault,
@@ -214,11 +221,22 @@ const App: React.FC = () => {
                 prayerNotificationsEnabled
             };
             storage.savePreferences(prefs);
-            
+
             // Sync Haptic Service
             HapticService.setEnabled(hapticsEnabled);
         }
-    }, [darkMode, theme, notifications, morningReminderEnabled, morningReminderTime, eveningReminderEnabled, eveningReminderTime, fontSize, favorites, language, homeLayout, apiKey, voiceName, audioAutoSave, audioLoopDefault, hapticsEnabled, customReminders, location, prayerNotificationsEnabled, isLoading]);
+    }, [darkMode, theme, notifications, morningReminderEnabled, morningReminderTime, eveningReminderEnabled, eveningReminderTime, fontSize, favorites, language, homeLayout, voiceName, audioAutoSave, audioLoopDefault, hapticsEnabled, customReminders, location, prayerNotificationsEnabled, isLoading]);
+
+    // apiKey is persisted in the platform secure store on every change.
+    // Skipped while still loading so an empty initial state doesn't clobber
+    // the freshly-read value from secureKeyStore.get().
+    useEffect(() => {
+        if (!isLoading) {
+            secureKeyStore.set(apiKey).catch(err => {
+                console.error('secureKeyStore.set failed:', err);
+            });
+        }
+    }, [apiKey, isLoading]);
 
     useEffect(() => {
         if (!isLoading) {
@@ -273,6 +291,40 @@ const App: React.FC = () => {
             }
         };
     }, []);
+
+    // PrePrayerOverlay — surfaced 30s before each prayer and held for the
+    // 10s trailing edge. The watcher polls every 15s (cheaper than 1s
+    // and the threshold window is 30s, so we never miss the entry point).
+    const [prePrayerTarget, setPrePrayerTarget] = useState<WatchedPrayer | null>(null);
+    useEffect(() => {
+        // Skip entirely when the user has disabled prayer notifications, or
+        // when we don't have a location to compute times against.
+        if (!prayerNotificationsEnabled || !location) {
+            setPrePrayerTarget(null);
+            return;
+        }
+
+        let cancelled = false;
+        const tick = () => {
+            if (cancelled) return;
+            try {
+                const times = PrayerTimesService.getPrayerTimes(new Date(), location);
+                const upcoming = findUpcomingPrayerWithinWindow(times, new Date());
+                setPrePrayerTarget(upcoming);
+            } catch {
+                // getPrayerTimes falls back to Mecca when coords are bad;
+                // never let the watcher throw into the render.
+                setPrePrayerTarget(null);
+            }
+        };
+
+        tick();
+        const interval = window.setInterval(tick, 15_000);
+        return () => {
+            cancelled = true;
+            window.clearInterval(interval);
+        };
+    }, [prayerNotificationsEnabled, location]);
 
     // Hardware Back Button Navigation Handler (Android)
     useEffect(() => {
@@ -384,27 +436,48 @@ const App: React.FC = () => {
         setProgress(prev => ({ ...prev, [zikrId]: (prev[zikrId] || 0) + by }));
     };
     
-    const incrementStreak = useCallback(() => {
-        const today = getLocalDateKey(); // Local date key; toISOString() is UTC and mis-dates near midnight
-        
-        setStats(current => {
-            if (current.lastActiveDate === today) return current;
+    const incrementStreak = useCallback((): StreakOutcome => {
+        // Local date key; toISOString() is UTC and mis-dates near midnight.
+        // The previous implementation parsed the keys as UTC midnights and
+        // compared with Math.ceil(diff / 86400000), which misclassified
+        // 25h spring-forward gaps as missed days and silently reset the
+        // streak. computeStreakOutcome now treats both keys as plain
+        // YYYY-MM-DD local-calendar dates, which is what the streak
+        // question actually means ("did you recite on consecutive local
+        // calendar days?"), and is DST- and travel-safe.
+        const today = getLocalDateKey();
 
-            let newStreak = current.streak;
-            if (current.lastActiveDate) {
-                const last = new Date(current.lastActiveDate);
-                const now = new Date(today);
-                const diffTime = Math.abs(now.getTime() - last.getTime());
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+        // React 18 functional setState updaters may run asynchronously, so
+        // we use flushSync to force the updater to apply before we read
+        // the outcome. This keeps the call synchronous and avoids a
+        // race where the caller would receive the placeholder before
+        // React commits the update.
+        let outcome: StreakOutcome = { kind: 'same-day', streak: 0 };
+        flushSync(() => {
+            setStats(current => {
+                // First-write of the timezone so a cross-timezone move later
+                // doesn't change the meaning of stored lastActiveDate.
+                const tz = current.timezone || resolveTimezone(current);
+                const computed = computeStreakOutcome(
+                    { ...current, timezone: tz },
+                    today,
+                );
+                outcome = computed;
 
-                if (diffDays === 1) newStreak += 1;
-                else newStreak = 1;
-            } else {
-                newStreak = 1;
-            }
+                // No state change on same-day — return the previous stats
+                // object so React skips the re-render.
+                if (computed.kind === 'same-day') return current;
 
-            return { ...current, streak: newStreak, lastActiveDate: today };
+                return {
+                    ...current,
+                    streak: computed.streak,
+                    lastActiveDate: today,
+                    timezone: tz,
+                };
+            });
         });
+
+        return outcome;
     }, []);
 
     const incrementTotalReads = (count: number) => {
@@ -551,8 +624,26 @@ const App: React.FC = () => {
             quranLastRead, setQuranLastRead, clearQuranLastRead
         }}>
             <div className={`${darkMode ? 'dark' : ''} h-screen w-screen`} dir="rtl" data-theme={theme}>
+                {/* MotionConfig reducedMotion="user" propagates the OS prefers-reduced-motion
+                    preference to every Framer Motion child (page transitions, sheet slides,
+                    modal pops). Tailwind keyframes are handled separately by the
+                    @media (prefers-reduced-motion: reduce) block in index.css. */}
+                <MotionConfig reducedMotion="user">
+                <ToastProvider>
                 <div className="bg-sand-50 text-gray-900 dark:bg-midnight-950 dark:text-gray-100 h-full w-full font-sans antialiased overflow-hidden transition-colors duration-300 relative">
                     <OfflineIndicator />
+                    <PrePrayerOverlay
+                        prayer={prePrayerTarget}
+                        onOpenAdhkar={(p) => {
+                            // The CTA reads the prayer key but the adhan
+                            // category is the right destination for any
+                            // prayer (it's "adhkar upon hearing the adhan").
+                            navigate('azkarList', { categoryId: 'adhan' });
+                            setPrePrayerTarget(null);
+                        }}
+                        onDismiss={() => setPrePrayerTarget(null)}
+                        audioEnabled={prayerNotificationsEnabled}
+                    />
                     <div className="max-w-md mx-auto h-full flex flex-col relative">
                     <ScreenErrorBoundary onReset={() => navigate('home')}>
                         <Suspense fallback={<LoadingFallback />}>
@@ -593,6 +684,8 @@ const App: React.FC = () => {
                     </ScreenErrorBoundary>
                     </div>
                 </div>
+                </ToastProvider>
+                </MotionConfig>
             </div>
         </AppContext.Provider>
     );

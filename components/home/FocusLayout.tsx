@@ -63,7 +63,7 @@ const FocusLayout: React.FC<FocusLayoutProps> = ({ onRefresh, currentZikr }) => 
     return (
         <div className="h-full flex flex-col justify-center relative px-2">
             <div className={`transition-all duration-500 transform ${animate ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
-                <div className="bg-white dark:bg-[#1A3129] rounded-2xl p-8 shadow-xl border border-gray-100 dark:border-primary-500/10 relative overflow-hidden transition-colors duration-300">
+                <div className="bg-white dark:bg-[#1A3129] rounded-2xl p-8 shadow-xl dark:shadow-none border border-gray-100 dark:border-primary-500/10 relative overflow-hidden transition-colors duration-300">
                     {/* Decorative Elements */}
                     <div className="absolute top-0 right-0 w-32 h-32 bg-primary-100/50 dark:bg-primary-500/5 rounded-bl-full -mr-10 -mt-10"></div>
                     <div className="absolute bottom-0 left-0 w-24 h-24 bg-primary-100/50 dark:bg-primary-500/5 rounded-tr-full -ml-8 -mb-8"></div>

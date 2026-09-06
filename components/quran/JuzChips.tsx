@@ -28,7 +28,7 @@ const JuzChips: React.FC<JuzChipsProps> = ({ onPick }) => {
                         <button
                             key={j.juz}
                             onClick={() => navigate('surahReader', { surahId: j.surah, ayah: j.ayah })}
-                            className="flex-shrink-0 w-14 h-14 rounded-2xl bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-primary-500/10 hover:border-primary-300 dark:hover:border-primary-500/40 active:scale-95 transition-all flex flex-col items-center justify-center shadow-sm"
+                            className="flex-shrink-0 w-14 h-14 rounded-2xl bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-primary-500/10 hover:border-primary-300 dark:hover:border-primary-500/40 active:scale-95 transition-all flex flex-col items-center justify-center shadow-sm dark:shadow-none"
                             aria-label={'الجزء ' + j.juz + ' - ' + label}
                         >
                             <span className="text-[10px] text-gray-400 dark:text-gray-500">جزء</span>

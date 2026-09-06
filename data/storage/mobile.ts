@@ -4,6 +4,7 @@ import { UserPreferences, ProgressState, Quote, Salawat, UserZikr, UserCategory,
 import { defaultPreferences, defaultStats } from './defaults';
 import { validateBackup, normalizeUserZikr } from '../backup';
 import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from '@capacitor-community/sqlite';
+import { secureKeyStore } from '../../services/secureKey';
 
 export class MobileStorage implements StorageAdapter {
     private sqlite: SQLiteConnection;
@@ -170,13 +171,31 @@ export class MobileStorage implements StorageAdapter {
     async getPreferences(): Promise<UserPreferences> {
         const stored = await this.getKV<UserPreferences>('preferences');
         if (stored) {
-            return { ...defaultPreferences, ...stored, language: 'ar' };
+            // Legacy installs may still have apiKey written to kv_store. Migrate
+            // it to the platform secure store once, then strip it from the
+            // stored blob so it never re-enters localStorage / SQLite.
+            let sanitized = stored;
+            if (stored.apiKey) {
+                try {
+                    await secureKeyStore.set(stored.apiKey);
+                    sanitized = { ...stored, apiKey: '' };
+                    await this.setKV('preferences', sanitized);
+                } catch (e) {
+                    console.error('Legacy apiKey migration failed:', e);
+                }
+            }
+            return { ...defaultPreferences, ...sanitized, apiKey: '', language: 'ar' };
         }
         return defaultPreferences;
     }
 
     async savePreferences(prefs: UserPreferences): Promise<void> {
-        await this.setKV('preferences', prefs);
+        // Never persist apiKey alongside other prefs — the secure store is its
+        // single source of truth. Caller manages apiKey separately via
+        // secureKeyStore.set().
+        const { apiKey: _omitted, ...safe } = prefs;
+        void _omitted;
+        await this.setKV('preferences', safe);
     }
 
     async getProgress(): Promise<ProgressState> {

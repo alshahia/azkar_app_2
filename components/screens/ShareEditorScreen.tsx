@@ -3,6 +3,8 @@ import { useAppContext } from '../../context/AppContext';
 import { ArrowLeftIcon, ShareIcon, PhotoIcon, SwatchIcon, MinusIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { toPng } from 'html-to-image';
 import { Share } from '@capacitor/share';
+import { useToast } from '../common/Toast';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
 
@@ -23,6 +25,8 @@ const FONTS = [
 
 const ShareEditorScreenWithProps: React.FC<{ data: any }> = ({ data }) => {
     const { navigate } = useAppContext();
+    const toast = useToast();
+    const { t } = useTranslation();
     const editorRef = useRef<HTMLDivElement>(null);
     const [selectedBg, setSelectedBg] = useState(BACKGROUNDS[0]);
     const [selectedFont, setSelectedFont] = useState(FONTS[1]);
@@ -70,7 +74,7 @@ const ShareEditorScreenWithProps: React.FC<{ data: any }> = ({ data }) => {
             }
         } catch (err) {
             console.error(err);
-            alert('حدث خطأ أثناء المشاركة. حاول مرة أخرى.');
+            toast.show(t('error_share'), { variant: 'error' });
         } finally {
             setIsGenerating(false);
         }
@@ -78,8 +82,8 @@ const ShareEditorScreenWithProps: React.FC<{ data: any }> = ({ data }) => {
 
      return (
         <div className="h-full flex flex-col bg-gray-50 dark:bg-[#12241C]">
-            <header className="flex items-center justify-between p-4 bg-white dark:bg-[#1A3129] shadow-sm z-10">
-                <button onClick={() => navigate('home')} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <header className="flex items-center justify-between p-4 bg-white dark:bg-[#1A3129] shadow-sm dark:shadow-none z-10">
+                <button onClick={() => navigate('home')} aria-label="رجوع" className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                     <ArrowLeftIcon className="w-6 h-6 text-gray-800 dark:text-white rtl:rotate-180" />
                 </button>
                 <h1 className="text-lg font-bold text-gray-900 dark:text-white">مشاركة كصورة</h1>
@@ -135,6 +139,7 @@ const ShareEditorScreenWithProps: React.FC<{ data: any }> = ({ data }) => {
                         <button
                             key={bg.id}
                             onClick={() => setSelectedBg(bg)}
+                            aria-label={bg.name}
                             className={`w-10 h-10 rounded-full shrink-0 ${bg.class} border-2 transition-all ${selectedBg.id === bg.id ? 'border-primary-500 scale-110' : 'border-transparent'}`}
                             title={bg.name}
                         />
@@ -143,11 +148,11 @@ const ShareEditorScreenWithProps: React.FC<{ data: any }> = ({ data }) => {
 
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3 rtl:space-x-reverse bg-gray-100 dark:bg-gray-800 rounded-lg p-2">
-                        <button onClick={() => setFontSize(s => Math.max(14, s - 2))} className="p-1 hover:text-primary-500 dark:text-gray-300">
+                        <button onClick={() => setFontSize(s => Math.max(14, s - 2))} aria-label="تصغير الخط" className="p-1 hover:text-primary-500 dark:text-gray-300">
                             <MinusIcon className="w-4 h-4" />
                         </button>
                         <span className="text-xs font-mono w-6 text-center dark:text-gray-300">{fontSize}</span>
-                        <button onClick={() => setFontSize(s => Math.min(60, s + 2))} className="p-1 hover:text-primary-500 dark:text-gray-300">
+                        <button onClick={() => setFontSize(s => Math.min(60, s + 2))} aria-label="تكبير الخط" className="p-1 hover:text-primary-500 dark:text-gray-300">
                             <PlusIcon className="w-4 h-4" />
                         </button>
                     </div>

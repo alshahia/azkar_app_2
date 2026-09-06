@@ -1,13 +1,14 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useAppContext } from '../../context/AppContext';
 import type { Zikr, UserZikr } from '../../types';
-import { PlayIcon, ShareIcon, HeartIcon, PencilIcon, CheckIcon, StopIcon, PhotoIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import { PlayIcon, ShareIcon, HeartIcon, PencilIcon, CheckIcon, StopIcon, PhotoIcon, SparklesIcon, EllipsisHorizontalIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from '../../hooks/useTranslation';
 import EditZikrModal from './EditZikrModal';
 import ExplainZikrModal from './ExplainZikrModal';
 import { HapticService } from '../../services/HapticService';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface ZikrCardProps {
     zikr: Zikr;
@@ -44,23 +45,46 @@ const ZikrCard: React.FC<ZikrCardProps> = ({
     const [isCompleting, setIsCompleting] = useState(false);
     const [isEditModalOpen, setEditModalOpen] = useState(false);
     const [isExplainModalOpen, setExplainModalOpen] = useState(false);
+    const [isActionsSheetOpen, setIsActionsSheetOpen] = useState(false);
+    // Counter micro-feedback: briefly true (≈120ms) on every increment
+    // so the chip plays its pulse animation, then settles back to
+    // invisible. Using a ref + CSS class toggle instead of setState to
+    // keep the visual feedback free of extra re-renders.
+    const [counterPulse, setCounterPulse] = useState(false);
+    const pulseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const prevCountRef = useRef(sessionCount);
 
     const isFavorite = favorites.includes(zikr.id);
     const remainingCount = Math.max(0, zikr.count - sessionCount);
-    
+
+    // Fire the +1 micro-feedback every time sessionCount increments.
+    // Skips the initial render and the completion moment (handled by the
+    // completion animation, not the pulse).
+    useEffect(() => {
+        if (sessionCount > prevCountRef.current && sessionCount < zikr.count) {
+            setCounterPulse(true);
+            if (pulseTimeoutRef.current) clearTimeout(pulseTimeoutRef.current);
+            pulseTimeoutRef.current = setTimeout(() => setCounterPulse(false), 130);
+        }
+        prevCountRef.current = sessionCount;
+        return () => {
+            if (pulseTimeoutRef.current) clearTimeout(pulseTimeoutRef.current);
+        };
+    }, [sessionCount, zikr.count]);
+
     // Reactive Completion Logic
     useEffect(() => {
         if (sessionCount >= zikr.count && !isCompleting) {
             setIsCompleting(true);
-            
+
             // Haptic Feedback for completion
             HapticService.success();
-            
+
             // Delay hiding to allow animation to play
             const timer = setTimeout(() => {
                 onHide(zikr.id);
             }, 800);
-            
+
             return () => clearTimeout(timer);
         }
     }, [sessionCount, zikr.count, zikr.id, onHide, isCompleting]);
@@ -140,13 +164,19 @@ const ZikrCard: React.FC<ZikrCardProps> = ({
                         <span className="text-xs font-bold text-gray-400 dark:text-gray-500 bg-sand-100 dark:bg-midnight-800 px-3 py-1 rounded-full tracking-wider">
                             {index + 1} / {total}
                         </span>
-                        
+
                         <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                            <button 
-                                onClick={handlePlayClick} 
+                            {/* Play stays inline — it's the primary audio control
+                                and the user reaches for it dozens of times a day.
+                                Everything else moves into the overflow sheet
+                                so the chrome around the Arabic text doesn't
+                                compete with the text itself. */}
+                            <button
+                                onClick={handlePlayClick}
+                                aria-label={isPlaying ? 'إيقاف' : 'تشغيل'}
                                 className={`transition-all p-2 rounded-full ${
-                                    isPlaying || isAudioLoading 
-                                    ? 'text-primary-600 bg-primary-50 dark:bg-primary-900/30' 
+                                    isPlaying || isAudioLoading
+                                    ? 'text-primary-600 bg-primary-50 dark:bg-primary-900/30'
                                     : 'text-gray-400 hover:text-primary-600 hover:bg-gray-50 dark:hover:bg-midnight-800'
                                 }`}
                                 disabled={isAudioLoading}
@@ -160,20 +190,16 @@ const ZikrCard: React.FC<ZikrCardProps> = ({
                                 )}
                             </button>
 
-                            <button onClick={handleShareImage} className="text-gray-400 hover:text-primary-600 hover:bg-gray-50 dark:hover:bg-midnight-800 p-2 rounded-full transition-colors" title="مشاركة كصورة">
-                                <PhotoIcon className="w-5 h-5" />
-                            </button>
-
-                            <button onClick={handleExplain} className="text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 p-2 rounded-full transition-colors" title="شرح الذكر (AI)">
-                                <SparklesIcon className="w-5 h-5" />
-                            </button>
-                            
-                            <button onClick={(e) => { e.stopPropagation(); toggleFavorite(zikr.id); }} className="text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 p-2 rounded-full transition-colors">
-                                <HeartIcon className={`w-5 h-5 ${isFavorite ? 'text-red-500 fill-current' : ''}`} />
-                            </button>
-                            
-                            <button onClick={(e) => { e.stopPropagation(); setEditModalOpen(true); }} className="text-gray-400 hover:text-primary-600 hover:bg-gray-50 dark:hover:bg-midnight-800 p-2 rounded-full transition-colors">
-                                <PencilIcon className="w-5 h-5" />
+                            {/* Overflow — opens the half-sheet with Share,
+                                AI, Favorite, and Edit. One tap to open,
+                                one tap on the action, sheet auto-closes. */}
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setIsActionsSheetOpen(true); }}
+                                aria-label="المزيد من الخيارات"
+                                aria-haspopup="dialog"
+                                className="text-gray-400 hover:text-primary-600 hover:bg-gray-50 dark:hover:bg-midnight-800 p-2 rounded-full transition-colors"
+                            >
+                                <EllipsisHorizontalIcon className="w-5 h-5" />
                             </button>
                         </div>
                     </div>
@@ -215,7 +241,14 @@ const ZikrCard: React.FC<ZikrCardProps> = ({
                                     <span className="font-bold text-lg">{t('azkar_list_completed_button')}</span>
                                 </div>
                             ) : (
-                                <span className="text-3xl font-bold font-mono tracking-widest tabular-nums">
+                                // 120ms +1 micro-feedback — briefly scales the
+                                // remaining-count chip and tints it primary to
+                                // confirm the tap registered. counterPulse is
+                                // flipped true for ~130ms on each increment and
+                                // toggles the animate-counter-pulse utility.
+                                <span
+                                    className={`text-3xl font-bold font-mono tracking-widest tabular-nums origin-center ${counterPulse ? 'animate-counter-pulse' : ''}`}
+                                >
                                     {remainingCount}
                                 </span>
                             )}
@@ -237,6 +270,79 @@ const ZikrCard: React.FC<ZikrCardProps> = ({
                 onClose={() => setExplainModalOpen(false)}
                 zikrText={zikr.arabic}
             />
+
+            {/* ZikrCard actions half-sheet. Mirrors the BookmarkSheet pattern
+                (backdrop + bottom-anchored rounded sheet, spring entrance)
+                but keeps the action rows denser because there are only four
+                of them. */}
+            <AnimatePresence>
+                {isActionsSheetOpen && (
+                    <>
+                        <motion.div
+                            className="fixed inset-0 bg-black/40 z-40"
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            onClick={() => setIsActionsSheetOpen(false)}
+                            aria-hidden="true"
+                        />
+                        <motion.div
+                            role="dialog"
+                            aria-modal="true"
+                            aria-label="إجراءات الذكر"
+                            className="fixed bottom-0 inset-x-0 z-50 bg-white dark:bg-[#12241C] rounded-t-3xl shadow-2xl"
+                            initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+                            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                        >
+                            <div className="flex justify-center pt-3 pb-1">
+                                <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-700" aria-hidden="true" />
+                            </div>
+                            <div className="flex items-center justify-between px-5 pt-1 pb-3 border-b border-gray-100 dark:border-gray-800">
+                                <h3 className="font-bold text-gray-800 dark:text-gray-100">إجراءات الذكر</h3>
+                                <button
+                                    onClick={() => setIsActionsSheetOpen(false)}
+                                    aria-label="إغلاق"
+                                    className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
+                                >
+                                    <XMarkIcon className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <div className="p-2">
+                                <button
+                                    onClick={() => { handleShareImage({ stopPropagation: () => {} } as React.MouseEvent); setIsActionsSheetOpen(false); }}
+                                    className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-[#1A3129] transition-colors text-right"
+                                >
+                                    <PhotoIcon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                                    <span className="font-medium text-gray-800 dark:text-gray-100">مشاركة كصورة</span>
+                                </button>
+                                <button
+                                    onClick={() => { setIsActionsSheetOpen(false); setExplainModalOpen(true); }}
+                                    className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-[#1A3129] transition-colors text-right"
+                                >
+                                    <SparklesIcon className="w-5 h-5 text-amber-500" />
+                                    <span className="font-medium text-gray-800 dark:text-gray-100">شرح الذكر (AI)</span>
+                                </button>
+                                <button
+                                    onClick={() => { toggleFavorite(zikr.id); setIsActionsSheetOpen(false); }}
+                                    className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-[#1A3129] transition-colors text-right"
+                                >
+                                    <HeartIcon className={`w-5 h-5 ${isFavorite ? 'text-red-500 fill-current' : 'text-red-500'}`} />
+                                    <span className="font-medium text-gray-800 dark:text-gray-100">
+                                        {isFavorite ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة'}
+                                    </span>
+                                </button>
+                                <button
+                                    onClick={() => { setIsActionsSheetOpen(false); setEditModalOpen(true); }}
+                                    className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-[#1A3129] transition-colors text-right"
+                                >
+                                    <PencilIcon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                                    <span className="font-medium text-gray-800 dark:text-gray-100">تعديل الذكر</span>
+                                </button>
+                            </div>
+                            <div className="h-[max(0.5rem,env(safe-area-inset-bottom))]" aria-hidden="true" />
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
         </>
     );
 };

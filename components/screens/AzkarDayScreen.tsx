@@ -7,6 +7,7 @@ import { StopIcon, SunIcon, MoonIcon } from '@heroicons/react/24/solid';
 import { useTranslation } from '../../hooks/useTranslation';
 import { audioService } from '../../services/AudioService';
 import { shareText } from '../../utils/share';
+import { useToast } from '../common/Toast';
 
 interface AzkarDayScreenProps {
     isEmbedded?: boolean;
@@ -15,6 +16,7 @@ interface AzkarDayScreenProps {
 const AzkarDayScreen: React.FC<AzkarDayScreenProps> = ({ isEmbedded = false }) => {
     const { navigate, favorites, toggleFavorite, fontSize, categories, apiKey, voiceName } = useAppContext();
     const { t } = useTranslation();
+    const toast = useToast();
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isAudioLoading, setIsAudioLoading] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -94,10 +96,10 @@ const AzkarDayScreen: React.FC<AzkarDayScreenProps> = ({ isEmbedded = false }) =
             setIsPlaying(false);
             
             if ((error as any).message === 'API_KEY_MISSING') {
-                const confirm = window.confirm("لتشغيل الصوت، يرجى إضافة مفتاح API في الإعدادات. هل تريد الذهاب للإعدادات الآن؟");
-                if (confirm) navigate('settings');
+                const goSettings = await toast.confirm(t('error_api_key_settings_prompt'));
+                if (goSettings) navigate('settings');
             } else {
-                alert("تعذر تشغيل الصوت. تأكد من صحة مفتاح الـ API واتصالك بالإنترنت.");
+                toast.show(t('error_audio_generic'), { variant: 'error' });
             }
         }
     };
@@ -199,14 +201,14 @@ const AzkarDayScreen: React.FC<AzkarDayScreenProps> = ({ isEmbedded = false }) =
                         <ICONS.ShareIcon className="w-6 h-6 mx-auto" />
                     </button>
                     <div className="w-px h-8 bg-gray-700"></div>
-                    <button onClick={() => toggleFavorite(currentZikr.id)} className="flex-1 py-4 text-gray-400 hover:text-white transition-colors">
+                    <button onClick={() => toggleFavorite(currentZikr.id)} aria-label={isFavorite ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة'} className="flex-1 py-4 text-gray-400 hover:text-white transition-colors">
                         <ICONS.HeartIcon className={`w-6 h-6 mx-auto ${isFavorite ? 'text-red-500 fill-current' : ''}`} />
                     </button>
                 </div>
             </div>
 
             <div className={`flex items-center justify-between mt-8 ${isEmbedded ? 'pb-16' : ''}`}>
-                <button onClick={handleBack} className="p-4 rounded-full bg-[#1A3129] text-white hover:bg-[#203c31] transition-colors">
+                <button onClick={handleBack} aria-label="رجوع" className="p-4 rounded-full bg-[#1A3129] text-white hover:bg-[#203c31] transition-colors">
                     <ArrowLeftIcon className="w-6 h-6 rtl:rotate-180" />
                 </button>
                 <button 

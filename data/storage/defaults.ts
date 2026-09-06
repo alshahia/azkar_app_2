@@ -12,7 +12,11 @@ export const defaultPreferences: UserPreferences = {
     fontSize: 2,
     favorites: [],
     language: 'ar',
-    homeLayout: 'dashboard',
+    // Default to 'focus' — a single zikr with three actions, not the
+    // 5-widget dashboard. The dashboard remains available via Settings
+    // for users who want the richer Explore surface, but no longer
+    // competes for attention with the primary task on first open.
+    homeLayout: 'focus',
     apiKey: '',
     voiceName: 'Charon',
     audioAutoSave: true,
@@ -27,5 +31,6 @@ export const defaultPreferences: UserPreferences = {
 export const defaultStats: UserStats = {
     streak: 0,
     lastActiveDate: null,
-    totalReads: 0
+    totalReads: 0,
+    timezone: null
 };

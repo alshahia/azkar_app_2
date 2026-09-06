@@ -8,6 +8,7 @@ import ZikrCard from '../azkar/ZikrCard';
 import FocusModeView from '../azkar/FocusModeView';
 import AudioController from '../azkar/AudioController';
 import { audioService } from '../../services/AudioService';
+import { useToast } from '../common/Toast';
 
 interface AzkarListScreenProps {
   category: Category;
@@ -17,6 +18,7 @@ interface AzkarListScreenProps {
 const AzkarListScreen: React.FC<AzkarListScreenProps> = ({ category, initialScrollToId }) => {
   const { navigate, incrementProgress, voiceName, apiKey, audioLoopDefault } = useAppContext();
   const { t } = useTranslation();
+  const toast = useToast();
   
   // -- View Mode State --
   const [viewMode, setViewMode] = useState<'list' | 'focus'>('list');
@@ -130,11 +132,11 @@ const AzkarListScreen: React.FC<AzkarListScreenProps> = ({ category, initialScro
                   setIsAudioLoading(false);
                   setPlayingZikrId(null);
                   if (error.message === 'API_KEY_MISSING') {
-                      alert('الرجاء إدخال مفتاح API في الإعدادات لتشغيل الصوت');
+                      toast.show(t('error_api_key_missing'), { variant: 'error' });
                   } else if (error.message === 'OFFLINE_AND_NOT_CACHED') {
-                      alert('لا يوجد اتصال بالإنترنت وهذا الذكر غير محفوظ محلياً.');
+                      toast.show(t('error_audio_offline'), { variant: 'error' });
                   } else {
-                      alert('حدث خطأ أثناء تشغيل الصوت. يرجى المحاولة مرة أخرى.');
+                      toast.show(t('error_audio_playback'), { variant: 'error' });
                   }
                   return;
               }
@@ -246,7 +248,7 @@ const AzkarListScreen: React.FC<AzkarListScreenProps> = ({ category, initialScro
     <div className="p-4 h-full flex flex-col relative overflow-hidden">
       {/* Header */}
       <header className="flex items-center justify-between mb-2 z-20">
-        <button onClick={handleBack} className="p-2 -ml-2 rtl:-mr-2 rtl:ml-0 bg-white/50 dark:bg-black/20 rounded-full backdrop-blur-sm hover:bg-white/80 dark:hover:bg-black/40 transition-colors">
+        <button onClick={handleBack} aria-label="رجوع" className="p-2 -ml-2 rtl:-mr-2 rtl:ml-0 bg-white/50 dark:bg-black/20 rounded-full backdrop-blur-sm hover:bg-white/80 dark:hover:bg-black/40 transition-colors">
           <ArrowLeftIcon className="w-6 h-6 text-gray-900 dark:text-white rtl:rotate-180" />
         </button>
         
@@ -257,19 +259,23 @@ const AzkarListScreen: React.FC<AzkarListScreenProps> = ({ category, initialScro
             <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-1 flex items-center">
                 <button 
                     onClick={() => setViewMode('list')}
+                    aria-label="عرض القائمة"
+                    aria-pressed={viewMode === 'list'}
                     className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-gray-600 shadow-sm text-primary-600 dark:text-white' : 'text-gray-400'}`}
                 >
                     <Squares2X2Icon className="w-5 h-5" />
                 </button>
                 <button 
                     onClick={() => setViewMode('focus')}
+                    aria-label="عرض التركيز"
+                    aria-pressed={viewMode === 'focus'}
                     className={`p-1.5 rounded-md transition-all ${viewMode === 'focus' ? 'bg-white dark:bg-gray-600 shadow-sm text-primary-600 dark:text-white' : 'text-gray-400'}`}
                 >
                     <RectangleStackIcon className="w-5 h-5" />
                 </button>
             </div>
 
-            <button onClick={() => navigate('settings')} className="p-2 -mr-2 rtl:-ml-2 rtl:mr-0 bg-white/50 dark:bg-black/20 rounded-full backdrop-blur-sm hover:bg-white/80 dark:hover:bg-black/40 transition-colors">
+            <button onClick={() => navigate('settings')} aria-label="الإعدادات" className="p-2 -mr-2 rtl:-ml-2 rtl:mr-0 bg-white/50 dark:bg-black/20 rounded-full backdrop-blur-sm hover:bg-white/80 dark:hover:bg-black/40 transition-colors">
                 <Cog6ToothIcon className="w-6 h-6 text-gray-900 dark:text-white" />
             </button>
         </div>
@@ -277,7 +283,7 @@ const AzkarListScreen: React.FC<AzkarListScreenProps> = ({ category, initialScro
       
       {/* Progress Bar & Audio Controller Container */}
       <div className="mb-4 z-20 relative">
-          <div className="flex items-center space-x-2 rtl:space-x-reverse bg-white dark:bg-[#1A3129] p-3 rounded-xl shadow-sm border border-gray-100 dark:border-none">
+          <div className="flex items-center space-x-2 rtl:space-x-reverse bg-white dark:bg-[#1A3129] p-3 rounded-xl shadow-sm dark:shadow-none border border-gray-100 dark:border-none">
               <div className="flex-grow">
                 <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1.5">
                     <span>{t('azkar_list_progress')}</span>
@@ -293,6 +299,8 @@ const AzkarListScreen: React.FC<AzkarListScreenProps> = ({ category, initialScro
               
               <button 
                 onClick={() => setIsControllerVisible(!isControllerVisible)}
+                aria-label={isControllerVisible ? 'إخفاء وحدة التحكم بالصوت' : 'إظهار وحدة التحكم بالصوت'}
+                aria-expanded={isControllerVisible}
                 className={`p-2 rounded-lg transition-colors ${
                     isControllerVisible 
                     ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' 

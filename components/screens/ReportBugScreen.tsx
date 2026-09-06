@@ -35,7 +35,7 @@ User Agent: ${navigator.userAgent}
     return (
         <div className="p-4 h-full flex flex-col">
             <header className="flex items-center mb-6 relative">
-                <button onClick={() => navigate('settings')} className="p-2 -ml-2 rtl:-mr-2 rtl:ml-0 absolute left-0 rtl:right-0 rtl:left-auto">
+                <button onClick={() => navigate('settings')} aria-label="رجوع" className="p-2 -ml-2 rtl:-mr-2 rtl:ml-0 absolute left-0 rtl:right-0 rtl:left-auto">
                     <ArrowLeftIcon className="w-6 h-6 text-white rtl:rotate-180" />
                 </button>
                 <h1 className="text-2xl font-bold text-white mx-auto text-center">{t('report_bug_title')}</h1>

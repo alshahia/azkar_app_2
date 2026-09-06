@@ -68,7 +68,7 @@ const PersonalizationScreen: React.FC = () => {
                 <div className="my-8">
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('personalize_font_title')}</h2>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">{t('personalize_font_desc')}</p>
-                    <div className="h-32 bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-none shadow-sm rounded-lg flex items-center justify-center p-4 mb-6 overflow-hidden transition-colors">
+                    <div className="h-32 bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-none shadow-sm dark:shadow-none rounded-lg flex items-center justify-center p-4 mb-6 overflow-hidden transition-colors">
                         <p className={`${getPreviewClass(fontSizeValue)} text-gray-900 dark:text-white font-serif text-center transition-all duration-200`}>
                             سُبْحَانَ اللَّهِ
                         </p>
@@ -91,7 +91,7 @@ const PersonalizationScreen: React.FC = () => {
                 <div className="my-8">
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('personalize_reminder_title')}</h2>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{t('personalize_reminder_desc')}</p>
-                    <div className="flex justify-between items-center bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-none shadow-sm p-4 rounded-lg transition-colors">
+                    <div className="flex justify-between items-center bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-none shadow-sm dark:shadow-none p-4 rounded-lg transition-colors">
                         <span className="font-medium text-gray-900 dark:text-white">{t('personalize_reminder_enable')}</span>
                         <label className="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" checked={reminders} onChange={() => setReminders(!reminders)} aria-label="تفعيل التذكيرات" className="sr-only peer" />
@@ -100,7 +100,7 @@ const PersonalizationScreen: React.FC = () => {
                     </div>
                      {reminders && (
                          <>
-                            <div className="flex justify-between items-center bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-none shadow-sm p-4 rounded-lg mt-3 transition-colors">
+                            <div className="flex justify-between items-center bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-none shadow-sm dark:shadow-none p-4 rounded-lg mt-3 transition-colors">
                                 <span className="font-medium text-gray-900 dark:text-white">{t('personalize_reminder_time')}</span>
                                 <button onClick={() => setTimePickerOpen(true)} className="font-medium text-primary-600 dark:text-primary-400">
                                     {reminderTime}

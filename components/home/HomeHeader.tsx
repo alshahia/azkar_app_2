@@ -58,39 +58,43 @@ export const QuickAccessGrid: React.FC = () => {
     const { navigate } = useAppContext();
     const { t } = useTranslation();
 
+    // Time-of-Day palette voices (DESIGN.md "Time-of-Day Gradient Rule"):
+    //   day tiles (quran / morning / calendar / qibla) -> emerald-500 -> emerald-700
+    //   evening tile -> indigo-500 -> purple-700
+    // Five distinct gradients collapsed to two voices - the One Voice Rule.
     const items = [
         {
             id: 'quran',
             label: t('nav_quran'),
-            gradient: 'from-[#0d9488] to-[#115e59]',
+            gradient: 'from-emerald-500 to-emerald-700',
             icon: <BookOpenIcon className="w-6 h-6" />,
             onClick: () => navigate('quran')
         },
         {
             id: 'morning',
             label: t('home_dashboard_morning'),
-            gradient: 'from-[#FF9F43] to-[#FF6B6B]', 
+            gradient: 'from-emerald-400 to-emerald-600',
             icon: '☀️',
             onClick: () => navigate('azkarList', { categoryId: 'morning' })
         },
         {
             id: 'evening',
             label: t('home_dashboard_evening'),
-            gradient: 'from-[#5f27cd] to-[#341f97]',
+            gradient: 'from-indigo-500 to-purple-700',
             icon: '🌙',
             onClick: () => navigate('azkarList', { categoryId: 'evening' })
         },
         {
             id: 'calendar',
             label: 'التقويم',
-            gradient: 'from-[#0ea5e9] to-[#0284c7]', // Sky blue
+            gradient: 'from-emerald-500 to-emerald-700',
             icon: <CalendarDaysIcon className="w-6 h-6" />,
             onClick: () => navigate('calendar')
         },
         {
             id: 'qibla',
             label: 'القبلة',
-            gradient: 'from-[#10b981] to-[#059669]',
+            gradient: 'from-emerald-500 to-emerald-700',
             icon: '🕋',
             onClick: () => navigate('qibla')
         }

@@ -61,6 +61,32 @@ export const translations = {
     home_widget_asmaulhusna: 'أسماء الله الحسنى',
     home_widget_tasbeeh: 'حلقة التسبيح',
     home_widget_salawat: 'صلوات',
+    home_widget_info: 'حكمة اليوم',
+
+    // Widget error states (replaces hardcoded Arabic copy)
+    home_widget_error_load_salawat: 'تعذّر تحميل ورد اليوم.',
+    home_widget_error_load_info: 'تعذّر تحميل الحكمة.',
+    home_widget_error_retry: 'اضغط الزر أدناه لإعادة المحاولة.',
+    home_widget_error_connection: 'تحقق من اتصالك بالإنترنت ثم اضغط الزر لإعادة المحاولة.',
+
+    // Generic toast messages
+    toast_confirm_action: 'تأكيد',
+    toast_cancel_action: 'إلغاء',
+    error_api_key_missing: 'الرجاء إدخال مفتاح API لتشغيل الصوت',
+    error_api_key_settings_prompt: 'لتشغيل الصوت، يرجى إضافة مفتاح API في الإعدادات. هل تريد الذهاب للإعدادات الآن؟',
+    error_audio_generic: 'تعذّر تشغيل الصوت. تحقق من المفتاح واتصالك بالإنترنت.',
+    error_audio_offline: 'لا يوجد اتصال بالإنترنت وهذا الذكر غير محفوظ محلياً.',
+    error_audio_playback: 'حدث خطأ أثناء تشغيل الصوت. يرجى المحاولة مرة أخرى.',
+    error_share: 'حدث خطأ أثناء المشاركة. حاول مرة أخرى.',
+    error_location_denied: 'تعذّر الوصول للموقع. يرجى تفعيل خدمة الموقع من إعدادات الهاتف.',
+    error_notifications_denied: 'يرجى تفعيل الإشعارات من إعدادات الهاتف.',
+    error_notifications_denied_short: 'يرجى تفعيل الإشعارات أولاً.',
+    error_location_required_for_prayer: 'يرجى تفعيل الموقع أولاً من الصفحة الرئيسية لتحديد أوقات الصلاة.',
+    error_backup_failed: 'فشل إنشاء النسخة الاحتياطية.',
+    error_restore_failed: 'فشل استعادة البيانات. الملف قد يكون تالفاً.',
+    success_restore_complete: 'تم استعادة البيانات بنجاح. سيتم إعادة تحميل التطبيق.',
+    confirm_reset_counter: 'هل تريد تصفير العداد؟',
+    confirm_restore_data: 'هل أنت متأكد؟ سيؤدي هذا لاستبدال جميع بياناتك الحالية بالبيانات الموجودة في الملف.',
 
     // Categories Screen
     categories_title: 'فئات الأذكار',

@@ -66,7 +66,7 @@ const AddZikrScreen: React.FC = () => {
     return (
         <div className="p-4 h-full flex flex-col">
             <header className="flex items-center mb-6 relative">
-                <button onClick={() => navigate('categories')} className="p-2 -ml-2 rtl:-mr-2 rtl:ml-0 absolute left-0 rtl:right-0 rtl:left-auto">
+                <button onClick={() => navigate('categories')} aria-label="رجوع" className="p-2 -ml-2 rtl:-mr-2 rtl:ml-0 absolute left-0 rtl:right-0 rtl:left-auto">
                     <ArrowLeftIcon className="w-6 h-6 text-gray-800 dark:text-white rtl:rotate-180" />
                 </button>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white mx-auto">إضافة ذكر جديد</h1>
@@ -91,6 +91,7 @@ const AddZikrScreen: React.FC = () => {
                             </select>
                             <button 
                                 onClick={() => setIsNewCategory(true)}
+                                aria-label="إنشاء فئة جديدة"
                                 className="bg-primary-100 dark:bg-primary-900 p-3 rounded-lg text-primary-600 dark:text-primary-400"
                                 title="إنشاء فئة جديدة"
                             >

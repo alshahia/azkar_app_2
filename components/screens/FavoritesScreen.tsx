@@ -21,7 +21,7 @@ const FavoritesScreen: React.FC = () => {
     return (
         <div className="p-4 h-full flex flex-col">
             <header className="flex items-center mb-6">
-                <button onClick={() => navigate('home')} className="p-2 -ml-2 rtl:-mr-2 rtl:ml-0">
+                <button onClick={() => navigate('home')} aria-label="رجوع" className="p-2 -ml-2 rtl:-mr-2 rtl:ml-0">
                     <ArrowLeftIcon className="w-6 h-6 text-gray-800 dark:text-white rtl:rotate-180" />
                 </button>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white mx-auto">{t('favorites_title')}</h1>
@@ -35,19 +35,19 @@ const FavoritesScreen: React.FC = () => {
                     placeholder={t('favorites_search_placeholder')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-white dark:bg-[#1A3129] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 border border-gray-200 dark:border-none rounded-full py-3 pl-12 pr-4 rtl:pr-12 rtl:pl-4 focus:ring-2 focus:ring-primary-500 focus:outline-none shadow-sm transition-colors"
+                    className="w-full bg-white dark:bg-[#1A3129] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 border border-gray-200 dark:border-none rounded-full py-3 pl-12 pr-4 rtl:pr-12 rtl:pl-4 focus:ring-2 focus:ring-primary-500 focus:outline-none shadow-sm dark:shadow-none transition-colors"
                 />
             </div>
 
             <div className="flex-grow overflow-y-auto">
                 {filteredFavorites.length > 0 ? (
                     filteredFavorites.map(zikr => (
-                        <div key={zikr.id} className="flex items-start justify-between p-4 mb-3 bg-white dark:bg-[#1A3129] rounded-2xl shadow-sm border border-gray-100 dark:border-none transition-colors">
+                        <div key={zikr.id} className="flex items-start justify-between p-4 mb-3 bg-white dark:bg-[#1A3129] rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-none transition-colors">
                             <div className="flex-grow pr-4 rtl:pr-0 rtl:pl-4">
                                 <p className="text-lg font-serif text-right mb-2 text-gray-900 dark:text-white">{zikr.arabic}</p>
                                 <p className="text-sm text-gray-600 dark:text-gray-300 text-left rtl:text-right">{zikr.translation}</p>
                             </div>
-                            <button onClick={() => toggleFavorite(zikr.id)} className="p-2 shrink-0">
+                            <button onClick={() => toggleFavorite(zikr.id)} aria-label="إزالة من المفضلة" className="p-2 shrink-0">
                                 <HeartSolid className="w-6 h-6 text-red-500" />
                             </button>
                         </div>

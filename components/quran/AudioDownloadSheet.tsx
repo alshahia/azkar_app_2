@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowDownTrayIcon, TrashIcon, XMarkIcon, CloudArrowDownIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useToast } from '../common/Toast';
 import {
     downloadSurah, getCacheStats, clearCache, formatBytes, isCached,
 } from '../../services/audioCache';
@@ -36,6 +37,7 @@ const AudioDownloadSheet: React.FC<AudioDownloadSheetProps> = ({
     open, reciterId, reciterName, surahAyat, onClose,
 }) => {
     const { t } = useTranslation();
+    const toast = useToast();
     const [stats, setStats] = useState<{ entries: number; totalBytes: number }>({ entries: 0, totalBytes: 0 });
     const [progress, setProgress] = useState<DownloadState>({ active: false, done: 0, total: 0, bytes: 0, failed: 0, skipped: 0 });
     const [surahCachedCount, setSurahCachedCount] = useState<number>(0);
@@ -83,10 +85,11 @@ const AudioDownloadSheet: React.FC<AudioDownloadSheetProps> = ({
     }, [progress.active, reciterId, surahAyat, refresh]);
 
     const handleClear = useCallback(async () => {
-        if (!window.confirm(t('quran_audio_clear_confirm'))) return;
+        const confirmed = await toast.confirm(t('quran_audio_clear_confirm'));
+        if (!confirmed) return;
         await clearCache();
         await refresh();
-    }, [refresh, t]);
+    }, [refresh, t, toast]);
 
     const pct = progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
 

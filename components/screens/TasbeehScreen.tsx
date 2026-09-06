@@ -6,10 +6,12 @@ import { ChevronRightIcon, ChevronLeftIcon } from '@heroicons/react/24/solid';
 import { useTranslation } from '../../hooks/useTranslation';
 import { HapticService } from '../../services/HapticService';
 import { playTick } from '../../utils/tickSound';
+import { useToast } from '../common/Toast';
 
 const TasbeehScreen: React.FC = () => {
     const { navigate, categories, incrementProgress } = useAppContext();
     const { t } = useTranslation();
+    const toast = useToast();
     
     // Get Tasbeeh Category Items
     const tasbeehCategory = categories.find(c => c.id === 'tasbeeh');
@@ -55,8 +57,9 @@ const TasbeehScreen: React.FC = () => {
         }
     };
 
-    const handleReset = () => {
-        if (confirm('هل تريد تصفير العداد؟')) {
+    const handleReset = async () => {
+        const confirmed = await toast.confirm(t('confirm_reset_counter'));
+        if (confirmed) {
             setCount(0);
             HapticService.light();
         }
@@ -98,13 +101,13 @@ const TasbeehScreen: React.FC = () => {
 
             {/* Zikr Display (Carousel) */}
             <div className="flex-none px-6 py-4 z-10">
-                <div className="bg-white dark:bg-[#1A3129] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-none min-h-[160px] flex flex-col justify-center items-center relative transition-all">
+                <div className="bg-white dark:bg-[#1A3129] rounded-2xl p-6 shadow-sm dark:shadow-none border border-gray-100 dark:border-none min-h-[160px] flex flex-col justify-center items-center relative transition-all">
                     
                     {/* Nav Arrows */}
-                    <button onClick={prevZikr} className="absolute left-2 p-2 text-gray-400 hover:text-primary-500">
+                    <button onClick={prevZikr} aria-label="الذكر السابق" className="absolute left-2 p-2 text-gray-400 hover:text-primary-500">
                         <ChevronLeftIcon className="w-6 h-6 rtl:rotate-180" />
                     </button>
-                    <button onClick={nextZikr} className="absolute right-2 p-2 text-gray-400 hover:text-primary-500">
+                    <button onClick={nextZikr} aria-label="الذكر التالي" className="absolute right-2 p-2 text-gray-400 hover:text-primary-500">
                         <ChevronRightIcon className="w-6 h-6 rtl:rotate-180" />
                     </button>
 

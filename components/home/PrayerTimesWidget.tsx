@@ -4,11 +4,13 @@ import { useAppContext } from '../../context/AppContext';
 import { PrayerTimesService } from '../../services/PrayerTimesService';
 import { MapPinIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useToast } from '../common/Toast';
 import { PrayerTimes } from 'adhan';
 
 const PrayerTimesWidget: React.FC = () => {
     const { location, setLocation, navigate } = useAppContext();
     const { t } = useTranslation();
+    const toast = useToast();
     
     const [prayerTimes, setPrayerTimes] = useState<PrayerTimes | null>(null);
     const [nextPrayer, setNextPrayer] = useState<{name: string, time: Date} | null>(null);
@@ -89,7 +91,7 @@ const PrayerTimesWidget: React.FC = () => {
             const loc = await PrayerTimesService.getCurrentLocation();
             setLocation(loc);
         } catch (e) {
-            alert('تعذر الوصول للموقع. يرجى تفعيل خدمة الموقع من إعدادات الهاتف.');
+            toast.show(t('error_location_denied'), { variant: 'error' });
         }
     };
 

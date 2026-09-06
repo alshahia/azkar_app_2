@@ -51,9 +51,9 @@ const SearchScreen: React.FC = () => {
     return (
         <div className="h-full flex flex-col bg-gray-50 dark:bg-transparent">
             {/* Header */}
-            <div className="p-4 bg-white dark:bg-[#1A3129] shadow-sm z-10">
+            <div className="p-4 bg-white dark:bg-[#1A3129] shadow-sm dark:shadow-none z-10">
                 <div className="flex items-center space-x-3 rtl:space-x-reverse mb-4">
-                    <button onClick={() => navigate('home')} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <button onClick={() => navigate('home')} aria-label="رجوع" className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                         <ArrowLeftIcon className="w-6 h-6 text-gray-800 dark:text-white rtl:rotate-180" />
                     </button>
                     <div className="flex-1 relative">
@@ -111,7 +111,7 @@ const SearchScreen: React.FC = () => {
                                 <button
                                     key={cat.id}
                                     onClick={() => handleCategoryClick(cat.id)}
-                                    className="w-full bg-white dark:bg-[#1A3129] p-4 rounded-xl flex items-center justify-between border border-gray-100 dark:border-none shadow-sm hover:shadow-md transition-all"
+                                    className="w-full bg-white dark:bg-[#1A3129] p-4 rounded-xl flex items-center justify-between border border-gray-100 dark:border-none shadow-sm dark:shadow-none hover:shadow-md transition-all"
                                 >
                                     <div className="flex items-center space-x-3 rtl:space-x-reverse">
                                         <div className="bg-primary-100 dark:bg-primary-900/30 p-2 rounded-full text-primary-600 dark:text-primary-400">
@@ -135,7 +135,7 @@ const SearchScreen: React.FC = () => {
                                 <button
                                     key={`${zikr.id}_${idx}`}
                                     onClick={() => handleZikrClick(zikr)}
-                                    className="w-full bg-white dark:bg-[#1A3129] p-4 rounded-xl text-right border border-gray-100 dark:border-none shadow-sm hover:shadow-md transition-all group"
+                                    className="w-full bg-white dark:bg-[#1A3129] p-4 rounded-xl text-right border border-gray-100 dark:border-none shadow-sm dark:shadow-none hover:shadow-md transition-all group"
                                 >
                                     <div className="flex items-start justify-between mb-2">
                                         <span className="text-[10px] bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-md">

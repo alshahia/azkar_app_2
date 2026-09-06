@@ -52,7 +52,7 @@ const PrayerTimesScreen: React.FC = () => {
             {/* Header */}
             <div className="bg-primary-600 pb-8 pt-4 px-4 rounded-b-[2.5rem] shadow-lg relative z-10 transition-colors duration-300">
                 <header className="flex items-center justify-between mb-6">
-                    <button onClick={() => navigate('home')} className="p-2 bg-white/20 rounded-full text-white hover:bg-white/30 transition-colors">
+                    <button onClick={() => navigate('home')} aria-label="رجوع" className="p-2 bg-white/20 rounded-full text-white hover:bg-white/30 transition-colors">
                         <ArrowLeftIcon className="w-6 h-6 rtl:rotate-180" />
                     </button>
                     <h1 className="text-xl font-bold text-white">مواقيت الصلاة</h1>
@@ -61,7 +61,7 @@ const PrayerTimesScreen: React.FC = () => {
                 
                 {/* Date Navigator */}
                 <div className="flex items-center justify-between text-white mb-4">
-                    <button onClick={() => changeDate(-1)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                    <button onClick={() => changeDate(-1)} aria-label="اليوم السابق" className="p-2 hover:bg-white/10 rounded-full transition-colors">
                         <ChevronRightIcon className="w-6 h-6" />
                     </button>
                     <div className="text-center">
@@ -70,7 +70,7 @@ const PrayerTimesScreen: React.FC = () => {
                             {date.toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                         </p>
                     </div>
-                    <button onClick={() => changeDate(1)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                    <button onClick={() => changeDate(1)} aria-label="اليوم التالي" className="p-2 hover:bg-white/10 rounded-full transition-colors">
                         <ChevronLeftIcon className="w-6 h-6" />
                     </button>
                 </div>

@@ -41,7 +41,7 @@ const StreamLayout: React.FC<StreamLayoutProps> = ({ allAzkar }) => {
             {streamData.map((zikr, idx) => {
                 const isFavorite = favorites.includes(zikr.id);
                 return (
-                    <div key={`${zikr.id}-${idx}`} className="bg-white dark:bg-[#1A3129] rounded-xl p-5 border border-gray-100 dark:border-gray-800 shadow-sm transition-colors duration-300">
+                    <div key={`${zikr.id}-${idx}`} className="bg-white dark:bg-[#1A3129] rounded-xl p-5 border border-gray-100 dark:border-gray-800 shadow-sm dark:shadow-none transition-colors duration-300">
                         <div className="flex justify-between items-start mb-3">
                             <div className="flex items-center space-x-2 rtl:space-x-reverse">
                                 <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-500/20 flex items-center justify-center text-primary-600 dark:text-primary-400 text-xs font-bold">

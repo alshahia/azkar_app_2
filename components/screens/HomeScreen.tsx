@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { Cog6ToothIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { Cog6ToothIcon, MagnifyingGlassIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from '../../hooks/useTranslation';
 import { WelcomeCard, QuickAccessGrid } from '../home/HomeHeader';
 import { 
@@ -20,14 +20,20 @@ import DashboardLayout from '../home/DashboardLayout';
 // Helper component for the standard/rich widget view
 const WidgetsLayout: React.FC = () => {
     const { t } = useTranslation();
+    // The Explore surface holds five widgets. The Quranic verse and
+    // Asma ul Husna are primary (always visible); the Tasbeeh, Salawat,
+    // and Quote widgets are tucked behind a "Show more" disclosure to
+    // reduce the cognitive load on first open. The full set is one tap
+    // away — not hidden, just not competing for attention.
+    const [showMore, setShowMore] = useState(false);
     return (
         <div className="space-y-6">
             <div className="animate-fade-in-up">
                 <WelcomeCard />
-                
+
                 {/* Contextual Smart Suggestion */}
                 <SmartSuggestionWidget />
-                
+
                 {/* Insert Prayer Times Widget Here */}
                 <PrayerTimesWidget />
 
@@ -40,29 +46,51 @@ const WidgetsLayout: React.FC = () => {
                 <div className="h-px bg-gray-200 dark:bg-gray-700 flex-grow"></div>
             </div>
 
+            {/* Primary Explore widgets — always visible */}
             <div className="animate-fade-in-up" style={{ animationDelay: '100ms' }}>
                 <QuranicVerseWidget />
             </div>
-            
+
             <div className="animate-fade-in-up" style={{ animationDelay: '200ms' }}>
                 <AsmaulHusnaWidget />
             </div>
 
+            {/* Secondary Explore widgets — behind a Show more disclosure */}
             <div className="animate-fade-in-up" style={{ animationDelay: '300ms' }}>
-                <TasbeehWidget />
+                <button
+                    onClick={() => setShowMore(prev => !prev)}
+                    aria-expanded={showMore}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
+                >
+                    <ChevronDownIcon
+                        className={`w-4 h-4 transition-transform duration-300 ${showMore ? 'rotate-180' : ''}`}
+                        aria-hidden="true"
+                    />
+                    <span>{showMore ? 'إخفاء المزيد' : 'عرض المزيد'}</span>
+                </button>
             </div>
 
-            <div className="animate-fade-in-up" style={{ animationDelay: '400ms' }}>
-                <SalawatWidget />
-            </div>
+            {showMore && (
+                <>
+                    <div className="animate-fade-in-up" style={{ animationDelay: '50ms' }}>
+                        <TasbeehWidget />
+                    </div>
 
-            <div className="animate-fade-in-up" style={{ animationDelay: '500ms' }}>
-                <InfoWidget />
-            </div>
-            
-            <div className="h-10 text-center text-gray-400 text-xs mt-4">
-                نهاية القائمة
-            </div>
+                    <div className="animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+                        <SalawatWidget />
+                    </div>
+
+                    <div className="animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+                        <InfoWidget />
+                    </div>
+                </>
+            )}
+
+            {showMore && (
+                <div className="h-10 text-center text-gray-400 text-xs mt-4">
+                    نهاية القائمة
+                </div>
+            )}
         </div>
     );
 };
@@ -114,12 +142,14 @@ const HomeScreen: React.FC = () => {
                 <div className="flex items-center space-x-3 rtl:space-x-reverse">
                     <button 
                         onClick={() => navigate('settings')}
+                        aria-label="الإعدادات"
                         className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
                     >
                         <Cog6ToothIcon className="w-6 h-6 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition-colors" />
                     </button>
                     <button 
                         onClick={() => navigate('search')}
+                        aria-label="البحث"
                         className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
                     >
                         <MagnifyingGlassIcon className="w-6 h-6 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition-colors" />

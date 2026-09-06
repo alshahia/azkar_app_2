@@ -44,7 +44,7 @@ const HijriCalendarScreen: React.FC = () => {
     return (
         <div className="h-full flex flex-col bg-gray-50 dark:bg-[#12241C]">
             {/* Header */}
-            <header className="flex items-center justify-between p-4 bg-white dark:bg-[#1A3129] shadow-sm z-10">
+            <header className="flex items-center justify-between p-4 bg-white dark:bg-[#1A3129] shadow-sm dark:shadow-none z-10">
                 <button onClick={() => navigate('home')} aria-label="رجوع" className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
                     <ArrowLeftIcon className="w-6 h-6 text-gray-900 dark:text-white rtl:rotate-180" />
                 </button>
@@ -54,7 +54,7 @@ const HijriCalendarScreen: React.FC = () => {
 
             {/* Calendar Controls */}
             <div className="flex items-center justify-between px-6 py-6 bg-primary-600 text-white rounded-b-[2rem] shadow-lg mb-4 transition-colors duration-300">
-                <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-white/20 rounded-full transition-colors">
+                <button onClick={() => changeMonth(-1)} aria-label="الشهر السابق" className="p-2 hover:bg-white/20 rounded-full transition-colors">
                     <ChevronRightIcon className="w-6 h-6" />
                 </button>
                 <div className="text-center">
@@ -63,7 +63,7 @@ const HijriCalendarScreen: React.FC = () => {
                         {viewDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })} (ميلادي)
                     </p>
                 </div>
-                <button onClick={() => changeMonth(1)} className="p-2 hover:bg-white/20 rounded-full transition-colors">
+                <button onClick={() => changeMonth(1)} aria-label="الشهر التالي" className="p-2 hover:bg-white/20 rounded-full transition-colors">
                     <ChevronLeftIcon className="w-6 h-6" />
                 </button>
             </div>
@@ -127,7 +127,7 @@ const HijriCalendarScreen: React.FC = () => {
                             if(!d) return null;
                             const ev = getEventForDate(d);
                             return (
-                                <div key={idx} className="bg-white dark:bg-[#1A3129] p-4 rounded-xl flex items-center shadow-sm border border-gray-100 dark:border-none">
+                                <div key={idx} className="bg-white dark:bg-[#1A3129] p-4 rounded-xl flex items-center shadow-sm dark:shadow-none border border-gray-100 dark:border-none">
                                     <div className="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 font-bold text-lg w-10 h-10 flex items-center justify-center rounded-lg ml-4 rtl:mr-0 rtl:ml-4 font-mono">
                                         {getHijriDayNumber(d)}
                                     </div>

@@ -128,6 +128,7 @@ const FocusModeView: React.FC<FocusModeViewProps> = ({
                 <button 
                     onClick={handlePrev} 
                     disabled={currentIndex === 0}
+                    aria-label="الذكر السابق"
                     className="absolute left-0 p-2 text-gray-400 disabled:opacity-20 hover:text-primary-500 transition-colors z-10"
                 >
                     <ChevronLeftIcon className="w-8 h-8 rtl:rotate-180" />
@@ -136,6 +137,7 @@ const FocusModeView: React.FC<FocusModeViewProps> = ({
                 <button 
                     onClick={handleNext} 
                     disabled={currentIndex === azkar.length - 1}
+                    aria-label="الذكر التالي"
                     className="absolute right-0 p-2 text-gray-400 disabled:opacity-20 hover:text-primary-500 transition-colors z-10"
                 >
                     <ChevronRightIcon className="w-8 h-8 rtl:rotate-180" />
@@ -173,10 +175,10 @@ const FocusModeView: React.FC<FocusModeViewProps> = ({
 
                         {/* Top Controls */}
                         <div className="w-full flex justify-between items-start mt-2 mb-4">
-                            <button onClick={(e) => { e.stopPropagation(); toggleFavorite(currentZikr.id); }}>
+                            <button onClick={(e) => { e.stopPropagation(); toggleFavorite(currentZikr.id); }} aria-label={isFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}>
                                 {isFavorite ? <HeartSolid className="w-6 h-6 text-red-500" /> : <HeartIcon className="w-6 h-6 text-gray-400" />}
                             </button>
-                            <button onClick={handlePlayClick} disabled={isAudioLoading} className={`${isPlaying ? 'text-primary-500' : 'text-gray-400'}`}>
+                            <button onClick={handlePlayClick} disabled={isAudioLoading} aria-label={isPlaying ? "إيقاف" : "تشغيل"} className={`${isPlaying ? 'text-primary-500' : 'text-gray-400'}`}>
                                 {isAudioLoading ? (
                                     <div className="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                                 ) : isPlaying ? (

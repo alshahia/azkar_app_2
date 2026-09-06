@@ -99,7 +99,8 @@ const ExplainZikrModal: React.FC<ExplainZikrModalProps> = ({ isOpen, onClose, zi
                         <h2 className="text-lg font-bold text-gray-900 dark:text-white">شرح وتدبر</h2>
                     </div>
                     <button 
-                        onClick={onClose} 
+                        onClick={onClose}
+                        aria-label="إغلاق" 
                         className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500"
                     >
                         <XMarkIcon className="w-6 h-6" />

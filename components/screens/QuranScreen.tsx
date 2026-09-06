@@ -75,7 +75,7 @@ const QuranScreen: React.FC = () => {
 
             <div className="px-4 -mt-6 relative z-20">
                 {/* Search */}
-                <div className="bg-white dark:bg-[#1A3129] rounded-2xl shadow-md border border-gray-100 dark:border-primary-500/10 flex items-center gap-3 px-4 py-3 mb-5">
+                <div className="bg-white dark:bg-[#1A3129] rounded-2xl shadow-md dark:shadow-none border border-gray-100 dark:border-primary-500/10 flex items-center gap-3 px-4 py-3 mb-5">
                     <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
                     <input
                         type="text"
@@ -94,7 +94,7 @@ const QuranScreen: React.FC = () => {
 
                 {/* Juz chips - only show when not searching */}
                 {!query && (
-                    <div className="bg-white dark:bg-[#1A3129] rounded-2xl border border-gray-100 dark:border-primary-500/10 p-4 mb-5 shadow-sm">
+                    <div className="bg-white dark:bg-[#1A3129] rounded-2xl border border-gray-100 dark:border-primary-500/10 p-4 mb-5 shadow-sm dark:shadow-none">
                         <JuzChips onPick={(s, a) => navigate('surahReader', { surahId: s, ayah: a })} />
                     </div>
                 )}
@@ -103,7 +103,7 @@ const QuranScreen: React.FC = () => {
                 {!query && quranBookmarks.length > 0 && (
                     <button
                         onClick={() => navigate('surahReader', { bookmarksOnly: true })}
-                        className="w-full mb-5 bg-white dark:bg-[#1A3129] rounded-2xl border border-gray-100 dark:border-primary-500/10 shadow-sm px-4 py-3 flex items-center justify-between gap-3 active:scale-[0.99] transition-transform"
+                        className="w-full mb-5 bg-white dark:bg-[#1A3129] rounded-2xl border border-gray-100 dark:border-primary-500/10 shadow-sm dark:shadow-none px-4 py-3 flex items-center justify-between gap-3 active:scale-[0.99] transition-transform"
                     >
                         <div className="flex items-center gap-3">
                             <BookmarkIcon className="w-5 h-5 text-primary-600 dark:text-primary-400" />

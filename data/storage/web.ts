@@ -4,6 +4,7 @@ import { UserPreferences, ProgressState, Quote, Salawat, UserZikr, UserCategory,
 import { defaultPreferences, defaultStats } from './defaults';
 import { validateBackup, normalizeUserZikr } from '../backup';
 import { get, set } from 'idb-keyval';
+import { secureKeyStore } from '../../services/secureKey';
 
 const KEYS = {
     PREFERENCES: 'azkarAppPreferences',
@@ -53,8 +54,11 @@ export class WebStorage implements StorageAdapter {
             const stored = localStorage.getItem(KEYS.PREFERENCES);
             if (stored) {
                 const parsed = JSON.parse(stored);
-                // Ensure defaults for new fields
-                return { ...defaultPreferences, ...parsed, language: 'ar' };
+                // Legacy web installs may have apiKey in localStorage. On web the
+                // secure store is in-memory only, so we don't migrate — the user
+                // re-enters the key next session. We only strip it from the
+                // stored blob so it doesn't re-enter exported backups.
+                return { ...defaultPreferences, ...parsed, apiKey: '', language: 'ar' };
             }
         } catch (e) {
             console.error('Error loading preferences', e);
@@ -65,7 +69,11 @@ export class WebStorage implements StorageAdapter {
     savePreferences(prefs: UserPreferences): Promise<void> {
         return this.enqueue(async () => {
             try {
-                localStorage.setItem(KEYS.PREFERENCES, JSON.stringify(prefs));
+                // Strip apiKey before writing — it lives in secureKeyStore on
+                // native, and is intentionally lost between page reloads on web.
+                const { apiKey: _omitted, ...safe } = prefs;
+                void _omitted;
+                localStorage.setItem(KEYS.PREFERENCES, JSON.stringify(safe));
             } catch (e) {
                 console.error('Failed saving preferences (quota?)', e);
                 throw e;

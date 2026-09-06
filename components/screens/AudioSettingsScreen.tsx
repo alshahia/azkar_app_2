@@ -5,6 +5,8 @@ import { ArrowLeftIcon, SpeakerWaveIcon, KeyIcon, PlayIcon, StopIcon, CloudArrow
 import { audioService } from '../../services/AudioService';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
+import { useToast } from '../common/Toast';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const AVAILABLE_VOICES = ['Charon', 'Kore', 'Puck', 'Fenrir', 'Zephyr'];
 
@@ -16,6 +18,8 @@ const AudioSettingsScreen: React.FC = () => {
         audioAutoSave, setAudioAutoSave, 
         audioLoopDefault, setAudioLoopDefault 
     } = useAppContext();
+    const { t } = useTranslation();
+    const toast = useToast();
     
     const [previewingVoice, setPreviewingVoice] = useState<string | null>(null);
 
@@ -42,11 +46,11 @@ const AudioSettingsScreen: React.FC = () => {
         } catch (error) {
             console.error(error);
             if ((error as any).message === 'API_KEY_MISSING') {
-                alert('الرجاء إدخال مفتاح API في الأسفل لتشغيل الصوت');
+                toast.show(t('error_api_key_missing'), { variant: 'error' });
             } else if ((error as any).message === 'OFFLINE_AND_NOT_CACHED') {
-                alert('لا يوجد اتصال بالإنترنت وهذا الذكر غير محفوظ محلياً.');
+                toast.show(t('error_audio_offline'), { variant: 'error' });
             } else {
-                alert('تعذر تشغيل الصوت. تأكد من صحة المفتاح واتصالك بالإنترنت');
+                toast.show(t('error_audio_generic'), { variant: 'error' });
             }
         } finally {
             setPreviewingVoice(null);
@@ -58,7 +62,7 @@ const AudioSettingsScreen: React.FC = () => {
         return (
             <Container 
                 onClick={hasToggle ? undefined : onToggle} 
-                className={`w-full flex items-center justify-between p-4 mb-2 bg-white dark:bg-[#1A3129] rounded-lg transition-colors hover:bg-gray-50 dark:hover:bg-[#203c31] shadow-sm border border-gray-100 dark:border-none ${hasToggle ? '' : 'cursor-pointer'}`}
+                className={`w-full flex items-center justify-between p-4 mb-2 bg-white dark:bg-[#1A3129] rounded-lg transition-colors hover:bg-gray-50 dark:hover:bg-[#203c31] shadow-sm dark:shadow-none border border-gray-100 dark:border-none ${hasToggle ? '' : 'cursor-pointer'}`}
             >
                 <div className="flex flex-col items-start flex-1 ml-4 rtl:mr-4 rtl:ml-0">
                     <div className="flex items-center space-x-4 rtl:space-x-reverse">
@@ -85,7 +89,7 @@ const AudioSettingsScreen: React.FC = () => {
     return (
         <div className="p-4 h-full flex flex-col">
             <header className="flex items-center mb-6 relative">
-                <button onClick={() => navigate('settings')} className="p-2 -ml-2 rtl:-mr-2 rtl:ml-0 absolute left-0 rtl:right-0 rtl:left-auto">
+                <button onClick={() => navigate('settings')} aria-label="رجوع" className="p-2 -ml-2 rtl:-mr-2 rtl:ml-0 absolute left-0 rtl:right-0 rtl:left-auto">
                     <ArrowLeftIcon className="w-6 h-6 text-gray-800 dark:text-white rtl:rotate-180" />
                 </button>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white mx-auto">إعدادات الصوت</h1>
@@ -118,7 +122,7 @@ const AudioSettingsScreen: React.FC = () => {
                 {/* Voice Selection */}
                 <div>
                     <h2 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 px-2">الصوت والنبرة</h2>
-                    <div className="bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-none shadow-sm rounded-lg overflow-hidden">
+                    <div className="bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-none shadow-sm dark:shadow-none rounded-lg overflow-hidden">
                         <div className="p-4 flex items-center space-x-4 rtl:space-x-reverse border-b border-gray-100 dark:border-gray-800">
                             <SpeakerWaveIcon className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                             <span className="text-gray-900 dark:text-white font-medium">اختر القارئ المفضل</span>
@@ -143,6 +147,7 @@ const AudioSettingsScreen: React.FC = () => {
                                     
                                     <button 
                                         onClick={(e) => { e.stopPropagation(); handleVoicePreview(voice); }}
+                                        aria-label={previewingVoice === voice ? "إيقاف المعاينة" : "معاينة الصوت"}
                                         className={`p-2 rounded-full transition-colors ${previewingVoice === voice ? 'bg-emerald-100 text-emerald-600' : 'hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400'}`}
                                     >
                                         {previewingVoice === voice ? <StopIcon className="w-5 h-5" /> : <PlayIcon className="w-5 h-5" />}
@@ -156,7 +161,7 @@ const AudioSettingsScreen: React.FC = () => {
                 {/* API Key */}
                 <div>
                     <h2 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 px-2">الإعدادات المتقدمة</h2>
-                    <div className="p-4 bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-none shadow-sm rounded-lg">
+                    <div className="p-4 bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-none shadow-sm dark:shadow-none rounded-lg">
                         <div className="flex items-center space-x-4 rtl:space-x-reverse mb-3">
                             <KeyIcon className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                             <span className="text-gray-900 dark:text-white font-medium">مفتاح Google API</span>

@@ -98,9 +98,16 @@ export interface LocationCoordinates {
 
 export interface UserStats {
     streak: number;
-    lastActiveDate: string | null; // YYYY-MM-DD
+    lastActiveDate: string | null; // YYYY-MM-DD in the user's local timezone at the time of the increment
     totalReads: number; // Lifetime total
+    timezone: string | null; // IANA name (e.g. "Asia/Riyadh"); captured on first increment so a cross-timezone move doesn't misread a calendar-day gap as a gap
 }
+
+// Re-export the streak outcome so the AppContext signature and any
+// consumer (CompletionScreen, future pre-prayer banner) can type-check
+// against the same shape without re-implementing the union.
+import type { StreakOutcome } from './data/streak';
+export type { StreakOutcome };
 
 export interface UserPreferences {
     darkMode: boolean;
@@ -186,7 +193,7 @@ export interface AppContextType {
 
   // Stats
   stats: UserStats;
-  incrementStreak: () => void;
+  incrementStreak: () => StreakOutcome;
   incrementTotalReads: (count: number) => void;
 
   // Quran

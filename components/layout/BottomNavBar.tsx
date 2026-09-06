@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { HomeIcon, ListBulletIcon, HeartIcon, Cog6ToothIcon, BookOpenIcon } from '@heroicons/react/24/solid';
+import { HomeIcon, ListBulletIcon, HeartIcon, Cog6ToothIcon, BookOpenIcon } from '@heroicons/react/24/outline';
 import { useAppContext } from '../../context/AppContext';
 import type { Screen } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';

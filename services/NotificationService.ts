@@ -83,7 +83,14 @@ export const NotificationService = {
                     body: `حان الآن موعد صلاة ${p.name}`,
                     id: 100 + p.idOffset,
                     schedule: { at: time, allowWhileIdle: true },
-                    extra: { type: 'prayer', prayer: p.key }
+                    // The PrePrayerOverlay CTA reads this to navigate the
+                    // user straight into the adhan-category adhkar.
+                    extra: { type: 'prayer', prayer: p.key, ctaCategoryId: 'adhan' },
+                    // Adhan audio clip bundled at android/app/src/main/res/raw/adhan.mp3
+                    // (and in the iOS bundle). Capacitor gracefully falls
+                    // back to the system default if the file is missing,
+                    // so this is safe to set even before the asset lands.
+                    sound: 'adhan.mp3',
                 });
             }
         });
@@ -96,7 +103,8 @@ export const NotificationService = {
                 body: `حان الآن موعد صلاة ${p.name}`,
                 id: 105 + p.idOffset,
                 schedule: { at: time, allowWhileIdle: true },
-                extra: { type: 'prayer', prayer: p.key }
+                extra: { type: 'prayer', prayer: p.key, ctaCategoryId: 'adhan' },
+                sound: 'adhan.mp3',
             });
         });
 

@@ -17,7 +17,7 @@ const SurahRow: React.FC<SurahRowProps> = ({ surah, onOpen, bookmarkCount = 0 })
     return (
         <button
             onClick={onOpen}
-            className="w-full flex items-center gap-4 p-3 rounded-2xl bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-primary-500/10 hover:border-primary-300 dark:hover:border-primary-500/30 active:scale-[0.98] transition-all shadow-sm text-right rtl:text-right"
+            className="w-full flex items-center gap-4 p-3 rounded-2xl bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-primary-500/10 hover:border-primary-300 dark:hover:border-primary-500/30 active:scale-[0.98] transition-all shadow-sm dark:shadow-none text-right rtl:text-right"
         >
             <OrnamentNumber number={surah.id} />
             <div className="flex-1 min-w-0">

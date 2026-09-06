@@ -9,7 +9,7 @@ const WelcomeScreen: React.FC = () => {
     const { t } = useTranslation();
 
     const FeatureCard: React.FC<{ icon: string; title: string; description: string }> = ({ icon, title, description }) => (
-        <div className="bg-white/80 dark:bg-[#1A3129]/50 backdrop-blur-sm rounded-lg p-4 flex flex-col items-start text-start shadow-sm transition-colors duration-300">
+        <div className="bg-white/80 dark:bg-[#1A3129]/50 backdrop-blur-sm rounded-lg p-4 flex flex-col items-start text-start shadow-sm dark:shadow-none transition-colors duration-300">
             <div className="text-2xl mb-2">{icon}</div>
             <h3 className="font-bold text-gray-900 dark:text-white transition-colors">{title}</h3>
             <p className="text-sm text-gray-600 dark:text-gray-300 transition-colors">{description}</p>

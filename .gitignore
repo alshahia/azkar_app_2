@@ -22,3 +22,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# AI IDE / agent config directories (machine-specific)
+.agent/
+.claude/
+.gemini/
+.hermes/
+.kiro/
+.opencode/
+.pi/
+.qoder/
+.rovodev/
+.vibe/

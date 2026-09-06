@@ -125,7 +125,7 @@ const QiblaCompassScreen: React.FC = () => {
     return (
         <div className="h-full flex flex-col bg-gray-50 dark:bg-[#12241C]">
             <header className="flex items-center justify-between p-4 z-10">
-                <button onClick={() => navigate('home')} className="p-2 bg-white/50 dark:bg-black/20 rounded-full backdrop-blur-sm transition-colors hover:bg-white dark:hover:bg-black/40">
+                <button onClick={() => navigate('home')} aria-label="رجوع" className="p-2 bg-white/50 dark:bg-black/20 rounded-full backdrop-blur-sm transition-colors hover:bg-white dark:hover:bg-black/40">
                     <ArrowLeftIcon className="w-6 h-6 text-gray-900 dark:text-white rtl:rotate-180" />
                 </button>
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">القبلة</h1>
@@ -224,7 +224,7 @@ const QiblaCompassScreen: React.FC = () => {
                 </div>
 
                 <div className="mt-10 text-center">
-                    <div className="bg-white dark:bg-[#1A3129] px-6 py-4 rounded-2xl shadow-sm border border-gray-100 dark:border-none inline-flex items-center space-x-4 rtl:space-x-reverse">
+                    <div className="bg-white dark:bg-[#1A3129] px-6 py-4 rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-none inline-flex items-center space-x-4 rtl:space-x-reverse">
                         <div>
                             <p className="text-xs text-gray-400 font-medium uppercase">زاوية القبلة</p>
                             <p className="text-2xl font-bold text-gray-800 dark:text-white font-mono">{Math.round(qiblaDirection)}°</p>
