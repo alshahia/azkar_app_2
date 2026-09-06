@@ -106,7 +106,7 @@ const TimePicker: React.FC<TimePickerProps> = ({ isOpen, onClose, onSave, initia
                 role="dialog"
                 aria-modal="true"
                 aria-label="اختر الوقت"
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 w-full max-w-xs"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-none p-4 w-full max-w-xs"
                 onClick={(e) => e.stopPropagation()}
             >
                 <h2 className="text-lg font-medium text-gray-600 dark:text-gray-300 mb-4">{view === 'clock' ? 'اختر الوقت' : 'أدخل الوقت'}</h2>
@@ -139,7 +139,7 @@ const TimePicker: React.FC<TimePickerProps> = ({ isOpen, onClose, onSave, initia
                 {view === 'clock' && <ClockView />}
                 
                 <div className="flex justify-between items-center mt-6">
-                    <button onClick={() => setView(view === 'clock' ? 'input' : 'clock')} className="p-2 text-gray-500 dark:text-gray-400 hover:text-primary-500">
+                    <button onClick={() => setView(view === 'clock' ? 'input' : 'clock')} aria-label={view === 'clock' ? "إدخال الوقت يدوياً" : "عرض الساعة"} className="p-2 text-gray-500 dark:text-gray-400 hover:text-primary-500">
                         {view === 'clock' ? <PencilSquareIcon className="w-6 h-6" /> : <ClockIcon className="w-6 h-6" />}
                     </button>
                     <div className="space-x-4">

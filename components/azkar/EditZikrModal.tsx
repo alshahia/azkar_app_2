@@ -92,7 +92,7 @@ const EditZikrModal: React.FC<EditZikrModalProps> = ({ isOpen, onClose, zikr, on
                 role="dialog"
                 aria-modal="true"
                 aria-label="تعديل الذكر"
-                className="bg-white dark:bg-[#1A3129] w-full max-w-sm rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh] animate-fade-in-up transition-colors duration-300"
+                className="bg-white dark:bg-[#1A3129] w-full max-w-sm rounded-2xl shadow-xl dark:shadow-none overflow-hidden flex flex-col max-h-[90vh] animate-fade-in-up transition-colors duration-300"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
@@ -100,6 +100,7 @@ const EditZikrModal: React.FC<EditZikrModalProps> = ({ isOpen, onClose, zikr, on
                     <h2 className="text-lg font-bold text-gray-900 dark:text-white">تعديل الذكر</h2>
                     <button 
                         onClick={onClose} 
+                        aria-label="إغلاق"
                         className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         type="button"
                     >

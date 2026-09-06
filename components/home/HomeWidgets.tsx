@@ -11,7 +11,7 @@ import { GLOBAL_TASBEEH_ID } from '../../constants';
 
 // --- Helper: Container Wrapper ---
 const WidgetContainer: React.FC<{ children: React.ReactNode, title?: string, icon?: React.ReactNode, className?: string, headerAction?: React.ReactNode }> = ({ children, title, icon, className = "", headerAction }) => (
-    <div className={`bg-white dark:bg-[#1A3129] rounded-2xl border border-gray-100 dark:border-primary-500/10 shadow-sm p-5 mb-4 overflow-hidden relative ${className}`}>
+    <div className={`bg-white dark:bg-[#1A3129] rounded-2xl border border-gray-100 dark:border-primary-500/10 shadow-sm dark:shadow-none p-5 mb-4 overflow-hidden relative ${className}`}>
         {(title || icon) && (
             <div className="flex items-center justify-between mb-4 z-10 relative">
                 <div className="flex items-center space-x-2 rtl:space-x-reverse">
@@ -57,15 +57,19 @@ export const SmartSuggestionWidget: React.FC = () => {
             return;
         }
 
-        // Priority 2: Sleep (Night)
+        // Priority 2: Sleep (Night) — uses the documented "sleep =
+        // midnight→indigo" time-of-day gradient (midnight-900 is the
+        // dark-mode surface color, indigo-600 reads as deep twilight).
+        // This is one instance of the convention; the rule is ratified
+        // in DESIGN.md (Colors → Time-of-Day Gradients) under Pass 3.1.
         if (hour >= 21 || hour < 4) {
              setSuggestion({
                 title: "أذكار النوم",
                 subtitle: "باسمك ربي وضعت جنبي...",
                 icon: <MoonIcon className="w-8 h-8 text-indigo-100" />,
                 action: () => navigate('azkarList', { categoryId: 'sleep' }),
-                gradient: "from-indigo-600 to-blue-800",
-                bgClass: "bg-indigo-600"
+                gradient: "from-midnight-900 to-indigo-600",
+                bgClass: "bg-midnight-900"
             });
             return;
         }
@@ -176,7 +180,7 @@ export const QuranicVerseWidget: React.FC = () => {
         <WidgetContainer className="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-[#1A3129] dark:to-[#12241C] border-none">
             <div className="flex justify-between items-start mb-4">
                 <span className="text-primary-600 dark:text-primary-400 font-bold text-lg">{t('home_widget_quran')}</span>
-                <button onClick={handleShare}><ShareIcon className="w-5 h-5 text-primary-600/50 hover:text-primary-600" /></button>
+                <button onClick={handleShare} aria-label="مشاركة"><ShareIcon className="w-5 h-5 text-primary-600/50 hover:text-primary-600" /></button>
             </div>
             
             <p className="font-serif text-2xl text-center text-gray-800 dark:text-gray-100 leading-loose mb-4">
@@ -189,7 +193,7 @@ export const QuranicVerseWidget: React.FC = () => {
             )}
             
             <div className="flex justify-center mt-4">
-                <button onClick={refreshVerse} className="bg-white dark:bg-primary-900/30 p-3 rounded-full shadow-sm hover:shadow-md transition-all active:scale-90">
+                <button onClick={refreshVerse} aria-label="تحديث الآية" className="bg-white dark:bg-primary-900/30 p-3 rounded-full shadow-sm dark:shadow-none hover:shadow-md transition-all active:scale-90">
                     <ArrowPathIcon className="w-6 h-6 text-primary-500" />
                 </button>
             </div>
@@ -256,13 +260,13 @@ export const AsmaulHusnaWidget: React.FC = () => {
                 <div className="w-12 h-1 bg-primary-100 dark:bg-primary-900 rounded-full mt-4 mb-6"></div>
                 
                 <div className="flex items-center space-x-8 rtl:space-x-reverse">
-                    <button onClick={prevName} className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 dark:bg-gray-800 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors">
+                    <button onClick={prevName} aria-label="الاسم السابق" className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 dark:bg-gray-800 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors">
                         <ChevronRightIcon className="w-5 h-5 text-gray-400" />
                     </button>
-                    <button onClick={randomName} aria-label="اسم عشوائي" className="w-12 h-12 flex items-center justify-center rounded-full bg-white dark:bg-gray-700 shadow-md hover:shadow-lg text-primary-500 transition-all active:scale-95">
+                    <button onClick={randomName} aria-label="اسم عشوائي" className="w-12 h-12 flex items-center justify-center rounded-full bg-white dark:bg-gray-700 shadow-md dark:shadow-none hover:shadow-lg text-primary-500 transition-all active:scale-95">
                         <ArrowPathIcon className="w-6 h-6" />
                     </button>
-                    <button onClick={nextName} className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 dark:bg-gray-800 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors">
+                    <button onClick={nextName} aria-label="الاسم التالي" className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 dark:bg-gray-800 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors">
                         <ChevronLeftIcon className="w-5 h-5 text-gray-400" />
                     </button>
                 </div>
@@ -300,7 +304,7 @@ export const TasbeehWidget: React.FC = () => {
         <WidgetContainer 
             className="!p-0 border-t-4 border-t-primary-500"
             headerAction={
-                <button onClick={() => navigate('tasbeeh')} className="text-gray-400 hover:text-primary-500 p-1" title="الشاشة الكاملة">
+                <button onClick={() => navigate('tasbeeh')} aria-label="الشاشة الكاملة" className="text-gray-400 hover:text-primary-500 p-1" title="الشاشة الكاملة">
                     <ArrowsPointingOutIcon className="w-5 h-5" />
                 </button>
             }
@@ -309,7 +313,7 @@ export const TasbeehWidget: React.FC = () => {
                 <div className="flex justify-between w-full items-center mb-4 px-2">
                     <h3 className="font-bold text-primary-600 dark:text-primary-400">{t('home_widget_tasbeeh')}</h3>
                     <div className="flex space-x-3 rtl:space-x-reverse">
-                        <button onClick={() => { setCount(0); setPhraseIndex(0); }} className="text-gray-400 hover:text-primary-500">
+                        <button onClick={() => { setCount(0); setPhraseIndex(0); }} aria-label="إعادة العداد" className="text-gray-400 hover:text-primary-500">
                             <ArrowPathIcon className="w-5 h-5" />
                         </button>
                     </div>
@@ -412,9 +416,11 @@ export const SalawatWidget: React.FC = () => {
     if (!loading && loadError) {
         return (
             <WidgetContainer className="bg-gradient-to-b from-primary-400 to-primary-600 dark:from-primary-800 dark:to-primary-900 border-none text-white text-center">
-                <div className="py-2 flex flex-col items-center">
-                    <h3 className="text-2xl font-bold text-yellow-300 mb-4 drop-shadow-sm">{t('home_widget_salawat')}</h3>
-                    <button onClick={refreshSalawat} className="bg-white/20 hover:bg-white/30 p-3 rounded-full backdrop-blur-sm transition-all active:scale-95">
+                <div className="py-3 flex flex-col items-center gap-2">
+                    <h3 className="text-2xl font-bold text-yellow-300 drop-shadow-sm">{t('home_widget_salawat')}</h3>
+                    <p className="text-sm font-medium opacity-95" role="status">{t('home_widget_error_load_salawat')}</p>
+                    <p className="text-xs opacity-80 leading-relaxed">{t('home_widget_error_connection')}</p>
+                    <button onClick={refreshSalawat} aria-label={t('toast_confirm_action')} className="bg-white/20 hover:bg-white/30 p-3 mt-1 rounded-full backdrop-blur-sm transition-all active:scale-95">
                         <ArrowPathIcon className="w-6 h-6 text-white" />
                     </button>
                 </div>
@@ -439,7 +445,7 @@ export const SalawatWidget: React.FC = () => {
 
     return (
         <WidgetContainer className="bg-gradient-to-b from-primary-400 to-primary-600 dark:from-primary-800 dark:to-primary-900 border-none text-white text-center relative">
-            <button onClick={handleShare} className="absolute top-4 left-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"><ShareIcon className="w-4 h-4 text-white" /></button>
+            <button onClick={handleShare} aria-label="مشاركة" className="absolute top-4 left-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"><ShareIcon className="w-4 h-4 text-white" /></button>
             <div className="py-2">
                 <h3 className="text-2xl font-bold text-yellow-300 mb-2 drop-shadow-sm">{t('home_widget_salawat')}</h3>
                 <p className="font-serif text-lg leading-relaxed opacity-95">
@@ -448,7 +454,7 @@ export const SalawatWidget: React.FC = () => {
             </div>
 
             <div className="mt-6 flex justify-center">
-                <button onClick={refreshSalawat} className="bg-white/20 hover:bg-white/30 p-3 rounded-full backdrop-blur-sm transition-all active:scale-95">
+                <button onClick={refreshSalawat} aria-label="تحديث" className="bg-white/20 hover:bg-white/30 p-3 rounded-full backdrop-blur-sm transition-all active:scale-95">
                     <ArrowPathIcon className="w-6 h-6 text-white" />
                 </button>
             </div>
@@ -459,6 +465,7 @@ export const SalawatWidget: React.FC = () => {
 // --- 5. Info Widget (Islamic Quotes) ---
 export const InfoWidget: React.FC = () => {
     const { navigate } = useAppContext();
+    const { t } = useTranslation();
     const repo = useMemo(() => getQuotesRepository(), []);
     const [currentQuote, setCurrentQuote] = useState<Quote | null>(null);
     const [loading, setLoading] = useState(true);
@@ -504,8 +511,11 @@ export const InfoWidget: React.FC = () => {
     if (!loading && loadError) {
         return (
             <WidgetContainer className="bg-gradient-to-b from-primary-400 to-primary-600 dark:from-primary-800 dark:to-primary-900 border-none text-white text-center">
-                <div className="py-2 flex justify-center">
-                    <button onClick={refreshQuote} className="bg-white/20 hover:bg-white/30 p-3 rounded-full backdrop-blur-sm transition-all active:scale-95">
+                <div className="py-3 flex flex-col items-center gap-2">
+                    <h3 className="text-xl font-bold text-yellow-300 drop-shadow-sm">{t('home_widget_info')}</h3>
+                    <p className="text-sm font-medium opacity-95" role="status">{t('home_widget_error_load_info')}</p>
+                    <p className="text-xs opacity-80 leading-relaxed">{t('home_widget_error_retry')}</p>
+                    <button onClick={refreshQuote} aria-label={t('toast_confirm_action')} className="bg-white/20 hover:bg-white/30 p-3 mt-1 rounded-full backdrop-blur-sm transition-all active:scale-95">
                         <ArrowPathIcon className="w-6 h-6 text-white" />
                     </button>
                 </div>
@@ -530,7 +540,7 @@ export const InfoWidget: React.FC = () => {
 
     return (
         <WidgetContainer className="bg-gradient-to-b from-primary-400 to-primary-600 dark:from-primary-800 dark:to-primary-900 border-none text-white text-center relative">
-            <button onClick={handleShare} className="absolute top-4 left-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"><ShareIcon className="w-4 h-4 text-white" /></button>
+            <button onClick={handleShare} aria-label="مشاركة" className="absolute top-4 left-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"><ShareIcon className="w-4 h-4 text-white" /></button>
             <div className="py-2">
                 <h3 className="text-2xl font-bold text-yellow-300 mb-2 drop-shadow-sm font-serif">{currentQuote.author}</h3>
                 <p className="font-serif text-lg leading-relaxed opacity-95">
@@ -539,7 +549,7 @@ export const InfoWidget: React.FC = () => {
             </div>
             
             <div className="mt-6 flex justify-center">
-                 <button onClick={refreshQuote} className="bg-white/20 hover:bg-white/30 p-3 rounded-full backdrop-blur-sm transition-all active:scale-95">
+                 <button onClick={refreshQuote} aria-label="تحديث" className="bg-white/20 hover:bg-white/30 p-3 rounded-full backdrop-blur-sm transition-all active:scale-95">
                     <ArrowPathIcon className="w-6 h-6 text-white" />
                 </button>
             </div>

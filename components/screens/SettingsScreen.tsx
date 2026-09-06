@@ -3,12 +3,14 @@ import React, { useState, useRef } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { ArrowLeftIcon, ChevronRightIcon, MoonIcon, BellIcon, EnvelopeIcon, InformationCircleIcon, SpeakerWaveIcon, SwatchIcon, ArchiveBoxArrowDownIcon, ArrowUpTrayIcon, PaintBrushIcon, FingerPrintIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useToast } from '../common/Toast';
 import { HomeLayout, AppTheme } from '../../types';
 import { getStorage } from '../../data/storage';
 
 const SettingsScreen: React.FC = () => {
     const { navigate, darkMode, toggleDarkMode, fontSize, setFontSize, homeLayout, setHomeLayout, theme, setTheme, hapticsEnabled, toggleHaptics } = useAppContext();
     const { t } = useTranslation();
+    const toast = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const getPreviewClass = (size: number) => {
@@ -32,7 +34,7 @@ const SettingsScreen: React.FC = () => {
             URL.revokeObjectURL(url);
         } catch (error) {
             console.error('Backup failed:', error);
-            alert('فشل إنشاء النسخة الاحتياطية.');
+            toast.show(t('error_backup_failed'), { variant: 'error' });
         }
     };
 
@@ -46,11 +48,12 @@ const SettingsScreen: React.FC = () => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        if (confirm('هل أنت متأكد؟ سيؤدي هذا لاستبدال جميع بياناتك الحالية بالبيانات الموجودة في الملف.')) {
+        const confirmed = await toast.confirm(t('confirm_restore_data'));
+        if (confirmed) {
             const reader = new FileReader();
             reader.onerror = () => {
                 console.error('Restore failed reading backup file');
-                alert('فشل استعادة البيانات. الملف قد يكون تالفاً.');
+                toast.show(t('error_restore_failed'), { variant: 'error' });
             };
             reader.onload = async (event) => {
                 const content = event.target?.result as string;
@@ -58,14 +61,14 @@ const SettingsScreen: React.FC = () => {
                     try {
                         const success = await getStorage().importData(content);
                         if (success) {
-                            alert('تم استعادة البيانات بنجاح. سيتم إعادة تحميل التطبيق.');
+                            toast.show(t('success_restore_complete'), { variant: 'success' });
                             window.location.reload();
                         } else {
-                            alert('فشل استعادة البيانات. الملف قد يكون تالفاً.');
+                            toast.show(t('error_restore_failed'), { variant: 'error' });
                         }
                     } catch (error) {
                         console.error('Restore failed:', error);
-                        alert('فشل استعادة البيانات. الملف قد يكون تالفاً.');
+                        toast.show(t('error_restore_failed'), { variant: 'error' });
                     }
                 }
             };
@@ -79,7 +82,7 @@ const SettingsScreen: React.FC = () => {
         return (
             <Container 
                 onClick={hasToggle ? undefined : onClick} 
-                className={`w-full flex items-center justify-between p-4 mb-2 bg-white dark:bg-[#1A3129] rounded-lg transition-colors hover:bg-gray-50 dark:hover:bg-[#203c31] shadow-sm border border-gray-100 dark:border-none ${hasToggle ? '' : 'cursor-pointer'}`}
+                className={'w-full flex items-center justify-between p-4 mb-2 bg-white dark:bg-[#1A3129] rounded-lg transition-colors hover:bg-gray-50 dark:hover:bg-[#203c31] shadow-sm dark:shadow-none border border-gray-100 dark:border-[#111827]/30 ' + (hasToggle ? '' : 'cursor-pointer')}
             >
                 <div className="flex items-center space-x-4 rtl:space-x-reverse">
                     <Icon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
@@ -103,7 +106,7 @@ const SettingsScreen: React.FC = () => {
     return (
         <div className="p-4 h-full flex flex-col">
             <header className="flex items-center mb-6 relative">
-                <button onClick={() => navigate('home')} className="p-2 -ml-2 rtl:-mr-2 rtl:ml-0 absolute left-0 rtl:right-0 rtl:left-auto">
+                <button onClick={() => navigate('home')} aria-label="رجوع" className="p-2 -ml-2 rtl:-mr-2 rtl:ml-0 absolute left-0 rtl:right-0 rtl:left-auto">
                     <ArrowLeftIcon className="w-6 h-6 text-gray-800 dark:text-white rtl:rotate-180" />
                 </button>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white mx-auto">{t('settings_title')}</h1>
@@ -117,7 +120,7 @@ const SettingsScreen: React.FC = () => {
                 <SettingItem icon={BellIcon} label="تخصيص الإشعارات" onClick={() => navigate('notificationSettings')} />
                 <SettingItem icon={SpeakerWaveIcon} label="إعدادات الصوت" onClick={() => navigate('audioSettings')} />
                 
-                <div className="p-4 mb-2 bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-none shadow-sm rounded-lg">
+                <div className="p-4 mb-2 bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-[#111827]/30 shadow-sm dark:shadow-none rounded-lg">
                     <div className="flex items-center space-x-4 rtl:space-x-reverse mb-3">
                         <PaintBrushIcon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
                         <span className="text-gray-900 dark:text-white font-medium">لون التطبيق</span>
@@ -127,6 +130,7 @@ const SettingsScreen: React.FC = () => {
                             <button
                                 key={t}
                                 onClick={() => setTheme(t)}
+                                aria-label={`لون ${t}`}
                                 className={`h-12 rounded-xl border-2 transition-all flex items-center justify-center ${theme === t ? 'border-primary-500 scale-105 shadow-md' : 'border-transparent opacity-80 hover:opacity-100'}`}
                                 style={{ 
                                     backgroundColor: 
@@ -143,11 +147,14 @@ const SettingsScreen: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="p-4 mb-2 bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-none shadow-sm rounded-lg">
+                <div className="p-4 mb-2 bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-[#111827]/30 shadow-sm dark:shadow-none rounded-lg">
                     <div className="flex items-center space-x-4 rtl:space-x-reverse mb-3">
                         <SwatchIcon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
                         <span className="text-gray-900 dark:text-white font-medium">{t('settings_layout_title')}</span>
                     </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 leading-relaxed">
+                        الوضع الموصى به للقراءة اليومية هو <span className="font-bold text-primary-600 dark:text-primary-400">التركيز</span> — ذكر واحد مع ثلاث خطوات. أما <span className="font-bold">اللوحة</span> فتضم أذكاراً أكثر وتناسب الاستكشاف.
+                    </p>
                     <div className="grid grid-cols-2 gap-2">
                         {(['dashboard', 'stream', 'focus', 'simple'] as HomeLayout[]).map(layout => (
                             <button
@@ -170,7 +177,7 @@ const SettingsScreen: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="p-4 mb-2 bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-none shadow-sm rounded-lg">
+                <div className="p-4 mb-2 bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-[#111827]/30 shadow-sm dark:shadow-none rounded-lg">
                     <span className="text-gray-900 dark:text-white font-medium mb-4 block">{t('settings_font_size')}</span>
                     <div className="h-20 bg-gray-50 dark:bg-[#12241C] rounded-lg flex items-center justify-center p-2 mb-4 overflow-hidden">
                         <p className={`${getPreviewClass(fontSize)} text-gray-900 dark:text-white font-serif text-center transition-all duration-200`}>

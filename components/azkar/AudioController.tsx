@@ -110,12 +110,13 @@ const AudioController: React.FC<AudioControllerProps> = ({
             }`}
         >
             <div className="overflow-hidden">
-                <div className="mx-1 mt-2 mb-4 bg-white dark:bg-[#1A3129] rounded-xl border border-gray-100 dark:border-primary-500/20 shadow-sm p-4 relative">
+                <div className="mx-1 mt-2 mb-4 bg-white dark:bg-[#1A3129] rounded-xl border border-gray-100 dark:border-primary-500/20 shadow-sm dark:shadow-none p-4 relative">
                     
                     {/* Close Button (Optional) */}
                     {onClose && (
                         <button 
                             onClick={onClose}
+                            aria-label="إغلاق"
                             className="absolute top-2 left-2 rtl:right-auto rtl:left-2 p-1 text-gray-400 hover:text-red-500 transition-colors"
                         >
                             <XMarkIcon className="w-4 h-4" />
@@ -158,6 +159,7 @@ const AudioController: React.FC<AudioControllerProps> = ({
                         <div className="flex items-center space-x-4 rtl:space-x-reverse">
                             <button 
                                 onClick={onStop}
+                                aria-label="إيقاف"
                                 className="p-2 text-gray-400 hover:text-red-500 transition-colors bg-gray-50 dark:bg-gray-800 rounded-full"
                                 title="إيقاف"
                             >
@@ -166,6 +168,7 @@ const AudioController: React.FC<AudioControllerProps> = ({
 
                             <button 
                                 onClick={togglePlayPause}
+                                aria-label={isPaused ? "تشغيل" : "إيقاف مؤقت"}
                                 className="w-12 h-12 bg-primary-500 hover:bg-primary-600 text-white rounded-full shadow-lg shadow-primary-500/30 flex items-center justify-center transition-transform active:scale-95"
                             >
                                 {isPaused ? <PlayIcon className="w-6 h-6 ml-0.5 rtl:mr-0.5 rtl:ml-0" /> : <PauseIcon className="w-6 h-6" />}
@@ -175,6 +178,7 @@ const AudioController: React.FC<AudioControllerProps> = ({
                         {/* Loop (Right) */}
                         <button 
                             onClick={onToggleLoop}
+                            aria-label="تكرار تلقائي"
                             className={`flex flex-col items-center justify-center w-10 h-10 rounded-lg transition-colors ${
                                 isLoopMode 
                                 ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800' 

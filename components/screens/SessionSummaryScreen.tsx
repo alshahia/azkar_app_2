@@ -37,7 +37,7 @@ const SessionSummaryScreen: React.FC<SessionSummaryScreenProps> = ({ sessionStat
             <header className="mb-8 flex items-center justify-between relative z-10">
                 <div className="w-8"></div> {/* Spacer for center alignment */}
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">ملخص الجلسة</h1>
-                <button onClick={() => navigate('categories')} className="p-2 bg-gray-200 dark:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">
+                <button onClick={() => navigate('categories')} aria-label="رجوع" className="p-2 bg-gray-200 dark:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">
                     <ArrowRightIcon className="w-5 h-5 rtl:rotate-180" />
                 </button>
             </header>
@@ -83,7 +83,7 @@ const SessionSummaryScreen: React.FC<SessionSummaryScreenProps> = ({ sessionStat
 
                 {/* Stat Grid */}
                 <div className="grid grid-cols-2 gap-4 w-full mt-4">
-                    <div className="bg-white dark:bg-[#1A3129] p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-none flex flex-col items-center justify-center text-center transition-transform hover:scale-[1.02]">
+                    <div className="bg-white dark:bg-[#1A3129] p-5 rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-none flex flex-col items-center justify-center text-center transition-transform hover:scale-[1.02]">
                         <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-full mb-3 text-orange-500">
                             <FireIcon className="w-6 h-6" />
                         </div>
@@ -91,7 +91,7 @@ const SessionSummaryScreen: React.FC<SessionSummaryScreenProps> = ({ sessionStat
                         <span className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1">نسبة الإنجاز</span>
                     </div>
 
-                    <div className="bg-white dark:bg-[#1A3129] p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-none flex flex-col items-center justify-center text-center transition-transform hover:scale-[1.02]">
+                    <div className="bg-white dark:bg-[#1A3129] p-5 rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-none flex flex-col items-center justify-center text-center transition-transform hover:scale-[1.02]">
                         <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-3 text-blue-500">
                             <ChartBarIcon className="w-6 h-6" />
                         </div>
