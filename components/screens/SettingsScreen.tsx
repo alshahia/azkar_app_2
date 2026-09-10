@@ -1,11 +1,17 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { ArrowLeftIcon, ChevronRightIcon, MoonIcon, BellIcon, EnvelopeIcon, InformationCircleIcon, SpeakerWaveIcon, SwatchIcon, ArchiveBoxArrowDownIcon, ArrowUpTrayIcon, PaintBrushIcon, FingerPrintIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, ChevronRightIcon, MoonIcon, BellIcon, EnvelopeIcon, InformationCircleIcon, SpeakerWaveIcon, SwatchIcon, ArchiveBoxArrowDownIcon, ArrowUpTrayIcon, PaintBrushIcon, FingerPrintIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useToast } from '../common/Toast';
 import { HomeLayout, AppTheme } from '../../types';
 import { getStorage } from '../../data/storage';
+import { previewBackupCounts } from '../../data/backup';
+import {
+    getCacheStats, getCacheStatsByReciter, removeReciterAudio, clearCache, formatBytes,
+    type ReciterCacheStats,
+} from '../../services/audioCache';
+import { getReciter } from '../../services/reciterCatalog';
 
 const SettingsScreen: React.FC = () => {
     const { navigate, darkMode, toggleDarkMode, fontSize, setFontSize, homeLayout, setHomeLayout, theme, setTheme, hapticsEnabled, toggleHaptics } = useAppContext();
@@ -48,33 +54,121 @@ const SettingsScreen: React.FC = () => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        const confirmed = await toast.confirm(t('confirm_restore_data'));
-        if (confirmed) {
-            const reader = new FileReader();
-            reader.onerror = () => {
-                console.error('Restore failed reading backup file');
+        const reader = new FileReader();
+        reader.onerror = () => {
+            console.error('Restore failed reading backup file');
+            toast.show(t('error_restore_failed'), { variant: 'error' });
+            e.target.value = '';
+        };
+        reader.onload = async (event) => {
+            const content = event.target?.result as string;
+            if (!content) {
+                e.target.value = '';
+                return;
+            }
+
+            let parsed: unknown;
+            try {
+                parsed = JSON.parse(content);
+            } catch {
                 toast.show(t('error_restore_failed'), { variant: 'error' });
-            };
-            reader.onload = async (event) => {
-                const content = event.target?.result as string;
-                if (content) {
-                    try {
-                        const success = await getStorage().importData(content);
-                        if (success) {
-                            toast.show(t('success_restore_complete'), { variant: 'success' });
-                            window.location.reload();
-                        } else {
-                            toast.show(t('error_restore_failed'), { variant: 'error' });
-                        }
-                    } catch (error) {
-                        console.error('Restore failed:', error);
-                        toast.show(t('error_restore_failed'), { variant: 'error' });
-                    }
+                e.target.value = '';
+                return;
+            }
+
+            const counts = previewBackupCounts(parsed);
+            if (!counts) {
+                toast.show(t('restore_preview_invalid'), { variant: 'error' });
+                e.target.value = '';
+                return;
+            }
+
+            // Build a per-section summary for the user.
+            const sections: Array<{ key: string; label: string; n: number }> = [
+                { key: 'preferences', label: t('restore_preview_section_preferences'), n: counts.preferences },
+                { key: 'progress', label: t('restore_preview_section_progress'), n: counts.progress },
+                { key: 'stats', label: t('restore_preview_section_stats'), n: counts.stats },
+                { key: 'userQuotes', label: t('restore_preview_section_userQuotes'), n: counts.userQuotes },
+                { key: 'userSalawat', label: t('restore_preview_section_userSalawat'), n: counts.userSalawat },
+                { key: 'userCategories', label: t('restore_preview_section_userCategories'), n: counts.userCategories },
+                { key: 'userAzkar', label: t('restore_preview_section_userAzkar'), n: counts.userAzkar },
+                { key: 'hiddenStaticIds', label: t('restore_preview_section_hiddenStaticIds'), n: counts.hiddenStaticIds },
+                { key: 'quranBookmarks', label: t('restore_preview_section_quranBookmarks'), n: counts.quranBookmarks },
+                { key: 'quranLastRead', label: t('restore_preview_section_quranLastRead'), n: counts.quranLastRead },
+            ];
+            const summary = sections
+                .filter(s => s.n > 0)
+                .map(s => s.label + ': ' + s.n)
+                .join(' • ');
+
+            const versionLabel = counts.hasEnvelope
+                ? t('restore_preview_envelope_label')
+                : t('restore_preview_legacy_label');
+            const message = t('restore_preview_title')
+                + '\n' + versionLabel
+                + (summary ? ('\n' + summary) : '');
+
+            const choice = await toast.promptChoice(message, [
+                { label: t('restore_preview_choice_merge'), value: 'merge', kind: 'neutral' },
+                { label: t('restore_preview_choice_replace'), value: 'replace', kind: 'primary' },
+                { label: t('restore_preview_choice_cancel'), value: 'cancel', kind: 'neutral' },
+            ]);
+
+            if (choice === 'cancel' || choice === null) {
+                e.target.value = '';
+                return;
+            }
+
+            try {
+                const success = await getStorage().importData(content, { mode: choice === 'merge' ? 'merge' : 'replace' });
+                if (success) {
+                    toast.show(
+                        choice === 'merge' ? t('success_restore_merged') : t('success_restore_complete'),
+                        { variant: 'success' }
+                    );
+                    window.location.reload();
+                } else {
+                    toast.show(t('error_restore_failed'), { variant: 'error' });
                 }
-            };
-            reader.readAsText(file);
+            } catch (error) {
+                console.error('Restore failed:', error);
+                toast.show(t('error_restore_failed'), { variant: 'error' });
+            }
+            e.target.value = '';
+        };
+        reader.readAsText(file);
+    };
+
+    // M1-T7: per-reciter audio cache overview + reclaim.
+    const [reciterStats, setReciterStats] = useState<ReciterCacheStats[]>([]);
+    const [audioStats, setAudioStats] = useState<{ entries: number; totalBytes: number }>({ entries: 0, totalBytes: 0 });
+
+    const refreshAudioStats = useCallback(async () => {
+        try {
+            const [byReciter, totals] = await Promise.all([getCacheStatsByReciter(), getCacheStats()]);
+            setReciterStats(byReciter);
+            setAudioStats(totals);
+        } catch {
+            // best-effort; UI keeps last-known values
         }
-        e.target.value = '';
+    }, []);
+
+    useEffect(() => {
+        void refreshAudioStats();
+    }, [refreshAudioStats]);
+
+    const handleRemoveReciter = async (reciterId: string) => {
+        const confirmed = await toast.confirm(t('quran_audio_delete_reciter_confirm'));
+        if (!confirmed) return;
+        await removeReciterAudio(reciterId);
+        await refreshAudioStats();
+    };
+
+    const handleClearAudioCache = async () => {
+        const confirmed = await toast.confirm(t('quran_audio_clear_confirm'));
+        if (!confirmed) return;
+        await clearCache();
+        await refreshAudioStats();
     };
 
     const SettingItem: React.FC<{ icon: React.ElementType, label: string, value?: string, hasToggle?: boolean, isChecked?: boolean, onToggle?: () => void, onClick?: () => void }> = ({ icon: Icon, label, value, hasToggle, isChecked, onToggle, onClick }) => {
@@ -210,6 +304,59 @@ const SettingsScreen: React.FC = () => {
                     accept=".json" 
                     className="hidden" 
                 />
+
+                <h2 className="text-lg font-semibold text-primary-600 dark:text-primary-400 mt-6 mb-2">{t('quran_audio_storage_title')}</h2>
+                <div className="p-4 mb-2 bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-[#111827]/30 shadow-sm dark:shadow-none rounded-lg">
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-4 rtl:space-x-reverse">
+                            <SpeakerWaveIcon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+                            <span className="text-gray-900 dark:text-white font-medium">{t('quran_audio_cache_size')}</span>
+                        </div>
+                        <span className="text-gray-500 dark:text-gray-400 text-sm">
+                            {formatBytes(audioStats.totalBytes)} • {audioStats.entries} {t('quran_audio_cached_files')}
+                        </span>
+                    </div>
+                    {reciterStats.length === 0 ? (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                            {t('quran_audio_autocache_note')}
+                        </p>
+                    ) : (
+                        <ul className="space-y-2">
+                            {reciterStats.map(row => {
+                                const reciter = getReciter(row.reciterId);
+                                return (
+                                    <li key={row.reciterId} className="flex items-center justify-between gap-2 bg-gray-50 dark:bg-[#12241C] rounded-xl px-3 py-2">
+                                        <div className="min-w-0 text-right rtl:text-right">
+                                            <p className="text-sm font-bold text-gray-800 dark:text-gray-100 truncate">
+                                                {reciter?.name ?? row.reciterId}
+                                            </p>
+                                            <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                                                {row.entries} {t('quran_audio_cached_files')} • {formatBytes(row.bytes)}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => handleRemoveReciter(row.reciterId)}
+                                            className="p-2 rounded-full text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
+                                            aria-label={t('quran_audio_delete_reciter')}
+                                            title={t('quran_audio_delete_reciter')}
+                                        >
+                                            <TrashIcon className="w-4 h-4" />
+                                        </button>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    )}
+                    {reciterStats.length > 0 && (
+                        <button
+                            onClick={handleClearAudioCache}
+                            className="w-full mt-3 flex items-center justify-center gap-2 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30 font-bold py-2.5 rounded-2xl transition"
+                        >
+                            <TrashIcon className="w-4 h-4" />
+                            <span>{t('quran_audio_clear_cache')}</span>
+                        </button>
+                    )}
+                </div>
 
                 <h2 className="text-lg font-semibold text-primary-600 dark:text-primary-400 mt-6 mb-2">{t('settings_support')}</h2>
                 <SettingItem icon={EnvelopeIcon} label={t('settings_contact_us_report_bug')} onClick={() => navigate('reportBug')} />

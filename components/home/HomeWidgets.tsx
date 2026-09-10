@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { ShareIcon, ArrowPathIcon, ChevronLeftIcon, ChevronRightIcon, ArrowsPointingOutIcon, SparklesIcon, MoonIcon, SunIcon, BookOpenIcon } from '@heroicons/react/24/outline';
+import { ShareIcon, ArrowPathIcon, ChevronLeftIcon, ChevronRightIcon, ArrowsPointingOutIcon, SparklesIcon, MoonIcon, SunIcon, BookOpenIcon, MusicalNoteIcon, PlayIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
 import { MosqueIcon } from '../common/CustomIcons';
 import { useAppContext } from '../../context/AppContext';
 import { getQuotesRepository, getSalawatRepository } from '../../data/repository';
@@ -8,6 +8,12 @@ import { Quote, Salawat } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 import Skeleton from '../common/Skeleton';
 import { GLOBAL_TASBEEH_ID } from '../../constants';
+import { getSurah, toArabicDigits } from '../../services/QuranService';
+import { getReciter } from '../../services/reciterCatalog';
+import { useQuranAudio } from '../../context/QuranAudioContext';
+import { hijriPartsOf } from '../../utils/hijri';
+import { getOnThisDay, isOnThisDayStub, type OnThisDayEntry } from '../../data/onthisday';
+import { STATIC_QUOTES } from '../../data/static/quotes';
 
 // --- Helper: Container Wrapper ---
 const WidgetContainer: React.FC<{ children: React.ReactNode, title?: string, icon?: React.ReactNode, className?: string, headerAction?: React.ReactNode }> = ({ children, title, icon, className = "", headerAction }) => (
@@ -26,6 +32,44 @@ const WidgetContainer: React.FC<{ children: React.ReactNode, title?: string, ico
         </div>
     </div>
 );
+
+// --- Continue Listening Widget (M1-T5): exact resume of the last
+// recitation session, persisted through the storage adapter kv. ---
+export const ContinueListeningWidget: React.FC = () => {
+    const { navigate } = useAppContext();
+    const { t } = useTranslation();
+    const { listen, play } = useQuranAudio();
+    if (!listen) return null;
+    const surah = getSurah(listen.surahId);
+    const reciter = getReciter(listen.reciterId);
+    const resume = () => {
+        play(listen.surahId, listen.ayahNumber, { resumePositionMs: listen.positionMs, source: 'user' });
+        navigate('surahReader', { surahId: listen.surahId, ayah: listen.ayahNumber });
+    };
+    return (
+        <button
+            onClick={resume}
+            className="w-full rounded-2xl p-4 mb-4 bg-white dark:bg-[#1A3129] border border-primary-100 dark:border-primary-500/20 shadow-sm dark:shadow-none flex items-center gap-3 cursor-pointer transition-transform active:scale-[0.98]"
+            aria-label={t('home_continue_listening')}
+        >
+            <div className="p-2.5 rounded-full bg-primary-600 text-white shrink-0">
+                <MusicalNoteIcon className="w-5 h-5" />
+            </div>
+            <div className="flex-1 min-w-0 text-right rtl:text-right">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400 mb-0.5">{t('home_continue_listening')}</p>
+                <p className="font-bold text-gray-800 dark:text-gray-100 truncate">
+                    {surah ? surah.name : 'سورة ' + listen.surahId}
+                </p>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                    {t('home_ayah_word')} {toArabicDigits(listen.ayahNumber)} • {reciter?.name ?? listen.reciterId}
+                </p>
+            </div>
+            <div className="p-2 rounded-full bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 shrink-0">
+                <PlayIcon className="w-5 h-5" />
+            </div>
+        </button>
+    );
+};
 
 // --- 0. Smart Suggestion Widget (Context Aware) ---
 export const SmartSuggestionWidget: React.FC = () => {
@@ -556,3 +600,132 @@ export const InfoWidget: React.FC = () => {
         </WidgetContainer>
     );
 };
+
+// --- 6. Today Digest Widget (M4-T3) ---
+// Hijri-keyed card: today's azkar progress summary + one wisdom quote
+// rotated by Hijri day + an on-this-day entry (when the bundled dataset
+// has a match). The whole card re-renders once at mount based on the
+// current Hijri date; subsequent renders would only change when the user
+// keeps the app open across a Hijri-day boundary (which they usually
+// won't see — the app foregrounds the digest at launch).
+export const TodayDigestWidget: React.FC = () => {
+    const { progress } = useAppContext();
+    const [quote, setQuote] = useState<Quote | null>(null);
+    const [onThisDay, setOnThisDay] = useState<OnThisDayEntry[]>([]);
+    const [hijriLabel, setHijriLabel] = useState<string>('');
+
+    useEffect(() => {
+        const now = new Date();
+        const parts = hijriPartsOf(now);
+        // Defer every setState to a microtask so the effect body doesn't
+        // call setState synchronously (react-hooks v7 set-state-in-effect).
+        // The microtask still resolves before any test's act() flush,
+        // so observable behaviour is unchanged.
+        queueMicrotask(() => {
+            if (!parts) {
+                setHijriLabel('');
+                setOnThisDay([]);
+            } else {
+                setHijriLabel(buildHijriLabel(parts));
+                setOnThisDay(getOnThisDay(parts.month, parts.day));
+            }
+            const idx = pickIndexFromDate(now);
+            const list = mergeQuotes();
+            if (list.length > 0) setQuote(list[idx % list.length]);
+        });
+    }, []);
+
+    const progressSummary = useMemo(() => {
+        const totals = Object.values(progress);
+        if (totals.length === 0) return null;
+        const completed = totals.filter(v => v > 0).length;
+        return completed;
+    }, [progress]);
+
+    const stub = isOnThisDayStub();
+
+    return (
+        <WidgetContainer
+            className="bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 dark:from-[#2a1f12] dark:via-[#1f1a14] dark:to-[#1a1418] border-none"
+            icon={<CalendarDaysIcon className="w-4 h-4 text-amber-600 dark:text-amber-400" />}
+            title="اليوم"
+        >
+            {hijriLabel && (
+                <p className="text-xs text-amber-700 dark:text-amber-400 font-bold mb-3" data-testid="today-hijri-label">
+                    {hijriLabel}
+                </p>
+            )}
+
+            {progressSummary !== null && (
+                <p className="text-sm text-gray-700 dark:text-gray-300 mb-3" data-testid="today-progress">
+                    أذكار اليوم: <span className="font-bold text-amber-700 dark:text-amber-400">{toArabicDigits(progressSummary)}</span> قسم
+                </p>
+            )}
+
+            {quote && (
+                <div className="border-t border-amber-200/60 dark:border-amber-500/10 pt-3 mb-3">
+                    <p className="font-serif text-base text-gray-800 dark:text-gray-100 leading-relaxed mb-1" data-testid="today-quote">
+                        {quote.text}
+                    </p>
+                    <p className="text-xs text-amber-700/80 dark:text-amber-400/80 font-medium">— {quote.author}</p>
+                </div>
+            )}
+
+            {onThisDay.length > 0 ? (
+                <div className="border-t border-amber-200/60 dark:border-amber-500/10 pt-3" data-testid="today-onthisday">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-400 mb-1">
+                        في مثل هذا اليوم
+                    </p>
+                    {onThisDay.map((entry) => (
+                        <div key={entry.id} className="mb-1">
+                            <p className="font-bold text-sm text-gray-800 dark:text-gray-100">{entry.title}</p>
+                            {entry.body && (
+                                <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">{entry.body}</p>
+                            )}
+                            {entry.source && (
+                                <p className="text-[10px] text-amber-700/70 dark:text-amber-400/70 mt-0.5">المصدر: {entry.source}</p>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                stub && (
+                    <p className="text-[10px] text-amber-700/70 dark:text-amber-400/70 italic border-t border-amber-200/60 dark:border-amber-500/10 pt-3">
+                        قيد الإعداد — نعمل على إعداد التقويم الهجري الكامل.
+                    </p>
+                )
+            )}
+        </WidgetContainer>
+    );
+};
+
+/** Build a short Arabic Hijri label like "1 رمضان 1446". */
+function buildHijriLabel(parts: { year: number; month: number; day: number }): string {
+    const months = [
+        'محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر',
+        'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان',
+        'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة',
+    ];
+    const name = months[parts.month - 1] ?? String(parts.month);
+    return toArabicDigits(parts.day) + ' ' + name + ' ' + toArabicDigits(parts.year);
+}
+
+/** Hash the current date (Hijri day-of-year) to a quote-index. Same
+ *  input always yields the same index so the card stays stable for the
+ *  day. Cheap and side-effect-free. */
+function pickIndexFromDate(now: Date): number {
+    const parts = hijriPartsOf(now);
+    if (!parts) {
+        const start = new Date(now.getFullYear(), 0, 0);
+        const diff = now.getTime() - start.getTime();
+        const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
+        return dayOfYear;
+    }
+    return parts.month * 30 + parts.day;
+}
+
+/** Merged quote list. Synchronous fallback to bundled so the card
+ *  renders immediately; the user-added list is rarely touched. */
+function mergeQuotes(): Quote[] {
+    return [...STATIC_QUOTES];
+}

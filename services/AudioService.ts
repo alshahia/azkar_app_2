@@ -1,6 +1,7 @@
 
 import { GoogleGenAI, Modality } from "@google/genai";
 import { getStorage } from "../data/storage";
+import { setMediaSessionHandlers, setMediaSessionPlaybackState, updateMediaSessionMetadata } from "../utils/mediaSession";
 
 class AudioService {
   private audioContext: AudioContext | null = null;
@@ -20,43 +21,28 @@ class AudioService {
   // Identifying the current track
   private currentKey: string | null = null;
 
-  constructor() {
-    this.setupMediaSession();
-  }
+  /**
+   * Installs Media Session handlers + metadata when a TTS track starts.
+   * Handlers are (re)claimed at play-start instead of at construction so
+   * the surface that most recently started audio owns the single global
+   * navigator.mediaSession object (Quran recitation does the same).
+   */
+  private claimMediaSession(text: string) {
+      // Truncate text for title if too long
+      const title = text.length > 50 ? text.substring(0, 50) + "..." : text;
 
-  private setupMediaSession() {
-    if ('mediaSession' in navigator) {
-        navigator.mediaSession.setActionHandler('play', () => this.resume());
-        navigator.mediaSession.setActionHandler('pause', () => this.pause());
-        navigator.mediaSession.setActionHandler('stop', () => this.stop());
-        navigator.mediaSession.setActionHandler('seekto', (details) => {
-            if (details.seekTime !== undefined) {
-                this.seek(details.seekTime);
-            }
-        });
-    }
-  }
-
-  private updateMediaSessionMetadata(text: string) {
-      if ('mediaSession' in navigator) {
-          // Truncate text for title if too long
-          const title = text.length > 50 ? text.substring(0, 50) + "..." : text;
-          
-          navigator.mediaSession.metadata = new MediaMetadata({
-              title: title,
-              artist: "تطبيق أذكار",
-              album: "الأذكار اليومية",
-              artwork: [
-                  { src: '/images/icon-192.png', sizes: '96x96', type: 'image/png' },
-                  { src: '/images/icon-192.png', sizes: '128x128', type: 'image/png' },
-                  { src: '/images/icon-192.png', sizes: '192x192', type: 'image/png' },
-                  { src: '/images/icon-512.png', sizes: '512x512', type: 'image/png' },
-              ]
-          });
-          
-          // Set initial state
-          navigator.mediaSession.playbackState = 'playing';
-      }
+      updateMediaSessionMetadata({
+          title,
+          artist: "تطبيق أذكار",
+          album: "الأذكار اليومية",
+      });
+      setMediaSessionHandlers({
+          play: () => this.resume(),
+          pause: () => this.pause(),
+          stop: () => this.stop(),
+          seekto: (seekTime) => this.seek(seekTime),
+      });
+      setMediaSessionPlaybackState('playing');
   }
 
   private getAudioContext() {
@@ -101,8 +87,8 @@ class AudioService {
       this.stop(); 
       this.currentKey = newKey;
       
-      // Update Lock Screen Metadata
-      this.updateMediaSessionMetadata(text);
+      // Claim the lock screen for this track (handlers + metadata).
+      this.claimMediaSession(text);
 
       const storage = getStorage();
       const prefs = await storage.getPreferences();
@@ -197,7 +183,7 @@ class AudioService {
                   this.completionResolver(true);
                   this.completionResolver = null;
               }
-              if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
+              setMediaSessionPlaybackState('none');
               this.cleanup();
           }
       };
@@ -210,7 +196,7 @@ class AudioService {
       this.isPlaying = true;
       this.isPaused = false;
       
-      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+      setMediaSessionPlaybackState('playing');
   }
 
   pause() {
@@ -225,7 +211,7 @@ class AudioService {
           this.currentSource.stop(); // Triggers onended, but isPaused flag handles it
           this.currentSource = null;
           
-          if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+          setMediaSessionPlaybackState('paused');
       }
   }
 
@@ -252,7 +238,7 @@ class AudioService {
           this.completionResolver = null;
       }
       
-      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
+      setMediaSessionPlaybackState('none');
       this.cleanup();
   }
 

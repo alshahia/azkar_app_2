@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowDownTrayIcon, TrashIcon, XMarkIcon, CloudArrowDownIcon } from '@heroicons/react/24/outline';
+import { ArrowDownTrayIcon, TrashIcon, XMarkIcon, CloudArrowDownIcon, PauseIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useToast } from '../common/Toast';
 import {
@@ -23,6 +23,7 @@ interface DownloadState {
     bytes: number;
     failed: number;
     skipped: number;
+    aborted?: boolean;
 }
 
 /**
@@ -60,8 +61,21 @@ const AudioDownloadSheet: React.FC<AudioDownloadSheetProps> = ({
         refresh();
     }, [open, refresh]);
 
+    const pausedRef = useRef(false);
+    const [paused, setPaused] = useState(false);
+
+    // Pause flips the shared cancel flag; downloadSurah exits at the next
+    // ayah boundary. Resume simply re-invokes the download - finished ayahs
+    // are skipped and an interrupted .part file resumes from its byte offset.
+    const handlePause = useCallback(() => {
+        pausedRef.current = true;
+        setPaused(true);
+    }, []);
+
     const handleDownload = useCallback(async () => {
         if (progress.active) return;
+        pausedRef.current = false;
+        setPaused(false);
         setProgress({ active: true, done: 0, total: surahAyat.length, bytes: 0, failed: 0, skipped: 0 });
         try {
             const res = await downloadSurah(reciterId, surahAyat, p => {
@@ -70,7 +84,7 @@ const AudioDownloadSheet: React.FC<AudioDownloadSheetProps> = ({
                     done: p.done,
                     bytes: p.bytesSoFar,
                 }));
-            });
+            }, () => !pausedRef.current);
             setProgress({
                 active: false,
                 done: res.downloaded + res.skipped + res.failed,
@@ -78,6 +92,7 @@ const AudioDownloadSheet: React.FC<AudioDownloadSheetProps> = ({
                 bytes: res.bytes,
                 failed: res.failed,
                 skipped: res.skipped,
+                aborted: res.aborted === true,
             });
         } finally {
             await refresh();
@@ -155,6 +170,20 @@ const AudioDownloadSheet: React.FC<AudioDownloadSheetProps> = ({
                                             {progress.done} / {progress.total} - {formatBytes(progress.bytes)}
                                         </p>
                                     </div>
+                                )}
+                                {progress.active && (
+                                    <button
+                                        onClick={handlePause}
+                                        className="w-full flex items-center justify-center gap-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-bold py-2.5 rounded-2xl active:scale-95 transition mt-2"
+                                    >
+                                        <PauseIcon className="w-4 h-4" />
+                                        <span>{t('quran_audio_pause_download')}</span>
+                                    </button>
+                                )}
+                                {!progress.active && paused && (
+                                    <p className="text-[11px] text-amber-600 dark:text-amber-400 mb-3">
+                                        {t('quran_audio_paused_note')}
+                                    </p>
                                 )}
                                 {!progress.active && progress.total > 0 && (
                                     <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-3">

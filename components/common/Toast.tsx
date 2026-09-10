@@ -17,9 +17,28 @@ interface PendingConfirm {
     cancelLabel?: string;
 }
 
+/**
+ * A choice option for the promptChoice helper. `value` is returned to the
+ * resolver; `kind` styles the button (primary actions use 'primary',
+ * destructive ones use 'danger', everything else defaults to the same
+ * neutral style as confirm/cancel).
+ */
+export interface ToastChoice {
+    label: string;
+    value: string;
+    kind?: 'primary' | 'danger' | 'neutral';
+}
+
+interface PendingChoice {
+    resolve: (value: string | null) => void;
+    message: string;
+    choices: ToastChoice[];
+}
+
 interface ToastContextValue {
     show: (message: string, opts?: { variant?: ToastVariant; durationMs?: number }) => void;
     confirm: (message: string, opts?: { confirmLabel?: string; cancelLabel?: string }) => Promise<boolean>;
+    promptChoice: (message: string, choices: ToastChoice[]) => Promise<string | null>;
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -49,6 +68,7 @@ const variantClass = (variant: ToastVariant): string => {
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [items, setItems] = useState<ToastItem[]>([]);
     const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null);
+    const [pendingChoice, setPendingChoice] = useState<PendingChoice | null>(null);
     const timersRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
 
     const removeToast = useCallback((id: number) => {
@@ -82,6 +102,19 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         });
     }, []);
 
+    const promptChoice = useCallback<ToastContextValue['promptChoice']>((message, choices) => {
+        return new Promise<string | null>(resolve => {
+            setPendingChoice({ resolve, message, choices });
+        });
+    }, []);
+
+    const resolveChoice = useCallback((value: string | null) => {
+        setPendingChoice(prev => {
+            if (prev) prev.resolve(value);
+            return null;
+        });
+    }, []);
+
     useEffect(() => {
         const timers = timersRef.current;
         return () => {
@@ -91,7 +124,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, []);
 
     return (
-        <ToastContext.Provider value={{ show, confirm }}>
+        <ToastContext.Provider value={{ show, confirm, promptChoice }}>
             {children}
 
             <div
@@ -112,6 +145,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             </div>
 
             {pendingConfirm && <ConfirmSheet pending={pendingConfirm} onResolve={resolveConfirm} />}
+            {pendingChoice && <ChoiceSheet pending={pendingChoice} onResolve={resolveChoice} />}
         </ToastContext.Provider>
     );
 };
@@ -163,6 +197,59 @@ const ConfirmSheet: React.FC<ConfirmSheetProps> = ({ pending, onResolve }) => {
                     >
                         {pending.confirmLabel || t('toast_confirm_action')}
                     </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+interface ChoiceSheetProps {
+    pending: PendingChoice;
+    onResolve: (value: string | null) => void;
+}
+
+const choiceClass = (kind: ToastChoice['kind']): string => {
+    if (kind === 'primary') return 'bg-primary-500 hover:bg-primary-600 text-white shadow-md shadow-primary-500/20';
+    if (kind === 'danger') return 'bg-red-500 hover:bg-red-600 text-white shadow-md shadow-red-500/20';
+    return 'border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#203c31]';
+};
+
+const ChoiceSheet: React.FC<ChoiceSheetProps> = ({ pending, onResolve }) => {
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onResolve(null);
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [onResolve]);
+
+    return (
+        <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="choice-message"
+            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm"
+            onClick={() => onResolve(null)}
+        >
+            <div
+                className="bg-white dark:bg-[#1A3129] w-full max-w-sm mx-auto rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl"
+                onClick={e => e.stopPropagation()}
+                dir="rtl"
+            >
+                <p id="choice-message" className="text-gray-900 dark:text-white text-base font-medium mb-6 text-center leading-relaxed">
+                    {pending.message}
+                </p>
+                <div className="flex flex-col gap-3">
+                    {pending.choices.map((c) => (
+                        <button
+                            key={c.value}
+                            type="button"
+                            onClick={() => onResolve(c.value)}
+                            className={'w-full py-3 rounded-xl font-bold transition-colors ' + choiceClass(c.kind)}
+                        >
+                            {c.label}
+                        </button>
+                    ))}
                 </div>
             </div>
         </div>

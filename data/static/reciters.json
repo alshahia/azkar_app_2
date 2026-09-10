@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "updatedAt": "2026-09-09",
+  "source": "Verified against cdn.islamic.network (HEAD 200). Regenerate with: node scripts/fetch-reciters.mjs",
+  "reciters": [
+    {
+      "id": "ar.alafasy",
+      "name": "مشاري العفاسي",
+      "style": "مرتل"
+    },
+    {
+      "id": "ar.husary",
+      "name": "محمود خليل الحصري",
+      "style": "مرتل"
+    },
+    {
+      "id": "ar.minshawi",
+      "name": "محمد صديق المنشاوي",
+      "style": "مرتل"
+    },
+    {
+      "id": "ar.hudhaify",
+      "name": "علي الحذيفي",
+      "style": "مرتل"
+    },
+    {
+      "id": "ar.mahermuaiqly",
+      "name": "ماهر المعيقلي",
+      "style": "مرتل"
+    }
+  ]
+}

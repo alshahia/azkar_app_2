@@ -1,19 +1,36 @@
-import React from 'react';
+import React, { useEffect, useSyncExternalStore } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { RECITERS } from '../../services/QuranService';
+import {
+    getReciters, subscribe as subscribeReciters, refreshRecitersIfWifi, type Reciter,
+} from '../../services/reciterCatalog';
+import { useQuranAudio } from '../../context/QuranAudioContext';
+
+/** Live snapshot of the merged (bundled + refreshed) reciter catalog. */
+function useReciters(): Reciter[] {
+    return useSyncExternalStore(subscribeReciters, getReciters, getReciters);
+}
 
 interface ReciterPickerProps {
     open: boolean;
-    currentId: string;
-    onPick: (id: string) => void;
     onClose: () => void;
 }
 
 /**
- * Bottom-sheet style reciter picker. Slides up from the bottom and traps focus.
+ * Bottom-sheet style reciter picker, opened from the app-level player.
+ * Self-contained: reads the current reciter from the audio context and
+ * triggers a Wi-Fi-gated catalog refresh on open so newly added reciters
+ * appear without an app release (M1-T4).
  */
-const ReciterPicker: React.FC<ReciterPickerProps> = ({ open, currentId, onPick, onClose }) => {
+const ReciterPicker: React.FC<ReciterPickerProps> = ({ open, onClose }) => {
+    const { reciterId, setReciter } = useQuranAudio();
+    const reciters = useReciters();
+
+    useEffect(() => {
+        if (!open) return;
+        void refreshRecitersIfWifi();
+    }, [open]);
+
     return (
         <AnimatePresence>
             {open && (
@@ -35,17 +52,17 @@ const ReciterPicker: React.FC<ReciterPickerProps> = ({ open, currentId, onPick, 
                             </button>
                         </div>
                         <div className="p-2">
-                            {RECITERS.map(r => (
+                            {reciters.map(r => (
                                 <button
                                     key={r.id}
-                                    onClick={() => { onPick(r.id); onClose(); }}
+                                    onClick={() => { setReciter(r.id); onClose(); }}
                                     className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-[#1A3129] active:bg-gray-100 dark:active:bg-[#24433A] transition-colors"
                                 >
                                     <div className="text-right rtl:text-right">
                                         <p className="font-bold text-gray-800 dark:text-gray-100">{r.name}</p>
                                         <p className="text-xs text-gray-500 dark:text-gray-400">{r.style}</p>
                                     </div>
-                                    {r.id === currentId && <CheckIcon className="w-5 h-5 text-primary-600 dark:text-primary-400" />}
+                                    {r.id === reciterId && <CheckIcon className="w-5 h-5 text-primary-600 dark:text-primary-400" />}
                                 </button>
                             ))}
                         </div>
