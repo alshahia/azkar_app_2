@@ -1,8 +1,8 @@
 
 import { StorageAdapter } from './interface';
-import { UserPreferences, ProgressState, Quote, Salawat, UserZikr, UserCategory, UserStats, QuranBookmark, QuranLastRead } from '../../types';
+import { UserPreferences, ProgressState, Quote, Salawat, UserZikr, UserCategory, UserStats, QuranBookmark, QuranLastRead, QuranReadHistoryEntry } from '../../types';
 import { defaultPreferences, defaultStats } from './defaults';
-import { validateBackup, normalizeUserZikr } from '../backup';
+import { validateBackup, normalizeUserZikr, envelopePayload, mergePayload, type BackupPayload } from '../backup';
 import { get, set } from 'idb-keyval';
 import { secureKeyStore } from '../../services/secureKey';
 
@@ -18,8 +18,10 @@ const KEYS = {
     AUDIO_PREFIX: 'azkar_audio_',
     STATS: 'azkar_user_stats',
     FLAG_PREFIX: 'azkar_flag_',
+    KV_PREFIX: 'azkar_kv_',
     QURAN_BOOKMARKS: 'azkar_quran_bookmarks',
-    QURAN_LAST_READ: 'azkar_quran_last_read'
+    QURAN_LAST_READ: 'azkar_quran_last_read',
+    QURAN_READ_HISTORY: 'azkar_quran_read_history'
 };
 
 /** JSON.parse that never throws: corrupted values fall back instead of
@@ -112,6 +114,23 @@ export class WebStorage implements StorageAdapter {
 
     async setFlag(key: string): Promise<void> {
         localStorage.setItem(KEYS.FLAG_PREFIX + key, 'true');
+    }
+
+    // --- Generic kv (session-ish app state; excluded from backups) ---
+
+    async getKv<T>(key: string): Promise<T | null> {
+        return readJson<T | null>(KEYS.KV_PREFIX + key, null);
+    }
+
+    setKv(key: string, value: unknown): Promise<void> {
+        return this.enqueue(async () => {
+            try {
+                localStorage.setItem(KEYS.KV_PREFIX + key, JSON.stringify(value));
+            } catch (e) {
+                console.error('Failed saving kv ' + key + ' (quota?)', e);
+                throw e;
+            }
+        });
     }
 
     // --- Dynamic Content ---
@@ -256,6 +275,21 @@ export class WebStorage implements StorageAdapter {
         });
     }
 
+    getQuranReadHistory(): Promise<QuranReadHistoryEntry[]> {
+        return Promise.resolve(readJson<QuranReadHistoryEntry[]>(KEYS.QURAN_READ_HISTORY, []));
+    }
+
+    saveQuranReadHistory(value: QuranReadHistoryEntry[]): Promise<void> {
+        return this.enqueue(async () => {
+            try {
+                localStorage.setItem(KEYS.QURAN_READ_HISTORY, JSON.stringify(value));
+            } catch (e) {
+                console.error('Failed saving Quran read history', e);
+                throw e;
+            }
+        });
+    }
+
     // --- Stats ---
 
     async getStats(): Promise<UserStats> {
@@ -280,7 +314,7 @@ export class WebStorage implements StorageAdapter {
 
     async exportData(): Promise<string> {
         const prefs = await this.getPreferences();
-        const data = {
+        const payload: BackupPayload = {
             preferences: { ...prefs, apiKey: '' }, // never leak the user's Gemini key into shareable backups
             progress: await this.getProgress(),
             stats: await this.getStats(),
@@ -291,27 +325,41 @@ export class WebStorage implements StorageAdapter {
             hiddenStaticIds: await this.getHiddenZikrIds(),
             quranBookmarks: await this.getQuranBookmarks(),
             quranLastRead: await this.getQuranLastRead(),
-            timestamp: Date.now(),
-            version: 3
         };
-        return JSON.stringify(data, null, 2);
+        return JSON.stringify(envelopePayload(payload, Date.now()), null, 2);
     }
 
     /**
      * Validated restore with rollback.
-     * Semantics (aligned with MobileStorage): a section present in the backup
-     * REPLACES local data wholesale; absent sections leave local data intact.
-     * Nothing is written until validation passes; any write failure restores
-     * the previous values.
+     * `mode` defaults to 'replace' (current behavior): a section present in
+     * the backup REPLACES local data wholesale; absent sections leave local
+     * data intact. 'merge' unions per-id collections with incoming values
+     * winning on collision, and merges object sections key-by-key. Nothing
+     * is written until validation passes; any write failure restores the
+     * previous values.
      */
-    async importData(jsonData: string): Promise<boolean> {
-        let payload;
+    async importData(jsonData: string, opts?: { mode?: 'replace' | 'merge' }): Promise<boolean> {
+        let incoming;
         try {
-            payload = validateBackup(JSON.parse(jsonData));
+            incoming = validateBackup(JSON.parse(jsonData));
         } catch (e) {
             console.error('Import failed validation:', e);
             return false;
         }
+        const mode = opts?.mode ?? 'replace';
+        const existing: BackupPayload = mode === 'merge' ? {
+            preferences: await this.getPreferences(),
+            progress: await this.getProgress(),
+            stats: await this.getStats(),
+            userQuotes: await this.getUserQuotes(),
+            userSalawat: await this.getUserSalawat(),
+            userCategories: await this.getUserCategories(),
+            userAzkar: await this.getUserAzkar(),
+            hiddenStaticIds: await this.getHiddenZikrIds(),
+            quranBookmarks: await this.getQuranBookmarks(),
+            quranLastRead: await this.getQuranLastRead(),
+        } : {};
+        const payload: BackupPayload = mode === 'merge' ? mergePayload(existing, incoming) : incoming;
 
         const touchedKeys: string[] = [KEYS.PREFERENCES, KEYS.PROGRESS];
         if (payload.stats) touchedKeys.push(KEYS.STATS);

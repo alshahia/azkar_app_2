@@ -1,5 +1,5 @@
 
-import { UserPreferences, ProgressState, Quote, Salawat, UserZikr, UserCategory, UserStats, QuranBookmark, QuranLastRead } from '../../types';
+import { UserPreferences, ProgressState, Quote, Salawat, UserZikr, UserCategory, UserStats, QuranBookmark, QuranLastRead, QuranReadHistoryEntry } from '../../types';
 
 export interface StorageAdapter {
     initialize(): Promise<void>;
@@ -47,8 +47,14 @@ export interface StorageAdapter {
     saveStats(stats: UserStats): Promise<void>;
 
     // Data Management
-    exportData(): Promise<string>; // Returns JSON string
-    importData(jsonData: string): Promise<boolean>; // Returns success
+    exportData(): Promise<string>; // Returns JSON string (v2 envelope)
+    /**
+     * Restore from a backup. Accepts either a v2 envelope or a bare legacy
+     * payload (v1..3). `mode` defaults to 'replace' (current behavior).
+     * 'merge' unions per-id collections and merges object sections key-by-key,
+     * with incoming values winning on collision.
+     */
+    importData(jsonData: string, opts?: { mode?: 'replace' | 'merge' }): Promise<boolean>;
 
     // Quran
     getQuranBookmarks(): Promise<QuranBookmark[]>;
@@ -56,7 +62,17 @@ export interface StorageAdapter {
     getQuranLastRead(): Promise<QuranLastRead | null>;
     saveQuranLastRead(value: QuranLastRead | null): Promise<void>;
 
+    // Read history ring buffer (M3-T5). Up to 10 entries, oldest dropped.
+    getQuranReadHistory(): Promise<QuranReadHistoryEntry[]>;
+    saveQuranReadHistory(value: QuranReadHistoryEntry[]): Promise<void>;
+
     // Internal migration flags (one-time data migrations)
     getFlag(key: string): Promise<boolean>;
     setFlag(key: string): Promise<void>;
+
+    // Generic key-value scratch space for session-ish app state (audio
+    // listen position, reciter catalog cache). Deliberately NOT part of
+    // exportData/importData backups.
+    getKv<T>(key: string): Promise<T | null>;
+    setKv(key: string, value: unknown): Promise<void>;
 }

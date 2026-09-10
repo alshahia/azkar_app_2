@@ -15,6 +15,10 @@
 import surahIndex from '../data/static/quran/index.json';
 import juzStarts from '../data/static/quran/juz.json';
 
+// Re-exported so callers that already import the service can also reach the
+// MushafMode type without taking a second import line.
+export type { MushafMode } from '../types';
+
 // Vite splits each surah body and each tafsir payload into its own JS chunk;
 // the user pays the cost only when a surah is actually opened.
 const textLoaders = import.meta.glob<{ s: number; a: AyatRow }>(
@@ -59,26 +63,10 @@ export interface JuzStart {
     ayah: number;
 }
 
-export interface Reciter {
-    id: string;          // identifier expected by cdn.islamic.network
-    name: string;        // Arabic display name
-    style: string;       // short description
-}
-
-// --- Static catalogues ---------------------------------------------------
-
-/**
- * Reciters verified reachable on cdn.islamic.network at the time of audit.
- * Add only after probing https://cdn.islamic.network/quran/audio/128/<id>/1.mp3
- * with HEAD and confirming 200 OK.
- */
-export const RECITERS: Reciter[] = [
-    { id: 'ar.alafasy',      name: 'مشاري العفاسي',         style: 'مرتل' },
-    { id: 'ar.husary',       name: 'محمود خليل الحصري',     style: 'مرتل' },
-    { id: 'ar.minshawi',     name: 'محمد صديق المنشاوي',     style: 'مرتل' },
-    { id: 'ar.hudhaify',     name: 'علي الحذيفي',            style: 'مرتل' },
-    { id: 'ar.mahermuaiqly', name: 'ماهر المعيقلي',          style: 'مرتل' },
-];
+// Reciters moved to data/static/reciters.json (M1-T4). The bundled verified
+// catalog plus the Wi-Fi-gated additive refresh channel live in
+// reciterCatalog.ts (getReciters/getReciter/refreshRecitersIfWifi).
+export type { Reciter } from './reciterCatalog';
 
 export const SURAHS: ReadonlyArray<SurahMeta> = surahIndex as SurahMeta[];
 export const JUZ_STARTS: ReadonlyArray<JuzStart> = juzStarts as JuzStart[];
@@ -144,6 +132,22 @@ export function positionFromGlobal(globalNumber: number): { surah: number; ayah:
         throw new Error('QuranService: global ayah out of range: ' + globalNumber);
     }
     return map[globalNumber - 1];
+}
+
+/** Reverse of positionFromGlobal: (surahId, ayahInSurah) -> global 1..6236.
+ *  Used by the app-level player, which only knows the (surah, ayah) command. */
+export function globalAyahNumber(surahId: number, ayahInSurah: number): number {
+    let offset = 0;
+    for (const s of SURAHS) {
+        if (s.id === surahId) {
+            if (ayahInSurah < 1 || ayahInSurah > s.ayahCount) {
+                throw new Error('QuranService: ayah out of range: ' + surahId + ':' + ayahInSurah);
+            }
+            return offset + ayahInSurah;
+        }
+        offset += s.ayahCount;
+    }
+    throw new Error('QuranService: unknown surah ' + surahId);
 }
 
 // --- Search --------------------------------------------------------------
@@ -240,4 +244,55 @@ export function showsBismillahHeader(surahId: number): boolean {
 /** Total number of ayahs in the Mushaf (6236 for the Hafs reading). */
 export function totalAyat(): number {
     return SURAHS.reduce((sum, s) => sum + s.ayahCount, 0);
+}
+
+/** Total number of Madinah Mushaf pages (604 for the standard Hafs layout). */
+export const TOTAL_MUSHAF_PAGES = 604;
+
+/** Lazy page -> [QuranAyah] index, built once on first call. Walks every
+ *  surah's text row and groups by the `page` field, so lookups are O(1) and
+ *  a page render never has to scan 114 files again. */
+let pageIndex: Map<number, QuranAyah[]> | null = null;
+
+async function buildPageIndex(): Promise<Map<number, QuranAyah[]>> {
+    if (pageIndex) return pageIndex;
+    const idx = new Map<number, QuranAyah[]>();
+    for (const s of SURAHS) {
+        const arr = await loadSurah(s.id);
+        for (const a of arr) {
+            const bucket = idx.get(a.page);
+            if (bucket) bucket.push(a);
+            else idx.set(a.page, [a]);
+        }
+    }
+    pageIndex = idx;
+    return idx;
+}
+
+/** Resets the lazy page index (test-only; production never mutates it). */
+export function _resetPageIndexForTests(): void {
+    pageIndex = null;
+}
+
+/** All ayahs that share the given Madinah Mushaf page number, ordered by
+ *  surah/ayah. Returns [] if `page` is out of range. */
+export async function getPageAyahs(page: number): Promise<QuranAyah[]> {
+    if (page < 1 || page > TOTAL_MUSHAF_PAGES) return [];
+    const idx = await buildPageIndex();
+    return idx.get(page) ?? [];
+}
+
+/** Surah ids that appear on a given page, in order, deduped.
+ *  Used to draw the page footer ("العصر | 601 | التين") and to detect
+ *  mid-page surah changes that need a Bismillah + ornament header. */
+export function getPageSurahIds(ayahs: QuranAyah[]): number[] {
+    const seen = new Set<number>();
+    const out: number[] = [];
+    for (const a of ayahs) {
+        if (!seen.has(a.surahId)) {
+            seen.add(a.surahId);
+            out.push(a.surahId);
+        }
+    }
+    return out;
 }

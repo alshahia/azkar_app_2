@@ -1,8 +1,8 @@
 
 import { StorageAdapter } from './interface';
-import { UserPreferences, ProgressState, Quote, Salawat, UserZikr, UserCategory, UserStats, QuranBookmark, QuranLastRead } from '../../types';
+import { UserPreferences, ProgressState, Quote, Salawat, UserZikr, UserCategory, UserStats, QuranBookmark, QuranLastRead, QuranReadHistoryEntry } from '../../types';
 import { defaultPreferences, defaultStats } from './defaults';
-import { validateBackup, normalizeUserZikr } from '../backup';
+import { validateBackup, normalizeUserZikr, envelopePayload, mergePayload, type BackupPayload } from '../backup';
 import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from '@capacitor-community/sqlite';
 import { secureKeyStore } from '../../services/secureKey';
 
@@ -14,6 +14,7 @@ export class MobileStorage implements StorageAdapter {
     private static readonly KEYS = {
         QURAN_BOOKMARKS: 'azkar_quran_bookmarks',
         QURAN_LAST_READ: 'azkar_quran_last_read',
+        QURAN_READ_HISTORY: 'azkar_quran_read_history',
     };
 
     constructor() {
@@ -226,6 +227,16 @@ export class MobileStorage implements StorageAdapter {
         await this.setKV('flag:' + key, true);
     }
 
+    // --- Generic kv (session-ish app state; excluded from backups) ---
+
+    async getKv<T>(key: string): Promise<T | null> {
+        return this.getKV<T>('kv:' + key);
+    }
+
+    async setKv(key: string, value: unknown): Promise<void> {
+        await this.setKV('kv:' + key, value);
+    }
+
     // --- Dynamic Content ---
 
     async getUserQuotes(): Promise<Quote[]> {
@@ -390,11 +401,19 @@ export class MobileStorage implements StorageAdapter {
         await this.setKV(MobileStorage.KEYS.QURAN_LAST_READ, value);
     }
 
+    async getQuranReadHistory(): Promise<QuranReadHistoryEntry[]> {
+        return (await this.getKV<QuranReadHistoryEntry[]>(MobileStorage.KEYS.QURAN_READ_HISTORY)) ?? [];
+    }
+
+    async saveQuranReadHistory(value: QuranReadHistoryEntry[]): Promise<void> {
+        await this.setKV(MobileStorage.KEYS.QURAN_READ_HISTORY, value);
+    }
+
 // --- Data Management ---
 
     async exportData(): Promise<string> {
         const prefs = await this.getPreferences();
-        const data = {
+        const payload: BackupPayload = {
             preferences: { ...prefs, apiKey: '' }, // never leak the user's Gemini key into shareable backups
             progress: await this.getProgress(),
             stats: await this.getStats(),
@@ -405,26 +424,43 @@ export class MobileStorage implements StorageAdapter {
             hiddenStaticIds: await this.getHiddenZikrIds(),
             quranBookmarks: await this.getQuranBookmarks(),
             quranLastRead: await this.getQuranLastRead(),
-            timestamp: Date.now(),
-            version: 3
         };
-        return JSON.stringify(data, null, 2);
+        return JSON.stringify(envelopePayload(payload, Date.now()), null, 2);
     }
 
     /**
      * Validated restore inside a single SQL transaction.
-     * Semantics aligned with WebStorage: sections PRESENT in the backup replace
-     * local data wholesale; absent sections are left untouched. Any failure
-     * rolls the whole transaction back - previous data survives intact.
+     * `mode` defaults to 'replace' (current behavior): sections present in
+     * the backup replace local data wholesale, absent sections are left
+     * untouched. 'merge' unions per-id collections with incoming values
+     * winning on collision, and merges object sections key-by-key. Any
+     * failure rolls the whole transaction back - previous data survives.
      */
-    async importData(jsonData: string): Promise<boolean> {
-        let payload;
+    async importData(jsonData: string, opts?: { mode?: 'replace' | 'merge' }): Promise<boolean> {
+        let incoming;
         try {
-            payload = validateBackup(JSON.parse(jsonData));
+            incoming = validateBackup(JSON.parse(jsonData));
         } catch (e) {
             console.error('Import failed validation:', e);
             return false;
         }
+        const mode = opts?.mode ?? 'replace';
+        // Read the current payload so merge can union with it. For 'replace'
+        // mode the read is wasted but the alternative (branching every
+        // section write) is harder to keep aligned across adapters.
+        const existing: BackupPayload = mode === 'merge' ? {
+            preferences: await this.getPreferences(),
+            progress: await this.getProgress(),
+            stats: await this.getStats(),
+            userQuotes: await this.getUserQuotes(),
+            userSalawat: await this.getUserSalawat(),
+            userCategories: await this.getUserCategories(),
+            userAzkar: await this.getUserAzkar(),
+            hiddenStaticIds: await this.getHiddenZikrIds(),
+            quranBookmarks: await this.getQuranBookmarks(),
+            quranLastRead: await this.getQuranLastRead(),
+        } : {};
+        const payload: BackupPayload = mode === 'merge' ? mergePayload(existing, incoming) : incoming;
 
         const db = await this.ensureDb();
         await db.beginTransaction();
@@ -435,29 +471,37 @@ export class MobileStorage implements StorageAdapter {
             if (payload.progress) await this.saveProgress(payload.progress);
             if (payload.stats) await this.saveStats({ ...defaultStats, ...payload.stats });
 
-            // Replace only the sections the backup actually contains.
+            // 'replace' path: clear + insert. 'merge' path: skip the DELETE so
+            // local-only rows survive (addX methods use INSERT OR IGNORE / OR
+            // REPLACE, which already dedupe per primary key).
             if (payload.userQuotes) {
-                await db.execute('DELETE FROM user_quotes');
+                if (mode === 'replace') await db.execute('DELETE FROM user_quotes');
                 for (const q of payload.userQuotes) await this.addUserQuote(q);
             }
             if (payload.userSalawat) {
-                await db.execute('DELETE FROM user_salawat');
+                if (mode === 'replace') await db.execute('DELETE FROM user_salawat');
                 for (const s of payload.userSalawat) await this.addUserSalawat(s);
             }
             if (payload.userCategories) {
-                await db.execute('DELETE FROM user_categories');
+                if (mode === 'replace') await db.execute('DELETE FROM user_categories');
                 for (const c of payload.userCategories) await this.addUserCategory(c);
             }
             if (payload.userAzkar) {
-                await db.execute('DELETE FROM user_azkar');
+                if (mode === 'replace') await db.execute('DELETE FROM user_azkar');
                 for (const raw of payload.userAzkar) {
                     const z = normalizeUserZikr(raw);
                     await this.addUserZikr(z);
                 }
             }
             if (payload.hiddenStaticIds) {
-                await db.execute('DELETE FROM hidden_static_azkar');
+                if (mode === 'replace') await db.execute('DELETE FROM hidden_static_azkar');
                 for (const id of payload.hiddenStaticIds) await db.run('INSERT OR IGNORE INTO hidden_static_azkar (id) VALUES (?)', [id]);
+            }
+            if (payload.quranBookmarks) {
+                await this.saveQuranBookmarks(payload.quranBookmarks);
+            }
+            if (payload.quranLastRead !== undefined) {
+                await this.saveQuranLastRead(payload.quranLastRead);
             }
 
             await db.commitTransaction();
