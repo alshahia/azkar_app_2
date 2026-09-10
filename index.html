@@ -1,20 +1,26 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Azkar App</title>
-    <meta name="theme-color" content="#022c22">
-    <link rel="manifest" href="/manifest.json">
-    <link rel="apple-touch-icon" href="/images/icon-192.png">
-    <link rel="icon" type="image/png" href="/images/icon-192.png">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+        <title>Azkar App</title>
+        <meta name="theme-color" content="#022c22">
+        <link rel="manifest" href="/manifest.json">
+        <link rel="apple-touch-icon" href="/images/icon-192.png">
+        <link rel="icon" type="image/png" href="/images/icon-192.png">
     
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Amiri+Quran&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Scheherazade+New:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/index.css">
+        <!-- Mushaf Uthmani fonts: bundled locally under public/fonts so they
+             work offline. preload tells the browser to start the request now,
+             ahead of the CSS being parsed. crossorigin is required because
+             fonts are CORS-fetched even when same-origin. -->
+        <link rel="preload" as="font" type="font/ttf" href="/fonts/AmiriQuran-Regular.ttf" crossorigin>
+        <link rel="preload" as="font" type="font/ttf" href="/fonts/AmiriQuranColored-Regular.ttf" crossorigin>
+    
+        <!-- Google Fonts -->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Amiri+Quran&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Scheherazade+New:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/index.css">
 </head>
 <body>
     <div id="root"></div>

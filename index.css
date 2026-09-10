@@ -3,6 +3,34 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Self-hosted Uthmani fonts. Mirrors the printed Mushaf (Amiri Quran is the
+   open-source companion to the Amiri Naskh family, tuned for Quranic marks).
+   The Colored variant embeds Tajweed rules as OpenType color glyphs - just
+   switching font-family paints the rule without per-character metadata. */
+@font-face {
+  font-family: 'Amiri Quran';
+  /* local() first: if the user already has the same Uthmani font installed
+     (Linux distros, mobile OS app stores that ship it) we skip the network.
+     The url() fallback then guarantees first-launch users get it from disk. */
+  src: local('Amiri Quran'),
+       url('/fonts/AmiriQuran-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  /* block: keep the text invisible until this exact font is available, so the
+     Mushaf never flashes the wrong glyph shapes. The Application Shell text
+     (Plus Jakarta Sans / Amiri) is loaded separately through Google Fonts and
+     stays on its own default display strategy. */
+  font-display: block;
+}
+@font-face {
+  font-family: 'Amiri Quran Colored';
+  src: local('Amiri Quran Colored'),
+       url('/fonts/AmiriQuranColored-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
 body {
   font-family: 'Plus Jakarta Sans', sans-serif;
   -webkit-tap-highlight-color: transparent;

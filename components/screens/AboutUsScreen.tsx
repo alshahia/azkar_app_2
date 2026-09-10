@@ -3,6 +3,7 @@ import React from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from '../../hooks/useTranslation';
+import { CONTENT_SOURCES } from '../../data/static/licenses';
 
 const AboutUsScreen: React.FC = () => {
     const { navigate } = useAppContext();
@@ -30,6 +31,34 @@ const AboutUsScreen: React.FC = () => {
                     </p>
                     <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                         يتميز التطبيق بإمكانية العمل بدون إنترنت، الوضع الليلي المريح للعين، وتذكيرات ذكية لمساعدتك على الاستمرار.
+                    </p>
+                </div>
+
+                {/* Attribution - data-driven from data/static/licenses.ts */}
+                <div className="bg-white dark:bg-[#1A3129] p-6 rounded-xl shadow-sm dark:shadow-none border border-gray-100 dark:border-none text-right">
+                    <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4">المصادر والتراخيص</h3>
+                    <ul className="space-y-4">
+                        {CONTENT_SOURCES.map((source) => (
+                            <li key={source.id} className="text-sm">
+                                <div className="flex items-start justify-between gap-2">
+                                    <a
+                                        href={source.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="font-bold text-primary-600 dark:text-primary-400 hover:underline"
+                                    >
+                                        {source.name}
+                                    </a>
+                                    <span className="shrink-0 text-[10px] bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-full">
+                                        {source.license}
+                                    </span>
+                                </div>
+                                <p className="text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{source.usage}</p>
+                            </li>
+                        ))}
+                    </ul>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-4 leading-relaxed text-center">
+                        جميع المحتويات تُستخدم لأغراض غير تجارية مع نسبة المصدر، وجزى الله خيراً جميع من ساهم في إتاحتها.
                     </p>
                 </div>
 

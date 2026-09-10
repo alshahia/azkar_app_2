@@ -23,11 +23,15 @@ dist-ssr
 *.sln
 *.sw?
 
+# Research: cloned reference repos (large, external code; do not commit)
+_research/repos/
+
 # AI IDE / agent config directories (machine-specific)
 .agent/
 .claude/
 .gemini/
 .hermes/
+.impeccable/
 .kiro/
 .opencode/
 .pi/

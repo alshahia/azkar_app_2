@@ -269,6 +269,8 @@ const ZikrCard: React.FC<ZikrCardProps> = ({
                 isOpen={isExplainModalOpen}
                 onClose={() => setExplainModalOpen(false)}
                 zikrText={zikr.arabic}
+                benefit={zikr.benefit}
+                reference={zikr.reference}
             />
 
             {/* ZikrCard actions half-sheet. Mirrors the BookmarkSheet pattern

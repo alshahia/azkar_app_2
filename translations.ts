@@ -87,6 +87,36 @@ export const translations = {
     success_restore_complete: 'تم استعادة البيانات بنجاح. سيتم إعادة تحميل التطبيق.',
     confirm_reset_counter: 'هل تريد تصفير العداد؟',
     confirm_restore_data: 'هل أنت متأكد؟ سيؤدي هذا لاستبدال جميع بياناتك الحالية بالبيانات الموجودة في الملف.',
+    restore_preview_title: 'معاينة ملف النسخة الاحتياطية',
+    restore_preview_invalid: 'ملف النسخة الاحتياطية غير صالح أو تالف.',
+    restore_preview_section_preferences: 'التفضيلات',
+    restore_preview_section_progress: 'التقدم',
+    restore_preview_section_stats: 'الإحصائيات',
+    restore_preview_section_userQuotes: 'الاقتباسات المخصصة',
+    restore_preview_section_userSalawat: 'الصلوات المخصصة',
+    restore_preview_section_userCategories: 'الفئات المخصصة',
+    restore_preview_section_userAzkar: 'الأذكار المخصصة',
+    restore_preview_section_hiddenStaticIds: 'العناصر المخفية',
+    restore_preview_section_quranBookmarks: 'علامات القرآن',
+    restore_preview_section_quranLastRead: 'آخر قراءة',
+    restore_preview_envelope_label: 'ملف v2',
+    restore_preview_legacy_label: 'ملف قديم',
+    restore_preview_choice_merge: 'دمج',
+    restore_preview_choice_replace: 'استبدال',
+    restore_preview_choice_cancel: 'إلغاء',
+    restore_preview_merge_description: 'دمج البيانات مع الحالية (الموجود مسبقاً يبقى، الملف يضيف/يحدّث).',
+    restore_preview_replace_description: 'استبدال جميع البيانات الحالية بمحتوى الملف.',
+    success_restore_merged: 'تم دمج البيانات بنجاح. سيتم إعادة تحميل التطبيق.',
+
+    // Search Screen (M2-T4)
+    search_placeholder_quran_azkar: 'ابحث في القرآن والأذكار...',
+    search_tab_all: 'الكل',
+    search_tab_quran: 'القرآن',
+    search_tab_categories: 'الفئات',
+    search_tab_azkar: 'الأذكار',
+    search_empty_hint: 'ابدأ الكتابة للبحث',
+    search_empty_results: 'لا توجد نتائج لـ ' + String.fromCharCode(34) + '{query}' + String.fromCharCode(34),
+    search_quran_loading: 'جاري تحضير فهرس البحث...',
 
     // Categories Screen
     categories_title: 'فئات الأذكار',
@@ -187,6 +217,16 @@ export const translations = {
     quran_sajda_recommended: 'مندوبة',
     quran_sajda_obligatory: 'واجبة',
 
+    // Mushaf page mode
+    quran_mushaf_open: 'افتح المصحف صفحة بصفحة',
+    quran_mushaf_open_desc: 'عرض على طريقة المصحف المطبوع مع ترقيم الصفحات',
+    quran_mushaf_prev: 'السابقة',
+    quran_mushaf_next: 'التالية',
+    quran_mushaf_toggle_mode: 'تبديل النمط',
+    quran_mushaf_toggle_tajweed: 'تلوين التجويد',
+    quran_mushaf_modern: 'العرض الحديث',
+    quran_mushaf_pixel: 'عرض المصحف المطبوع',
+
     // Offline audio cache
     quran_close: 'إغلاق',
     quran_audio_offline_title: 'التلاوة دون اتصال',
@@ -202,5 +242,13 @@ export const translations = {
     quran_audio_clear_cache: 'إفراغ الذاكرة المؤقتة',
     quran_audio_clear_confirm: 'هل تريد إفراغ كل التلاوات المخزّنة؟',
     quran_audio_autocache_note: 'تُحفظ التلاوة تلقائيًا عند تشغيلها لأول مرة ولا تحتاج لاتصال لاحقًا.',
+    quran_audio_pause_download: 'إيقاف مؤقت',
+    quran_audio_resume_download: 'متابعة التنزيل',
+    quran_audio_paused_note: 'توقف التنزيل مؤقتًا — سيُكمل من حيث توقف.',
+    quran_audio_storage_title: 'التلاوات المحفوظة',
+    quran_audio_delete_reciter: 'حذف ملفات هذا القارئ',
+    quran_audio_delete_reciter_confirm: 'هل تريد حذف كل ملفات هذا القارئ؟',
+    home_continue_listening: 'متابعة الاستماع',
+    home_ayah_word: 'آية',
   }
 };

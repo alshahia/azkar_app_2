@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # full history so the lint ratchet can diff against the base branch
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Ratchet gate (user decision): only changed files must be clean.
+      - name: Lint changed files
+        run: npm run lint:changed -- "${{ github.event.pull_request.base.ref || 'main' }}"
+
+      # Advisory: full-repo lint result stays visible without blocking.
+      - name: Lint (full repo, advisory)
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Unit tests
+        run: npm run test
+
+      - name: Typecheck + production build
+        run: npm run build

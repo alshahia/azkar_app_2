@@ -9,9 +9,12 @@ interface ExplainZikrModalProps {
     isOpen: boolean;
     onClose: () => void;
     zikrText: string;
+    /** Bundled benefit/reference passed through so the LLM prompt stays grounded. */
+    benefit?: string | null;
+    reference?: string | null;
 }
 
-const ExplainZikrModal: React.FC<ExplainZikrModalProps> = ({ isOpen, onClose, zikrText }) => {
+const ExplainZikrModal: React.FC<ExplainZikrModalProps> = ({ isOpen, onClose, zikrText, benefit, reference }) => {
     const { apiKey, darkMode } = useAppContext();
     const [explanation, setExplanation] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
@@ -38,7 +41,7 @@ const ExplainZikrModal: React.FC<ExplainZikrModalProps> = ({ isOpen, onClose, zi
             setExplanation(null);
             setError(null);
         }
-    }, [isOpen, zikrText]);
+    }, [isOpen, zikrText, benefit, reference]);
 
     const fetchExplanation = async () => {
         const requestId = ++requestIdRef.current;
@@ -58,7 +61,7 @@ const ExplainZikrModal: React.FC<ExplainZikrModalProps> = ({ isOpen, onClose, zi
             );
 
             const result = await Promise.race([
-                GeminiService.explainZikr(zikrText, effectiveKey),
+                GeminiService.explainZikr(zikrText, effectiveKey, { benefit, reference }),
                 timeoutPromise
             ]);
 

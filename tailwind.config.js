@@ -44,6 +44,10 @@ export default {
         sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         serif: ['"Amiri"', 'ui-serif', 'Georgia', 'serif'],
         quran: ['"Amiri Quran"', '"Scheherazade New"', '"Amiri"', 'serif'],
+        // Tajweed-colored variant of the same Uthmani font. Switching to this
+        // family on the same Uthmani text paints the embedded Tajweed rules
+        // via OpenType color glyphs (no per-character markup needed).
+        'quran-colored': ['"Amiri Quran Colored"', '"Amiri Quran"', '"Scheherazade New"', '"Amiri"', 'serif'],
       },
       // One-shot "gentle bounce" promised by DESIGN.md (Components → Completion Card → Hero element).
       // Replaces the 800ms spring overshoot reserved for the larger completion transition;
