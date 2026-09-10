@@ -70,7 +70,8 @@ export type Screen =
   | 'calendar'
   | 'shareEditor'
   | 'quran'
-  | 'surahReader';
+  | 'surahReader'
+  | 'mushafPage';
 
 export type ProgressState = {
     // Keys stringify on every JSON/storage round-trip, so the signature is
@@ -82,6 +83,10 @@ export type AppLanguage = 'ar';
 export type AppTheme = 'emerald' | 'blue' | 'rose' | 'amber' | 'purple' | 'cyan';
 
 export type HomeLayout = 'focus' | 'stream' | 'dashboard' | 'simple';
+
+/** Mushaf page-mode renderer. 'modern' = page-grouped flow using the app's
+ *  own cards; 'pixel' = the printed-Mushaf look from @tarekeldeeb/quran-madina-react. */
+export type MushafMode = 'modern' | 'pixel';
 
 export interface CustomReminder {
     id: number; // Unique ID for notification scheduling
@@ -132,6 +137,34 @@ export interface UserPreferences {
     location?: LocationCoordinates | null;
     calculationMethod?: string; // 'MuslimWorldLeague' | 'Egyptian' etc.
     prayerNotificationsEnabled: boolean;
+
+    // Mushaf page-mode reader preferences
+    mushafMode?: MushafMode;   // default 'modern'
+    mushafTajweed?: boolean;   // swap font-quran -> font-quran-colored
+
+    // Tafsir switching (M3-T4). Default 'muyassar'; the registry lists every
+    // bundled source. Adding a new tafsir is a content-only change.
+    tafsirId?: string;
+
+    // Keep the screen on while the SurahReader is open (M4-T5).
+    // Default true; the hook is a silent no-op when the browser API is
+    // missing (older WebViews / pre-iOS-16.4 PWA).
+    wakeLockEnabled?: boolean;
+
+    // Verse-of-the-Day (M4-T1). Default true so the daily-reminder flow
+    // starts producing value immediately; the user can disable in
+    // NotificationSettingsScreen.
+    votdEnabled?: boolean;
+    votdTime?: string; // "hh:mm A", defaults to "06:00 AM"
+
+    // Highest changelog version the user has dismissed (M4-T4). When the
+    // app version exceeds this, the What's-new modal re-opens on launch.
+    lastSeenVersion?: string;
+
+    // Active UI locale (M5-T6). Today only 'ar' is shipped; the field is
+    // here so future locales can drop in without a schema migration. The
+    // adapter reads this on hydrate to resolve locale-aware defaults.
+    currentLocale?: import('./data/storage/locale').SupportedLocale;
 }
 
 export interface AppContextType {
@@ -203,6 +236,33 @@ export interface AppContextType {
   quranLastRead: QuranLastRead | null;
   setQuranLastRead: (l: QuranLastRead) => Promise<void>;
   clearQuranLastRead: () => Promise<void>;
+  mushafMode: MushafMode;
+  setMushafMode: (m: MushafMode) => Promise<void>;
+  mushafTajweed: boolean;
+  setMushafTajweed: (v: boolean) => Promise<void>;
+
+  // Tafsir preference (M3-T4). Drives the chip picker in TafsirSheet.
+  tafsirId: string;
+  setTafsirId: (id: string) => Promise<void>;
+
+  // Keep the screen on while the reader is open (M4-T5). Silently
+  // no-ops when the browser API is missing; defaults to true so users
+  // get the calmer reading experience out of the box.
+  wakeLockEnabled: boolean;
+  setWakeLockEnabled: (v: boolean) => void;
+
+  // Verse-of-the-Day (M4-T1). The notification is re-scheduled whenever
+  // enabled/time flips, and on app foreground. Defaults to enabled at
+  // 06:00 local.
+  votdEnabled: boolean;
+  setVotdEnabled: (v: boolean) => void;
+  votdTime: string;
+  setVotdTime: (t: string) => void;
+
+  // Read history (M3-T5). The reader pushes on unmount; the index screen
+  // renders the most recent N.
+  quranReadHistory: QuranReadHistoryEntry[];
+  appendQuranHistory: (entry: QuranReadHistoryEntry) => void;
 }
 
 export interface QuranBookmark {
@@ -215,3 +275,16 @@ export interface QuranLastRead {
   surah: number;
   ayah: number;
 }
+
+/**
+ * One reading session entry. Pushed on SurahReader unmount so the user
+ * has a quick way to jump back to where they were, even weeks later.
+ * Capped at 10 entries (ring buffer, oldest dropped).
+ */
+export interface QuranReadHistoryEntry {
+  surah: number;
+  ayah: number;
+  ts: number;
+}
+
+export const QURAN_READ_HISTORY_MAX = 10;

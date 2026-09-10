@@ -1,6 +1,10 @@
 
 import type { UserPreferences, UserStats } from '../../types';
 
+/** Arabic default preferences. The locale resolver in `./locale.ts`
+ *  re-exports these as the fallback for every supported locale today;
+ *  future locales can override individual fields without touching
+ *  every call-site. */
 export const defaultPreferences: UserPreferences = {
     darkMode: true,
     theme: 'emerald',
@@ -25,7 +29,14 @@ export const defaultPreferences: UserPreferences = {
     customReminders: [],
     location: null,
     calculationMethod: 'MuslimWorldLeague',
-    prayerNotificationsEnabled: true
+    prayerNotificationsEnabled: true,
+    mushafMode: 'modern',
+    mushafTajweed: false,
+    tafsirId: 'muyassar',
+    wakeLockEnabled: true,
+    votdEnabled: true,
+    votdTime: '06:00 AM',
+    currentLocale: 'ar'
 };
 
 export const defaultStats: UserStats = {

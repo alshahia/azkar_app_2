@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { flushSync } from 'react-dom';
-import type { Screen, ProgressState, AppLanguage, HomeLayout, UserPreferences, Category, UserZikr, CustomReminder, LocationCoordinates, UserStats, AppTheme, QuranBookmark, QuranLastRead } from './types';
+import type { Screen, ProgressState, AppLanguage, HomeLayout, UserPreferences, Category, UserZikr, CustomReminder, LocationCoordinates, UserStats, AppTheme, QuranBookmark, QuranLastRead, MushafMode, QuranReadHistoryEntry } from './types';
 import { AppContext } from './context/AppContext';
 import MainLayout from './components/layout/MainLayout';
 import OfflineIndicator from './components/common/OfflineIndicator';
@@ -11,7 +11,11 @@ import { getStorage } from './data/storage';
 import { runStorageMigrations } from './data/migrations';
 import { azkarRepository } from './data/azkarRepository';
 import { defaultPreferences, defaultStats } from './data/storage/defaults';
+import { getDefaultPreferences } from './data/storage/locale';
+import { DEFAULT_TAFSIR_ID } from './services/tafsirRegistry';
 import { computeStreakOutcome, resolveTimezone, type StreakOutcome } from './data/streak';
+import { pushQuranHistory } from './data/quranHistory';
+import { compareSemver } from './utils/changelog';
 import { NotificationService } from './services/NotificationService';
 import { PrayerTimesService } from './services/PrayerTimesService';
 import { HapticService } from './services/HapticService';
@@ -24,6 +28,10 @@ import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import ScreenErrorBoundary from './components/common/ScreenErrorBoundary';
 import { ToastProvider } from './components/common/Toast';
 import { secureKeyStore } from './services/secureKey';
+import { QuranAudioProvider } from './context/QuranAudioContext';
+import { RepeatSettingsProvider } from './context/RepeatSettingsContext';
+import AudioMiniPlayer from './components/quran/AudioMiniPlayer';
+import WhatsNewModal from './components/common/WhatsNewModal';
 
 // Lazy Load Screens
 const WelcomeScreen = React.lazy(() => import('./components/onboarding/WelcomeScreen'));
@@ -50,6 +58,7 @@ const HijriCalendarScreen = React.lazy(() => import('./components/screens/HijriC
 const ShareEditorScreen = React.lazy(() => import('./components/screens/ShareEditorScreen')); 
 const QuranScreen = React.lazy(() => import('./components/screens/QuranScreen'));
 const SurahReaderScreen = React.lazy(() => import('./components/screens/SurahReaderScreen'));
+const MushafPageScreen = React.lazy(() => import('./components/screens/MushafPageScreen'));
 
 const LoadingFallback = () => (
     <div className="h-full w-full flex items-center justify-center bg-sand-50 dark:bg-midnight-950">
@@ -125,6 +134,15 @@ const App: React.FC = () => {
     // Quran state
     const [quranBookmarks, setQuranBookmarks] = useState<QuranBookmark[]>([]);
     const [quranLastRead, setQuranLastReadState] = useState<QuranLastRead | null>(null);
+    const [mushafMode, setMushafModeState] = useState<MushafMode>(defaultPreferences.mushafMode ?? 'modern');
+    const [mushafTajweed, setMushafTajweedState] = useState<boolean>(defaultPreferences.mushafTajweed ?? false);
+    const [tafsirId, setTafsirIdState] = useState<string>(defaultPreferences.tafsirId ?? DEFAULT_TAFSIR_ID);
+    const [wakeLockEnabled, setWakeLockEnabledState] = useState<boolean>(defaultPreferences.wakeLockEnabled ?? true);
+    const [votdEnabled, setVotdEnabledState] = useState<boolean>(defaultPreferences.votdEnabled ?? true);
+    const [votdTime, setVotdTimeState] = useState<string>(defaultPreferences.votdTime ?? '06:00 AM');
+    const [lastSeenVersion, setLastSeenVersionState] = useState<string | null>(null);
+    const [whatsNewOpen, setWhatsNewOpen] = useState<boolean>(false);
+    const [quranReadHistory, setQuranReadHistoryState] = useState<QuranReadHistoryEntry[]>([]);
 
     const storage = getStorage();
 
@@ -154,36 +172,49 @@ const App: React.FC = () => {
                 const onboardingDone = await storage.isOnboardingComplete();
                 const quranMarks = await storage.getQuranBookmarks();
                 const quranLast = await storage.getQuranLastRead();
-                
+
+                // M5-T6: resolve locale-aware defaults ONCE from the stored
+                // currentLocale (or Arabic fallback). Future locales add a
+                // case to getDefaultPreferences without touching call-sites.
+                const localeDefaults = getDefaultPreferences(prefs.currentLocale);
+
                 await refreshData();
 
                 setFavorites(prefs.favorites);
                 setDarkMode(prefs.darkMode);
-                setTheme(prefs.theme || 'emerald');
+                setTheme(prefs.theme || localeDefaults.theme);
                 setNotifications(prefs.notifications);
-                setMorningReminderEnabled(prefs.morningReminderEnabled ?? defaultPreferences.morningReminderEnabled);
-                setMorningReminderTime(prefs.morningReminderTime ?? defaultPreferences.morningReminderTime);
-                setEveningReminderEnabled(prefs.eveningReminderEnabled ?? defaultPreferences.eveningReminderEnabled);
-                setEveningReminderTime(prefs.eveningReminderTime ?? defaultPreferences.eveningReminderTime);
+                setMorningReminderEnabled(prefs.morningReminderEnabled ?? localeDefaults.morningReminderEnabled);
+                setMorningReminderTime(prefs.morningReminderTime ?? localeDefaults.morningReminderTime);
+                setEveningReminderEnabled(prefs.eveningReminderEnabled ?? localeDefaults.eveningReminderEnabled);
+                setEveningReminderTime(prefs.eveningReminderTime ?? localeDefaults.eveningReminderTime);
                 setFontSize(prefs.fontSize);
                 setLanguage(prefs.language);
                 setHomeLayout(prefs.homeLayout);
                 // apiKey is persisted in the platform secure store, not in prefs.
                 setApiKey(await secureKeyStore.get());
-                setVoiceName(prefs.voiceName || defaultPreferences.voiceName);
-                setAudioAutoSave(prefs.audioAutoSave ?? defaultPreferences.audioAutoSave);
-                setAudioLoopDefault(prefs.audioLoopDefault ?? defaultPreferences.audioLoopDefault);
-                setHapticsEnabled(prefs.hapticsEnabled ?? defaultPreferences.hapticsEnabled);
+                setVoiceName(prefs.voiceName || localeDefaults.voiceName);
+                setAudioAutoSave(prefs.audioAutoSave ?? localeDefaults.audioAutoSave);
+                setAudioLoopDefault(prefs.audioLoopDefault ?? localeDefaults.audioLoopDefault);
+                setHapticsEnabled(prefs.hapticsEnabled ?? localeDefaults.hapticsEnabled);
                 setCustomReminders(prefs.customReminders || []);
                 setLocation(prefs.location || null);
-                setPrayerNotificationsEnabled(prefs.prayerNotificationsEnabled ?? defaultPreferences.prayerNotificationsEnabled);
+                setPrayerNotificationsEnabled(prefs.prayerNotificationsEnabled ?? localeDefaults.prayerNotificationsEnabled);
                 setProgress(prog);
                 setStats(userStats);
                 setQuranBookmarks(quranMarks);
                 setQuranLastReadState(quranLast);
+                setMushafModeState(prefs.mushafMode ?? localeDefaults.mushafMode ?? 'modern');
+                setMushafTajweedState(prefs.mushafTajweed ?? localeDefaults.mushafTajweed ?? false);
+                setTafsirIdState(prefs.tafsirId ?? localeDefaults.tafsirId ?? DEFAULT_TAFSIR_ID);
+                setWakeLockEnabledState(prefs.wakeLockEnabled !== undefined ? prefs.wakeLockEnabled : (localeDefaults.wakeLockEnabled !== undefined ? localeDefaults.wakeLockEnabled : true));
+                setVotdEnabledState(prefs.votdEnabled !== undefined ? prefs.votdEnabled : (localeDefaults.votdEnabled !== undefined ? localeDefaults.votdEnabled : true));
+                setVotdTimeState(prefs.votdTime ?? (localeDefaults.votdTime ?? '06:00 AM'));
+                setLastSeenVersionState(prefs.lastSeenVersion ?? null);
+                setQuranReadHistoryState(await storage.getQuranReadHistory().catch(() => []));
 
                 // Initialize Haptic Service
-                HapticService.setEnabled(prefs.hapticsEnabled ?? defaultPreferences.hapticsEnabled);
+                HapticService.setEnabled(prefs.hapticsEnabled ?? localeDefaults.hapticsEnabled);
                 
                 if (onboardingDone) {
                     setScreen('home');
@@ -218,14 +249,21 @@ const App: React.FC = () => {
                 hapticsEnabled,
                 customReminders,
                 location,
-                prayerNotificationsEnabled
+                prayerNotificationsEnabled,
+                mushafMode,
+                mushafTajweed,
+                tafsirId,
+                wakeLockEnabled,
+                votdEnabled,
+                votdTime,
+                lastSeenVersion: lastSeenVersion ?? undefined
             };
             storage.savePreferences(prefs);
 
             // Sync Haptic Service
             HapticService.setEnabled(hapticsEnabled);
         }
-    }, [darkMode, theme, notifications, morningReminderEnabled, morningReminderTime, eveningReminderEnabled, eveningReminderTime, fontSize, favorites, language, homeLayout, voiceName, audioAutoSave, audioLoopDefault, hapticsEnabled, customReminders, location, prayerNotificationsEnabled, isLoading]);
+    }, [darkMode, theme, notifications, morningReminderEnabled, morningReminderTime, eveningReminderEnabled, eveningReminderTime, fontSize, favorites, language, homeLayout, voiceName, audioAutoSave, audioLoopDefault, hapticsEnabled, customReminders, location, prayerNotificationsEnabled, mushafMode, mushafTajweed, tafsirId, wakeLockEnabled, votdEnabled, votdTime, lastSeenVersion, isLoading]);
 
     // apiKey is persisted in the platform secure store on every change.
     // Skipped while still loading so an empty initial state doesn't clobber
@@ -275,6 +313,11 @@ const App: React.FC = () => {
                 const extra = notification.notification.extra;
                 if (extra?.type === 'prayer') {
                     navigate('prayerTimes');
+                } else if (extra?.type === 'votd') {
+                    // Deep-link straight into the surah reader at the VOTD
+                    // ayah. The reader scrolls to the ayah on mount when
+                    // params.ayah is set.
+                    navigate('surahReader', { surahId: extra.surah, ayah: extra.ayah });
                 } else if (extra?.categoryId) {
                     navigate('azkarList', { categoryId: extra.categoryId });
                 } else {
@@ -393,7 +436,14 @@ const App: React.FC = () => {
         } else {
             await NotificationService.cancelPrayerReminders();
         }
-    }, [morningReminderEnabled, morningReminderTime, eveningReminderEnabled, eveningReminderTime, customReminders, prayerNotificationsEnabled, location]);
+
+        if (votdEnabled) {
+            const { hours, minutes } = parseTime(votdTime);
+            await NotificationService.scheduleVotd(hours, minutes);
+        } else {
+            await NotificationService.cancelVotd();
+        }
+    }, [morningReminderEnabled, morningReminderTime, eveningReminderEnabled, eveningReminderTime, customReminders, prayerNotificationsEnabled, location, votdEnabled, votdTime]);
 
     // Restore and Sync Notifications when preferences change
     useEffect(() => {
@@ -556,6 +606,64 @@ const App: React.FC = () => {
             return null;
         });
     };
+    const setMushafMode = async (m: MushafMode) => {
+        setMushafModeState(prev => prev === m ? prev : m);
+    };
+    const setMushafTajweed = async (v: boolean) => {
+        setMushafTajweedState(prev => prev === v ? prev : v);
+    };
+    const setTafsirId = async (id: string) => {
+        setTafsirIdState(prev => prev === id ? prev : id);
+    };
+    const setWakeLockEnabled = (v: boolean) => {
+        setWakeLockEnabledState(prev => prev === v ? prev : v);
+    };
+    const setVotdEnabled = (v: boolean) => {
+        setVotdEnabledState(prev => prev === v ? prev : v);
+    };
+    const setVotdTime = (t: string) => {
+        setVotdTimeState(prev => prev === t ? prev : t);
+    };
+    const setLastSeenVersion = (v: string | null) => {
+        setLastSeenVersionState(prev => prev === v ? prev : v);
+    };
+    const appendQuranHistory = (entry: QuranReadHistoryEntry) => {
+        setQuranReadHistoryState((prev) => {
+            const next = pushQuranHistory(prev, entry);
+            storage.saveQuranReadHistory(next).catch((e) => console.error('saveQuranReadHistory', e));
+            return next;
+        });
+    };
+
+    // What's-new modal (M4-T4). Triggered once at boot if the running
+    // app version exceeds the highest version the user has dismissed.
+    const dismissWhatsNew = useCallback((newLastSeen: string) => {
+        setLastSeenVersion(newLastSeen);
+        setWhatsNewOpen(false);
+    }, []);
+
+    // Detect the version-bump exactly once, after the initial load and
+    // the onboarding screen has had a chance to render. We schedule the
+    // check inside an effect (not directly in the hydration useEffect)
+    // so React can commit the home screen before the modal overlays it.
+    useEffect(() => {
+        if (isLoading) return;
+        // APP_VERSION is injected at build time via vite define (see
+        // vite.config.ts). Falls back to package.json if the define is
+        // missing for any reason.
+        const running = __APP_VERSION__;
+        const seen = lastSeenVersion ?? '0.0.0';
+        // Defer to a microtask so we don't setState synchronously inside
+        // the effect body (react-hooks v7 set-state-in-effect).
+        queueMicrotask(() => {
+            if (compareSemver(running, seen) > 0) {
+                setWhatsNewOpen(true);
+            }
+        });
+        // Only run when the hydrate effect flips isLoading off; once
+        // dismissed, lastSeenVersion bumps and we don't re-open.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isLoading]);
 
     const renderScreen = () => {
         switch (screen) {
@@ -575,6 +683,7 @@ const App: React.FC = () => {
             case 'shareEditor': return <ShareEditorScreen data={screenParams} />;
             case 'quran': return <QuranScreen />;
             case 'surahReader': return <SurahReaderScreen params={screenParams} />;
+            case 'mushafPage': return <MushafPageScreen params={screenParams} />;
             case 'azkarList': {
                 const category = categories.find(c => c.id === screenParams?.categoryId);
                 return category ? <AzkarListScreen category={category} initialScrollToId={screenParams?.initialScrollToId} /> : <CategoriesScreen />;
@@ -597,6 +706,7 @@ const App: React.FC = () => {
     }
 
     return (
+        <RepeatSettingsProvider>
         <AppContext.Provider value={{ 
             navigate, favorites, toggleFavorite, 
             darkMode, toggleDarkMode, 
@@ -621,8 +731,16 @@ const App: React.FC = () => {
             prayerNotificationsEnabled, setPrayerNotificationsEnabled,
             stats, incrementStreak, incrementTotalReads,
             quranBookmarks, addQuranBookmark, removeQuranBookmark,
-            quranLastRead, setQuranLastRead, clearQuranLastRead
+            quranLastRead, setQuranLastRead, clearQuranLastRead,
+            mushafMode, setMushafMode,
+            mushafTajweed, setMushafTajweed,
+            tafsirId, setTafsirId,
+            wakeLockEnabled, setWakeLockEnabled,
+            votdEnabled, setVotdEnabled,
+            votdTime, setVotdTime,
+            quranReadHistory, appendQuranHistory
         }}>
+            <QuranAudioProvider>
             <div className={`${darkMode ? 'dark' : ''} h-screen w-screen`} dir="rtl" data-theme={theme}>
                 {/* MotionConfig reducedMotion="user" propagates the OS prefers-reduced-motion
                     preference to every Framer Motion child (page transitions, sheet slides,
@@ -684,10 +802,21 @@ const App: React.FC = () => {
                     </ScreenErrorBoundary>
                     </div>
                 </div>
+                {/* App-level Quran player: survives screen navigation. */}
+                <AudioMiniPlayer />
+                {/* What's-new modal (M4-T4): surfaces once on version bump. */}
+                <WhatsNewModal
+                    isOpen={whatsNewOpen}
+                    lastSeenVersion={lastSeenVersion}
+                    currentVersion={__APP_VERSION__}
+                    onDismiss={dismissWhatsNew}
+                />
                 </ToastProvider>
                 </MotionConfig>
             </div>
+            </QuranAudioProvider>
         </AppContext.Provider>
+        </RepeatSettingsProvider>
     );
 };
 

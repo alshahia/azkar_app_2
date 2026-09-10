@@ -10,8 +10,24 @@ import { copyText, shareText } from '../../utils/share';
 interface AyahCardProps {
     ayah: QuranAyah;
     isBookmarked: boolean;
+    /** Currently playing ayah per the audio queue, regardless of timing
+     *  bundle availability. Driven by the SurahReader's IO + audio position.
+     */
     isCurrentAudio?: boolean;
+    /** Currently playing ayah per QUL timing data. Independent source: when
+     *  timings are loaded, this is more precise than isCurrentAudio. The
+     *  card highlights whenever either flag is true.
+     */
+    isHighlighted?: boolean;
     onPlay: () => void;
+    /** Tap-to-seek: jump audio playback to this ayah's start. Used by the
+     *  timing-highlighted path (the player seeks instead of restarting).
+     */
+    onSeek?: () => void;
+    /** Long-press to open the VerseActionModalContainer (M3-T1). The card
+     *  itself only flips a boolean; the modal lives at the screen level so
+     *  it can share audio/tafsir contexts. */
+    onLongPress?: () => void;
     onToggleBookmark: () => void;
     onShowTafsir: () => void;
     sajdaLabel?: string;
@@ -28,8 +44,8 @@ interface AyahCardProps {
  * surrounding chrome.
  */
 const AyahCard: React.FC<AyahCardProps> = ({
-    ayah, isBookmarked, isCurrentAudio = false,
-    onPlay, onToggleBookmark, onShowTafsir, sajdaLabel,
+    ayah, isBookmarked, isCurrentAudio = false, isHighlighted = false,
+    onPlay, onSeek, onLongPress, onToggleBookmark, onShowTafsir, sajdaLabel,
 }) => {
     const [actionsOpen, setActionsOpen] = useState(false);
     const [copied, setCopied] = useState(false);
@@ -47,7 +63,35 @@ const AyahCard: React.FC<AyahCardProps> = ({
     return (
         <div
             id={`ayah-${ayah.surahId}-${ayah.number}`}
-            className={`group relative rounded-2xl px-4 py-5 transition-colors duration-300 ${isCurrentAudio ? 'bg-primary-50 dark:bg-primary-900/15 ring-1 ring-primary-300/40 dark:ring-primary-500/30' : 'hover:bg-gray-50/60 dark:hover:bg-[#1A3129]/40'}`}
+            onClick={onSeek}
+            onContextMenu={(e: React.MouseEvent<HTMLDivElement>) => { if (onLongPress) { e.preventDefault(); onLongPress(); } }}
+            onTouchStart={(e: React.TouchEvent<HTMLDivElement>) => {
+                if (!onLongPress) return;
+                // ~500ms touch-and-hold feel without bringing in a lib. The
+                // browser/UDT does not always emit a synthetic mouseup, so we
+                // clear via timer state stored on the element.
+                const el = e.currentTarget as HTMLElement;
+                const prev = el.dataset.longPressTimer;
+                if (prev) window.clearTimeout(Number(prev));
+                const id = window.setTimeout(() => {
+                    delete el.dataset.longPressTimer;
+                    onLongPress();
+                }, 550);
+                el.dataset.longPressTimer = String(id);
+            }}
+            onTouchEnd={(e: React.TouchEvent<HTMLDivElement>) => {
+                const el = e.currentTarget as HTMLElement;
+                const prev = el.dataset.longPressTimer;
+                if (prev) {
+                    window.clearTimeout(Number(prev));
+                    delete el.dataset.longPressTimer;
+                }
+            }}
+            onKeyDown={onSeek ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSeek(); } } : undefined}
+            tabIndex={onSeek ? 0 : undefined}
+            role={onSeek ? 'button' : undefined}
+            aria-current={(isCurrentAudio || isHighlighted) ? 'true' : undefined}
+            className={`group relative rounded-2xl px-4 py-5 transition-colors duration-300 cursor-${onSeek ? 'pointer' : 'default'} ${(isCurrentAudio || isHighlighted) ? 'bg-primary-50 dark:bg-primary-900/15 ring-1 ring-primary-300/40 dark:ring-primary-500/30' : 'hover:bg-gray-50/60 dark:hover:bg-[#1A3129]/40'}`}
         >
             {/* Sajda chip */}
             {ayah.sajda > 0 && (

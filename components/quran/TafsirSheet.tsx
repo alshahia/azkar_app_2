@@ -2,38 +2,44 @@ import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { XMarkIcon, BookOpenIcon } from '@heroicons/react/24/outline';
 import { loadTafsir } from '../../services/QuranService';
+import { DEFAULT_TAFSIR_ID, listTafsirs, type TafsirDescriptor } from '../../services/tafsirRegistry';
 
 interface TafsirSheetProps {
     open: boolean;
     surahId: number;
     ayahNumber: number;
     onClose: () => void;
+    tafsirId?: string;
+    onTafsirChange?: (id: string) => void;
 }
 
 /**
  * Bottom sheet that loads and renders the Tafsir Muyassar entry for a single
  * ayah. Memoises the surah-level payload so subsequent opens are instant.
  */
-const TafsirSheet: React.FC<TafsirSheetProps> = ({ open, surahId, ayahNumber, onClose }) => {
+const TafsirSheet: React.FC<TafsirSheetProps> = ({ open, surahId, ayahNumber, onClose, tafsirId, onTafsirChange }) => {
     const [tafsir, setTafsir] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const activeId = tafsirId ?? DEFAULT_TAFSIR_ID;
 
     useEffect(() => {
         if (!open) return;
         let cancelled = false;
         setLoading(true);
         setError(null);
-        loadTafsir(surahId)
-            .then(arr => {
+        const descriptor = listTafsirs().find((t) => t.id === activeId) ?? listTafsirs()[0];
+        descriptor.load(surahId)
+            .then((arr: string[]) => {
                 if (cancelled) return;
                 const text = arr[ayahNumber - 1];
                 setTafsir(text || null);
             })
-            .catch(e => { if (!cancelled) setError(String(e?.message || e)); })
+            .catch((e: unknown) => { if (!cancelled) setError(String((e as { message?: string })?.message ?? e)); })
             .finally(() => { if (!cancelled) setLoading(false); });
         return () => { cancelled = true; };
-    }, [open, surahId, ayahNumber]);
+    }, [open, surahId, ayahNumber, activeId]);
 
     const arabicAyah = ayahNumber.toString().replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[+d]);
 
@@ -57,7 +63,7 @@ const TafsirSheet: React.FC<TafsirSheetProps> = ({ open, surahId, ayahNumber, on
                             <div className="flex items-center gap-2">
                                 <BookOpenIcon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                                 <div>
-                                    <h3 className="font-bold text-gray-800 dark:text-gray-100">التفسير الميسر</h3>
+                                    <TafsirPicker activeId={activeId} onChange={onTafsirChange} />
                                     <p className="text-xs text-gray-500 dark:text-gray-400">سورة {surahId} - آية {arabicAyah}</p>
                                 </div>
                             </div>
@@ -88,6 +94,32 @@ const TafsirSheet: React.FC<TafsirSheetProps> = ({ open, surahId, ayahNumber, on
                 </>
             )}
         </AnimatePresence>
+    );
+};
+interface TafsirPickerProps {
+    activeId: string;
+    onChange?: (id: string) => void;
+}
+const TafsirPicker: React.FC<TafsirPickerProps> = ({ activeId, onChange }) => {
+    const items = listTafsirs();
+    return (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+            {items.map((t: TafsirDescriptor) => {
+                const isActive = t.id === activeId;
+                return (
+                    <button
+                        key={t.id}
+                        onClick={() => onChange && onChange(t.id)}
+                        disabled={!onChange}
+                        className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${isActive ? 'bg-primary-600 text-white border-primary-600' : 'bg-white dark:bg-[#12241C] text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-primary-400'}`}
+                        aria-pressed={isActive}
+                        title={t.label + ' - ' + t.license}
+                    >
+                        {t.labelAr}
+                    </button>
+                );
+            })}
+        </div>
     );
 };
 
