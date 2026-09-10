@@ -1,0 +1,48 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":automergeMinor",
+    ":automergePatch",
+    "group:allNonMajor"
+  ],
+  "schedule": ["before 6am on monday"],
+  "timezone": "Asia/Riyadh",
+  "prConcurrentLimit": 3,
+  "labels": ["dependencies", "renovate"],
+  "packageRules": [
+    {
+      "description": "Hold major bumps on Capacitor packages until manual review.",
+      "matchManagers": ["npm"],
+      "matchPackagePatterns": ["^@capacitor/"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["dependencies", "renovate", "capacitor-major"]
+    },
+    {
+      "description": "Group all @capacitor/* minor + patch into one PR.",
+      "matchManagers": ["npm"],
+      "matchPackagePatterns": ["^@capacitor/"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "Capacitor packages",
+      "automerge": true
+    },
+    {
+      "description": "Group devDependency bumps separately from runtime deps.",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["dev"],
+      "groupName": "Dev dependencies",
+      "automerge": true
+    },
+    {
+      "description": "GitHub Actions: auto-merge patch + minor.",
+      "matchManagers": ["github-actions"],
+      "automerge": true,
+      "groupName": "GitHub Actions"
+    }
+  ],
+  "ignoreDeps": [],
+  "rangeStrategy": "bump",
+  "commitMessagePrefix": "chore(deps):",
+  "enabledManagers": ["npm", "github-actions"]
+}
