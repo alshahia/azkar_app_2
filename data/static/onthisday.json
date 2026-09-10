@@ -1,0 +1,98 @@
+{
+  "schema": "azkar-onthisday",
+  "version": 1,
+  "stubMode": true,
+  "note": "This is a curated stub for M4-T3 (Today digest card). The full 366-entry dataset is a curated effort and ships separately after content review. The card renders gracefully when an entry is missing for today.",
+  "entries": [
+    {
+      "id": "ramadan-start",
+      "hijriMonth": 9,
+      "hijriDay": 1,
+      "type": "occasion",
+      "title": "بداية شهر رمضان",
+      "body": "يحل شهر رمضان المبارك، شهر الصيام والقيام وتلاوة القرآن. كان النبي ﷺ يبشر أصحابه بقدومه.",
+      "source": "صحيح البخاري ١٨٩٩"
+    },
+    {
+      "id": "eid-al-fitr",
+      "hijriMonth": 10,
+      "hijriDay": 1,
+      "type": "occasion",
+      "title": "عيد الفطر",
+      "body": "يوم فرحة المسلمين بإتمام صيام رمضان. التكبير والتهليل وإظهار الشكر لله تعالى.",
+      "source": "سنن أبي داود ١١٥٧"
+    },
+    {
+      "id": "day-of-arafah",
+      "hijriMonth": 12,
+      "hijriDay": 9,
+      "type": "occasion",
+      "title": "يوم عرفة",
+      "body": "ركن الحج الأعظم، ويوم مغفرة الذنوب والعتق من النار. صيامه يكفر السنة الماضية والباقية.",
+      "source": "صحيح مسلم ١١٦٢"
+    },
+    {
+      "id": "eid-al-adha",
+      "hijriMonth": 12,
+      "hijriDay": 10,
+      "type": "occasion",
+      "title": "عيد الأضحى",
+      "body": "يوم النحر وذكرى فداء إسماعيل عليه السلام. يتقرب المسلمون بالأضاحي شكراً لله.",
+      "source": "صحيح البخاري ٩٥٥"
+    },
+    {
+      "id": "fatah-makkah",
+      "hijriMonth": 8,
+      "hijriDay": 20,
+      "type": "event",
+      "title": "فتح مكة",
+      "body": "في العشرين من رمضان سنة ٨ هـ دخل النبي ﷺ مكة فاتحاً، وأعلن عفواً عاماً عن أهلها.",
+      "source": "سيرة ابن هشام - الجزء الرابع"
+    },
+    {
+      "id": "isra-and-miraj",
+      "hijriMonth": 7,
+      "hijriDay": 27,
+      "type": "event",
+      "title": "الإسراء والمعراج",
+      "body": "رحلة النبي ﷺ من المسجد الحرام إلى المسجد الأقصى ثم إلى السماء. فرضت فيه الصلوات الخمس.",
+      "source": "صحيح البخاري ٣٤٩"
+    },
+    {
+      "id": "hijra",
+      "hijriMonth": 3,
+      "hijriDay": 12,
+      "type": "event",
+      "title": "الهجرة النبوية",
+      "body": "انتقال النبي ﷺ من مكة إلى المدينة، بداية التأريخ الهجري والتقويم الإسلامي.",
+      "source": "سيرة ابن هشام - الجزء الأول"
+    },
+    {
+      "id": "muharram-1",
+      "hijriMonth": 1,
+      "hijriDay": 1,
+      "type": "occasion",
+      "title": "رأس السنة الهجرية",
+      "body": "أول أيام السنة الهجرية. شهر الله المحرم، صيام يوم منه يعدل صيام سنة.",
+      "source": "سنن الترمذي ٧٤٧"
+    },
+    {
+      "id": "ashura",
+      "hijriMonth": 1,
+      "hijriDay": 10,
+      "type": "occasion",
+      "title": "يوم عاشوراء",
+      "body": "اليوم الذي نجّى الله فيه موسى عليه السلام وقومه من فرعون. صيامه يكفر سنة ماضية.",
+      "source": "صحيح مسلم ١١٣٠"
+    },
+    {
+      "id": "shaban-15",
+      "hijriMonth": 8,
+      "hijriDay": 15,
+      "type": "occasion",
+      "title": "ليلة النصف من شعبان",
+      "body": "ليلة يغفر الله فيها للمستغفرين، ويستجيب فيها للداعين. يحييها بعض المسلمين بالقيام.",
+      "source": "سنن ابن ماجه ١٣٨٩"
+    }
+  ]
+}

@@ -4,13 +4,15 @@ import { useAppContext } from '../../context/AppContext';
 import { Cog6ToothIcon, MagnifyingGlassIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from '../../hooks/useTranslation';
 import { WelcomeCard, QuickAccessGrid } from '../home/HomeHeader';
-import { 
-    QuranicVerseWidget, 
-    AsmaulHusnaWidget, 
-    TasbeehWidget, 
-    SalawatWidget, 
+import {
+    QuranicVerseWidget,
+    AsmaulHusnaWidget,
+    TasbeehWidget,
+    SalawatWidget,
     InfoWidget,
-    SmartSuggestionWidget // Import new widget
+    SmartSuggestionWidget, // Import new widget
+    ContinueListeningWidget,
+    TodayDigestWidget,
 } from '../home/HomeWidgets';
 import PrayerTimesWidget from '../home/PrayerTimesWidget'; 
 import FocusLayout from '../home/FocusLayout';
@@ -33,6 +35,12 @@ const WidgetsLayout: React.FC = () => {
 
                 {/* Contextual Smart Suggestion */}
                 <SmartSuggestionWidget />
+
+                {/* Resume the last recitation session (hidden when none) */}
+                <ContinueListeningWidget />
+
+                {/* M4-T3: Today digest — Hijri date + progress + quote + on-this-day */}
+                <TodayDigestWidget />
 
                 {/* Insert Prayer Times Widget Here */}
                 <PrayerTimesWidget />

@@ -2,6 +2,8 @@
 import { LocalNotifications, LocalNotificationSchema } from '@capacitor/local-notifications';
 import { PrayerTimes } from 'adhan';
 import { Capacitor } from '@capacitor/core';
+import { pickVotd, votdTitle } from '../utils/votd';
+import { loadSurah } from './QuranService';
 
 export const NotificationService = {
     async checkPermissions(): Promise<boolean> {
@@ -169,5 +171,67 @@ export const NotificationService = {
         } catch (error) {
             console.error('Error canceling notifications:', error);
         }
-    }
+    },
+
+    /**
+     * Verse-of-the-Day notification (M4-T1).
+     *
+     * Schedules (or cancels) a daily notification at the user-chosen
+     * hour:minute. The ayah is picked at scheduling time by the deterministic
+     * hash in utils/votd, then re-resolved daily inside a one-shot
+     * notification per day (re-scheduled when the app comes back to the
+     * foreground, same pattern as prayer reminders). The body loads the
+     * surah on demand to include the actual Uthmani text (truncated for
+     * the notification body limit). Deep-link extra `{type:'votd', surah, ayah}`
+     * so the App.tsx tap handler can navigate straight into the reader.
+     */
+    async scheduleVotd(hour: number, minute: number, now: Date = new Date()): Promise<void> {
+        if (!Capacitor.isNativePlatform()) return;
+        const VOTD_ID = 50;
+        try {
+            await this.cancelReminder(VOTD_ID);
+            const votd = pickVotd(now);
+            if (!votd) {
+                console.warn('VOTD: no Islamic calendar in this engine, skipping schedule.');
+                return;
+            }
+            const surahName = votdTitle(votd);
+            // Pre-load the surah so the notification body contains a snippet
+            // of the actual ayah text (Android caps title/body at ~480 chars
+            // total). On any failure we degrade gracefully - the title still
+            // tells the user which ayah to open.
+            let bodyText = '\u0627\u0641\u062a\u062a\u0627\u062d \u0627\u0644\u0622\u064a\u0629 \u0627\u0644\u064a\u0648\u0645 \u0641\u064a \u062a\u0637\u0628\u064a\u0642 \u0623\u0630\u0643\u0627\u0631.';
+            try {
+                const ayahs = await loadSurah(votd.surah);
+                const text = ayahs[votd.ayah - 1]?.text ?? '';
+                if (text) bodyText = text.length > 200 ? text.slice(0, 197) + '\u2026' : text;
+            } catch (e) {
+                console.warn('VOTD: surah text load failed, falling back to default body.', e);
+            }
+            await LocalNotifications.schedule({
+                notifications: [
+                    {
+                        title: '\u0622\u064a\u0629 \u0627\u0644\u064a\u0648\u0645 \u2014 ' + surahName,
+                        body: bodyText,
+                        id: VOTD_ID,
+                        schedule: {
+                            on: { hour, minute },
+                            allowWhileIdle: true,
+                            every: 'day',
+                        },
+                        attachments: [],
+                        actionTypeId: '',
+                        extra: { type: 'votd', surah: votd.surah, ayah: votd.ayah },
+                    },
+                ],
+            });
+            console.log(`VOTD scheduled for ${hour}:${minute} -> ${surahName}`);
+        } catch (error) {
+            console.error('Error scheduling VOTD:', error);
+        }
+    },
+
+    async cancelVotd(): Promise<void> {
+        return this.cancelReminder(50);
+    },
 };

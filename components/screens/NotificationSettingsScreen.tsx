@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { ArrowLeftIcon, SunIcon, MoonIcon, BellIcon, PlusIcon, TrashIcon, MapPinIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, SunIcon, MoonIcon, BellIcon, PlusIcon, TrashIcon, MapPinIcon, BookOpenIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from '../../hooks/useTranslation';
 import TimePicker from '../common/TimePicker';
 import { NotificationService } from '../../services/NotificationService';
@@ -9,21 +9,24 @@ import { CustomReminder } from '../../types';
 import { useToast } from '../common/Toast';
 
 const NotificationSettingsScreen: React.FC = () => {
-    const { navigate, 
-            morningReminderEnabled, setMorningReminderEnabled, 
+    const { navigate,
+            morningReminderEnabled, setMorningReminderEnabled,
             morningReminderTime, setMorningReminderTime,
             eveningReminderEnabled, setEveningReminderEnabled,
             eveningReminderTime, setEveningReminderTime,
             categories,
             customReminders, addCustomReminder, removeCustomReminder,
             prayerNotificationsEnabled, setPrayerNotificationsEnabled,
-            location
+            location,
+            wakeLockEnabled, setWakeLockEnabled,
+            votdEnabled, setVotdEnabled,
+            votdTime, setVotdTime
     } = useAppContext();
     const { t } = useTranslation();
     const toast = useToast();
 
-    const [activePicker, setActivePicker] = useState<'morning' | 'evening' | 'custom' | null>(null);
-    
+    const [activePicker, setActivePicker] = useState<'morning' | 'evening' | 'votd' | 'custom' | null>(null);
+
     // Custom Reminder State
     const [selectedCategory, setSelectedCategory] = useState(categories[0]?.id || '');
     const [customTime, setCustomTime] = useState('09:00 AM');
@@ -157,6 +160,12 @@ const NotificationSettingsScreen: React.FC = () => {
                 const { hours, minutes } = parseTime(newTime);
                 NotificationService.scheduleReminder(2, hours, minutes, "أذكار المساء", "حان موعد قراءة أذكار المساء", "evening");
             }
+        } else if (activePicker === 'votd') {
+            setVotdTime(newTime);
+            if (votdEnabled) {
+                const { hours, minutes } = parseTime(newTime);
+                NotificationService.scheduleVotd(hours, minutes);
+            }
         } else if (activePicker === 'custom') {
             setCustomTime(newTime);
         }
@@ -203,6 +212,87 @@ const NotificationSettingsScreen: React.FC = () => {
                     {!location && prayerNotificationsEnabled && (
                         <p className="text-xs text-red-400 mt-2 text-center">يرجى تفعيل الموقع من الصفحة الرئيسية</p>
                     )}
+                </div>
+
+                {/* Verse of the Day (M4-T1) */}
+                <div className="bg-white dark:bg-[#1A3129] rounded-xl p-4 shadow-sm dark:shadow-none border border-gray-100 dark:border-none">
+                    <div className="flex justify-between items-center mb-4">
+                        <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                            <div className="bg-violet-100 dark:bg-violet-900/30 p-2 rounded-full">
+                                <BookOpenIcon className="w-6 h-6 text-violet-500" />
+                            </div>
+                            <div>
+                                <span className="font-bold text-gray-900 dark:text-white block">آية اليوم</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">آية جديدة من القرآن كل يوم</span>
+                            </div>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={votdEnabled}
+                                onChange={async (e) => {
+                                    const next = e.target.checked;
+                                    setVotdEnabled(next);
+                                    try {
+                                        if (next) {
+                                            const granted = await NotificationService.requestPermissions();
+                                            if (granted) {
+                                                const { hours, minutes } = parseTime(votdTime);
+                                                NotificationService.scheduleVotd(hours, minutes);
+                                            } else {
+                                                setVotdEnabled(false);
+                                                toast.show(t('error_notifications_denied'), { variant: 'error' });
+                                            }
+                                        } else {
+                                            NotificationService.cancelVotd();
+                                        }
+                                    } catch (err) {
+                                        console.error('VOTD toggle failed', err);
+                                        setVotdEnabled(!next);
+                                    }
+                                }}
+                                aria-label="آية اليوم"
+                                className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] rtl:after:right-[2px] rtl:after:left-auto after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
+                        </label>
+                    </div>
+                    {votdEnabled && (
+                        <div className="border-t border-gray-100 dark:border-gray-700 pt-4 flex justify-between items-center">
+                            <span className="text-sm text-gray-500 dark:text-gray-400">وقت الإشعار</span>
+                            <button
+                                onClick={() => setActivePicker('votd')}
+                                className="bg-gray-50 dark:bg-gray-800 px-4 py-2 rounded-lg text-primary-600 dark:text-primary-400 font-bold font-mono"
+                            >
+                                {votdTime}
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {/* Screen Wake Lock (M4-T5) */}
+                <div className="bg-white dark:bg-[#1A3129] rounded-xl p-4 shadow-sm dark:shadow-none border border-gray-100 dark:border-none">
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                            <div className="bg-emerald-100 dark:bg-emerald-900/30 p-2 rounded-full">
+                                <SunIcon className="w-6 h-6 text-emerald-500" />
+                            </div>
+                            <div>
+                                <span className="font-bold text-gray-900 dark:text-white block">إبقاء الشاشة مضاءة</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">منع انطفاء الشاشة أثناء قراءة القرآن</span>
+                            </div>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={wakeLockEnabled}
+                                onChange={(e) => setWakeLockEnabled(e.target.checked)}
+                                aria-label="إبقاء الشاشة مضاءة"
+                                className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] rtl:after:right-[2px] rtl:after:left-auto after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
+                        </label>
+                    </div>
                 </div>
 
                 {/* Morning Section */}
@@ -324,8 +414,9 @@ const NotificationSettingsScreen: React.FC = () => {
             <TimePicker 
                 isOpen={activePicker !== null}
                 initialTime={
-                    activePicker === 'morning' ? morningReminderTime : 
-                    activePicker === 'evening' ? eveningReminderTime : 
+                    activePicker === 'morning' ? morningReminderTime :
+                    activePicker === 'evening' ? eveningReminderTime :
+                    activePicker === 'votd' ? votdTime :
                     customTime
                 }
                 onClose={() => setActivePicker(null)}
