@@ -22,12 +22,12 @@ export const GeneralIcon: React.FC<IconProps> = ({ className }) => (
         </defs>
         
         {/* Background */}
-        <rect width="512" height="512" className="fill-primary-50 dark:fill-[#08100d] transition-colors duration-300"/>
+        <rect width="512" height="512" className="fill-primary-50 dark:fill-[rgb(var(--surface)_/_0.5)] transition-colors duration-300"/>
         
         <g transform="translate(256, 256)">
             {/* Decorative Shapes */}
-            <rect x="-200" y="-200" width="400" height="400" rx="40" transform="rotate(45)" className="fill-primary-100 dark:fill-[#0f221b] opacity-60 transition-colors duration-300"/>
-            <rect x="-180" y="-180" width="360" height="360" rx="60" className="fill-white dark:fill-[#13261e] stroke-primary-200 dark:stroke-[#1f3d30] transition-colors duration-300" strokeWidth="2"/>
+            <rect x="-200" y="-200" width="400" height="400" rx="40" transform="rotate(45)" className="fill-primary-100 dark:fill-[rgb(var(--surface)_/_0.6)] opacity-60 transition-colors duration-300"/>
+            <rect x="-180" y="-180" width="360" height="360" rx="60" className="fill-white dark:fill-[rgb(var(--surface-card))] stroke-primary-200 dark:stroke-[rgb(var(--border-soft)_/_0.5)] transition-colors duration-300" strokeWidth="2"/>
         </g>
 
         {/* Main Content */}
@@ -97,8 +97,8 @@ export const MosqueIcon: React.FC<IconProps> = ({ className }) => (
                     </feMerge>
                 </filter>
             </defs>
-            <rect x="106" y="106" width="300" height="300" rx="40" transform="rotate(45 256 256)" className="fill-primary-100 dark:fill-[#101f1a] opacity-60 transition-colors duration-300"/>
-            <rect x="86" y="86" width="340" height="340" rx="60" className="fill-white dark:fill-[#15221d] stroke-primary-200 dark:stroke-[#1f3a2f] transition-colors duration-300" strokeWidth="4"/>
+            <rect x="106" y="106" width="300" height="300" rx="40" transform="rotate(45 256 256)" className="fill-primary-100 dark:fill-[rgb(var(--surface-card)_/_0.5)] opacity-60 transition-colors duration-300"/>
+            <rect x="86" y="86" width="340" height="340" rx="60" className="fill-white dark:fill-[rgb(var(--surface-card))] stroke-primary-200 dark:stroke-[rgb(var(--border-soft)_/_0.5)] transition-colors duration-300" strokeWidth="4"/>
             <g className="stroke-primary-600 dark:stroke-primary-400 dark:filter-[url(#ng-mos)] transition-all duration-300" strokeWidth="9" fill="none" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="140" y1="390" x2="372" y2="390"/>
                 <rect x="196" y="310" width="120" height="80"/>
@@ -147,7 +147,7 @@ export const MorningIcon: React.FC<IconProps> = ({ className }) => (
             </filter>
         </defs>
         {/* Background - Gradient in Dark Mode, Solid in Light */}
-        <rect x="40" y="40" width="432" height="432" rx="80" className="fill-orange-50 dark:fill-[#1a2a20] transition-colors duration-300"/>
+        <rect x="40" y="40" width="432" height="432" rx="80" className="fill-orange-50 dark:fill-[rgb(var(--surface-card)_/_0.5)] transition-colors duration-300"/>
         
         <g className="stroke-orange-500 dark:stroke-orange-400 dark:filter-[url(#ng-mor)] transition-all duration-300" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" fill="none">
             <g id="sun-rays">
@@ -167,7 +167,7 @@ export const MorningIcon: React.FC<IconProps> = ({ className }) => (
             <line x1="195" y1="265" x2="210" y2="250"/>
             <line x1="307" y1="235" x2="332" y2="260"/>
             <line x1="302" y1="250" x2="317" y2="265"/>
-            <g className="fill-orange-800 dark:fill-[#0f1812] transition-colors duration-300">
+            <g className="fill-orange-800 dark:fill-[rgb(var(--surface)_/_0.6)] transition-colors duration-300">
                 <path d="M 256 380 Q 256 380 256 410 Q 190 390 146 365 L 136 315 Q 190 350 256 350 Q 322 350 376 315 L 366 365 Q 322 390 256 410 Z"/>
             </g>
             <path d="M 146 365 L 156 325 Q 200 360 256 360 Q 312 360 356 325 L 366 365"/>
@@ -196,11 +196,11 @@ export const EveningIcon: React.FC<IconProps> = ({ className }) => (
             </filter>
             <path id="star" d="M0,-10 L2.3,-3.1 L9.5,-3.1 L3.7,1.1 L5.9,8.1 L0,3.8 L-5.9,8.1 L-3.7,1.1 L-9.5,-3.1 L-2.3,-3.1 Z"/>
         </defs>
-        <rect width="512" height="512" rx="80" className="fill-indigo-50 dark:fill-[#0f1a15] transition-colors duration-300"/>
+        <rect width="512" height="512" rx="80" className="fill-indigo-50 dark:fill-[rgb(var(--surface-card)_/_0.5)] transition-colors duration-300"/>
         
-        <g className="stroke-indigo-600 dark:stroke-[#6affaa] dark:filter-[url(#ng-eve)] transition-all duration-300" fill="none" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M190,120 A45,45 0 1,1 175,200 A35,35 0 1,0 190,120 Z" className="fill-indigo-500 dark:fill-[#6affaa] stroke-none transition-colors duration-300" transform="translate(10, 10)"/>
-            <g className="fill-indigo-500 dark:fill-[#6affaa] stroke-none transition-colors duration-300">
+        <g className="stroke-indigo-600 dark:stroke-[rgb(var(--gold))] dark:filter-[url(#ng-eve)] transition-all duration-300" fill="none" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M190,120 A45,45 0 1,1 175,200 A35,35 0 1,0 190,120 Z" className="fill-indigo-500 dark:fill-[rgb(var(--gold))] stroke-none transition-colors duration-300" transform="translate(10, 10)"/>
+            <g className="fill-indigo-500 dark:fill-[rgb(var(--gold))] stroke-none transition-colors duration-300">
                 <use href="#star" transform="translate(215, 150) scale(1.8)"/>
                 <use href="#star" transform="translate(295, 130) scale(1.2)"/>
                 <use href="#star" transform="translate(355, 150) scale(1.4)"/>
@@ -250,13 +250,13 @@ export const WuduIcon: React.FC<IconProps> = ({ className }) => (
         </defs>
         
         {/* Background */}
-        <rect width="512" height="512" className="fill-primary-50 dark:fill-[#05100c] transition-colors duration-300"/>
+        <rect width="512" height="512" className="fill-primary-50 dark:fill-[rgb(var(--surface)_/_0.7)] transition-colors duration-300"/>
         <g transform="translate(256 256) rotate(45)">
-            <rect x="-180" y="-180" width="360" height="360" rx="40" className="fill-primary-100 dark:fill-[#132b21] opacity-50 transition-colors duration-300"/>
+            <rect x="-180" y="-180" width="360" height="360" rx="40" className="fill-primary-100 dark:fill-[rgb(var(--surface)_/_0.6)] opacity-50 transition-colors duration-300"/>
         </g>
-        <rect x="86" y="86" width="340" height="340" rx="60" className="fill-white dark:fill-[#162e24] stroke-primary-200 dark:stroke-[#1f4032] transition-colors duration-300" strokeWidth="2"/>
+        <rect x="86" y="86" width="340" height="340" rx="60" className="fill-white dark:fill-[rgb(var(--surface-card)_/_0.5)] stroke-primary-200 dark:stroke-[rgb(var(--border-soft)_/_0.5)] transition-colors duration-300" strokeWidth="2"/>
         
-        <g className="stroke-primary-600 dark:stroke-[#5affb0] dark:filter-[url(#ng-wud)] transition-all duration-300" strokeWidth="5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+        <g className="stroke-primary-600 dark:stroke-[rgb(var(--gold))] dark:filter-[url(#ng-wud)] transition-all duration-300" strokeWidth="5" fill="none" strokeLinecap="round" strokeLinejoin="round">
             <path d="M340 125 C340 125 330 115 345 115 C360 115 350 125 350 125 L355 130 C375 135 385 150 385 170 C385 195 365 210 345 205 C325 200 320 180 310 165 L305 160 C315 140 335 135 355 130"/>
             <path d="M385 155 C410 145 420 170 415 185 C410 200 395 200 380 195"/>
             <path d="M350 170 C365 175 380 170 385 165" strokeWidth="3" opacity="0.8"/>
@@ -269,10 +269,10 @@ export const WuduIcon: React.FC<IconProps> = ({ className }) => (
             <path d="M260 250 C270 245 280 255 290 250" strokeWidth="3"/>
             <path d="M250 260 C260 255 270 265 280 260" strokeWidth="3"/>
             <path d="M250 330 C250 350 245 360 245 370 C245 378 255 378 255 370 C255 360 260 350 265 330"/>
-            <circle cx="250" cy="390" r="3" className="fill-primary-500 dark:fill-[#5affb0] stroke-none transition-colors duration-300"/>
+            <circle cx="250" cy="390" r="3" className="fill-primary-500 dark:fill-[rgb(var(--gold))] stroke-none transition-colors duration-300"/>
             <path d="M275 330 C275 360 270 380 270 400 C270 410 280 410 280 400 C280 380 285 350 290 330"/>
             <path d="M305 325 C305 340 310 350 310 360 C310 368 320 368 320 360 C320 350 315 330 315 320"/>
-            <circle cx="315" cy="380" r="3" className="fill-primary-500 dark:fill-[#5affb0] stroke-none transition-colors duration-300"/>
+            <circle cx="315" cy="380" r="3" className="fill-primary-500 dark:fill-[rgb(var(--gold))] stroke-none transition-colors duration-300"/>
         </g>
     </svg>
 );
@@ -286,11 +286,11 @@ export const FoodIcon: React.FC<IconProps> = ({ className }) => (
                 <feComposite in="SourceGraphic" in2="goo" operator="over"/>
             </filter>
         </defs>
-        <rect width="512" height="512" className="fill-primary-50 dark:fill-[#050a07] transition-colors duration-300"/>
-        <rect x="106" y="106" width="300" height="300" rx="40" transform="rotate(45 256 256)" className="fill-primary-100 dark:fill-[#0f2418] opacity-60 transition-colors duration-300"/>
-        <rect x="64" y="64" width="384" height="384" rx="60" className="fill-white dark:fill-[#1a2e22] stroke-primary-200 dark:stroke-[#1f3d2e] transition-colors duration-300" strokeWidth="2"/>
+        <rect width="512" height="512" className="fill-primary-50 dark:fill-[rgb(var(--surface)_/_0.7)] transition-colors duration-300"/>
+        <rect x="106" y="106" width="300" height="300" rx="40" transform="rotate(45 256 256)" className="fill-primary-100 dark:fill-[rgb(var(--surface)_/_0.6)] opacity-60 transition-colors duration-300"/>
+        <rect x="64" y="64" width="384" height="384" rx="60" className="fill-white dark:fill-[rgb(var(--surface-card)_/_0.5)] stroke-primary-200 dark:stroke-[rgb(var(--border-soft)_/_0.5)] transition-colors duration-300" strokeWidth="2"/>
         
-        <g className="stroke-primary-600 dark:stroke-[#4fffa0] dark:filter-[url(#ng-food)] transition-all duration-300" strokeWidth="5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+        <g className="stroke-primary-600 dark:stroke-[rgb(var(--gold))] dark:filter-[url(#ng-food)] transition-all duration-300" strokeWidth="5" fill="none" strokeLinecap="round" strokeLinejoin="round">
             <g transform="translate(280, 110)">
                 <ellipse cx="45" cy="15" rx="45" ry="12"/>
                 <path d="M 0 15 L 10 110 Q 15 135 45 135 Q 75 135 80 110 L 90 15"/>
@@ -329,13 +329,13 @@ export const TasbeehIcon: React.FC<IconProps> = ({ className }) => (
                 </feMerge>
             </filter>
             <symbol id="bead" viewBox="0 0 20 20">
-                <circle cx="10" cy="10" r="7" fill="none" className="stroke-primary-600 dark:stroke-[#5dfc96] transition-colors duration-300" strokeWidth="2.5"/>
+                <circle cx="10" cy="10" r="7" fill="none" className="stroke-primary-600 dark:stroke-[rgb(var(--gold))] transition-colors duration-300" strokeWidth="2.5"/>
             </symbol>
         </defs>
         
         {/* Background */}
-        <rect x="106" y="106" width="300" height="300" rx="40" transform="rotate(45 256 256)" className="fill-primary-50 dark:fill-[#0b1d16] transition-colors duration-300"/>
-        <rect x="116" y="116" width="280" height="280" rx="50" className="fill-white dark:fill-[#152e24] transition-colors duration-300"/>
+        <rect x="106" y="106" width="300" height="300" rx="40" transform="rotate(45 256 256)" className="fill-primary-50 dark:fill-[rgb(var(--surface)_/_0.6)] transition-colors duration-300"/>
+        <rect x="116" y="116" width="280" height="280" rx="50" className="fill-white dark:fill-[rgb(var(--surface-card))] transition-colors duration-300"/>
         
         <g className="dark:filter-[url(#ng-tas)]">
             <use href="#bead" x="246" y="365" width="20" height="20"/>
@@ -363,19 +363,17 @@ export const TasbeehIcon: React.FC<IconProps> = ({ className }) => (
             <use href="#bead" x="212" y="350" width="20" height="20"/>
             <use href="#bead" x="229" y="360" width="20" height="20"/>
             
-            <path d="M256 385 L256 405" className="stroke-primary-600 dark:stroke-[#5dfc96] transition-colors duration-300" strokeWidth="2.5" strokeLinecap="round"/>
-            <ellipse cx="256" cy="395" rx="6" ry="9" fill="none" className="stroke-primary-600 dark:stroke-[#5dfc96] transition-colors duration-300" strokeWidth="2.5"/>
-            <circle cx="256" cy="382" r="4" className="fill-primary-500 dark:fill-[#5dfc96] transition-colors duration-300"/>
+            <path d="M256 385 L256 405" className="stroke-primary-600 dark:stroke-[rgb(var(--gold))] transition-colors duration-300" strokeWidth="2.5" strokeLinecap="round"/>
+            <ellipse cx="256" cy="395" rx="6" ry="9" fill="none" className="stroke-primary-600 dark:stroke-[rgb(var(--gold))] transition-colors duration-300" strokeWidth="2.5"/>
+            <circle cx="256" cy="382" r="4" className="fill-primary-500 dark:fill-[rgb(var(--gold))] transition-colors duration-300"/>
             
             <g transform="translate(256, 410)">
-                <circle cx="0" cy="0" r="3" fill="none" className="stroke-primary-600 dark:stroke-[#5dfc96] transition-colors duration-300" strokeWidth="2"/>
-                <path d="M0 3 Q -5 10 -8 20" fill="none" className="stroke-primary-600 dark:stroke-[#5dfc96] transition-colors duration-300" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M0 3 Q 0 12 0 22" fill="none" className="stroke-primary-600 dark:stroke-[#5dfc96] transition-colors duration-300" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M0 3 Q 5 10 8 20" fill="none" className="stroke-primary-600 dark:stroke-[#5dfc96] transition-colors duration-300" strokeWidth="2" strokeLinecap="round"/>
+                <circle cx="0" cy="0" r="3" fill="none" className="stroke-primary-600 dark:stroke-[rgb(var(--gold))] transition-colors duration-300" strokeWidth="2"/>
+                <path d="M0 3 Q -5 10 -8 20" fill="none" className="stroke-primary-600 dark:stroke-[rgb(var(--gold))] transition-colors duration-300" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M0 3 Q 0 12 0 22" fill="none" className="stroke-primary-600 dark:stroke-[rgb(var(--gold))] transition-colors duration-300" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M0 3 Q 5 10 8 20" fill="none" className="stroke-primary-600 dark:stroke-[rgb(var(--gold))] transition-colors duration-300" strokeWidth="2" strokeLinecap="round"/>
             </g>
         </g>
     </svg>
 );
 
-// Map the specific icons for convenience, but preferring direct use in constants.ts
-export const StandardAzkarIcon = GeneralIcon;

@@ -4,7 +4,7 @@ import { UserPreferences, ProgressState, Quote, Salawat, UserZikr, UserCategory,
 import { defaultPreferences, defaultStats } from './defaults';
 import { validateBackup, normalizeUserZikr, envelopePayload, mergePayload, type BackupPayload } from '../backup';
 import { get, set } from 'idb-keyval';
-import { secureKeyStore } from '../../services/secureKey';
+import { logger } from '../../utils/logger';
 
 const KEYS = {
     PREFERENCES: 'azkarAppPreferences',
@@ -31,7 +31,7 @@ const readJson = <T>(key: string, fallback: T): T => {
         const stored = localStorage.getItem(key);
         return stored ? (JSON.parse(stored) as T) : fallback;
     } catch (e) {
-        console.error('Corrupted stored value for ' + key + ', using fallback.', e);
+        logger.error('Corrupted stored value for ' + key + ', using fallback.', { message: e instanceof Error ? e.message : String(e) });
         return fallback;
     }
 };
@@ -41,6 +41,19 @@ export class WebStorage implements StorageAdapter {
      *  cannot interleave an await-read between another writer's read and write. */
     private mutationQueue: Promise<unknown> = Promise.resolve();
 
+    // Stable handler references: addEventListener/removeEventListener only
+    // match on the exact function object, so the unload listeners registered
+    // in initialize() can be detached symmetrically in dispose().
+    private readonly handleVisibilityChange = (): void => {
+        if (document.visibilityState === 'hidden') {
+            void this.flush();
+        }
+    };
+
+    private readonly handleBeforeUnload = (): void => {
+        void this.flush();
+    };
+
     private enqueue<T>(operation: () => Promise<T>): Promise<T> {
         const result = this.mutationQueue.then(operation, operation);
         this.mutationQueue = result.catch(() => undefined);
@@ -48,7 +61,26 @@ export class WebStorage implements StorageAdapter {
     }
 
     async initialize(): Promise<void> {
-        return Promise.resolve();
+        // Remove before add so repeated initialize() calls (e.g. a StrictMode
+        // double-effect) cannot stack duplicate listeners.
+        document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+        document.removeEventListener('beforeunload', this.handleBeforeUnload);
+        document.addEventListener('visibilitychange', this.handleVisibilityChange);
+        document.addEventListener('beforeunload', this.handleBeforeUnload);
+    }
+
+    /** Resolves once every mutation enqueued so far has settled. The queue
+     *  tail never rejects (enqueue swallows errors into the chain), so this
+     *  is safe to await from unload / visibility handlers. */
+    flush(): Promise<unknown> {
+        return this.mutationQueue;
+    }
+
+    /** Detaches the visibilitychange / beforeunload listeners. Call when the
+     *  instance is torn down (tests, HMR) so the listeners don't leak. */
+    dispose(): void {
+        document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+        document.removeEventListener('beforeunload', this.handleBeforeUnload);
     }
 
     async getPreferences(): Promise<UserPreferences> {
@@ -63,7 +95,7 @@ export class WebStorage implements StorageAdapter {
                 return { ...defaultPreferences, ...parsed, apiKey: '', language: 'ar' };
             }
         } catch (e) {
-            console.error('Error loading preferences', e);
+            logger.error('Error loading preferences', { message: e instanceof Error ? e.message : String(e) });
         }
         return defaultPreferences;
     }
@@ -77,7 +109,7 @@ export class WebStorage implements StorageAdapter {
                 void _omitted;
                 localStorage.setItem(KEYS.PREFERENCES, JSON.stringify(safe));
             } catch (e) {
-                console.error('Failed saving preferences (quota?)', e);
+                logger.error('Failed saving preferences (quota?)', { message: e instanceof Error ? e.message : String(e) });
                 throw e;
             }
         });
@@ -92,7 +124,7 @@ export class WebStorage implements StorageAdapter {
             try {
                 localStorage.setItem(KEYS.PROGRESS, JSON.stringify(progress));
             } catch (e) {
-                console.error('Failed saving progress (quota?)', e);
+                logger.error('Failed saving progress (quota?)', { message: e instanceof Error ? e.message : String(e) });
                 throw e;
             }
         });
@@ -127,7 +159,7 @@ export class WebStorage implements StorageAdapter {
             try {
                 localStorage.setItem(KEYS.KV_PREFIX + key, JSON.stringify(value));
             } catch (e) {
-                console.error('Failed saving kv ' + key + ' (quota?)', e);
+                logger.error('Failed saving kv ' + key + ' (quota?)', { message: e instanceof Error ? e.message : String(e) });
                 throw e;
             }
         });
@@ -228,7 +260,7 @@ export class WebStorage implements StorageAdapter {
         try {
             await set(KEYS.AUDIO_PREFIX + key, base64Data);
         } catch (e) {
-            console.error('Failed to save audio to IndexedDB', e);
+            logger.error('Failed to save audio to IndexedDB', { message: e instanceof Error ? e.message : String(e) });
         }
     }
 
@@ -237,7 +269,7 @@ export class WebStorage implements StorageAdapter {
             const val = await get(KEYS.AUDIO_PREFIX + key);
             return val || null;
         } catch (e) {
-            console.error('Failed to get audio from IndexedDB', e);
+            logger.error('Failed to get audio from IndexedDB', { message: e instanceof Error ? e.message : String(e) });
             return null;
         }
     }
@@ -253,7 +285,7 @@ export class WebStorage implements StorageAdapter {
             try {
                 localStorage.setItem(KEYS.QURAN_BOOKMARKS, JSON.stringify(bookmarks));
             } catch (e) {
-                console.error('Failed saving Quran bookmarks', e);
+                logger.error('Failed saving Quran bookmarks', { message: e instanceof Error ? e.message : String(e) });
                 throw e;
             }
         });
@@ -269,7 +301,7 @@ export class WebStorage implements StorageAdapter {
                 if (value === null) localStorage.removeItem(KEYS.QURAN_LAST_READ);
                 else localStorage.setItem(KEYS.QURAN_LAST_READ, JSON.stringify(value));
             } catch (e) {
-                console.error('Failed saving Quran last-read', e);
+                logger.error('Failed saving Quran last-read', { message: e instanceof Error ? e.message : String(e) });
                 throw e;
             }
         });
@@ -284,7 +316,7 @@ export class WebStorage implements StorageAdapter {
             try {
                 localStorage.setItem(KEYS.QURAN_READ_HISTORY, JSON.stringify(value));
             } catch (e) {
-                console.error('Failed saving Quran read history', e);
+                logger.error('Failed saving Quran read history', { message: e instanceof Error ? e.message : String(e) });
                 throw e;
             }
         });
@@ -293,21 +325,22 @@ export class WebStorage implements StorageAdapter {
     // --- Stats ---
 
     async getStats(): Promise<UserStats> {
-        try {
-            const stored = localStorage.getItem(KEYS.STATS);
-            if (stored) {
-                return { ...defaultStats, ...JSON.parse(stored) };
-            }
-        } catch(e) {}
-        return defaultStats;
+        // readJson logs and falls back on corrupted JSON instead of
+        // silently swallowing it.
+        return { ...defaultStats, ...readJson<Partial<UserStats>>(KEYS.STATS, {}) };
     }
 
-    async saveStats(stats: UserStats): Promise<void> {
-        try {
-            localStorage.setItem(KEYS.STATS, JSON.stringify(stats));
-        } catch (e) {
-            console.error('Failed saving stats (quota?)', e);
-        }
+    saveStats(stats: UserStats): Promise<void> {
+        // Enqueued + throwing like every other write: importData's rollback
+        // depends on write failures propagating.
+        return this.enqueue(async () => {
+            try {
+                localStorage.setItem(KEYS.STATS, JSON.stringify(stats));
+            } catch (e) {
+                logger.error('Failed saving stats (quota?)', { message: e instanceof Error ? e.message : String(e) });
+                throw e;
+            }
+        });
     }
 
     // --- Data Management ---
@@ -343,7 +376,7 @@ export class WebStorage implements StorageAdapter {
         try {
             incoming = validateBackup(JSON.parse(jsonData));
         } catch (e) {
-            console.error('Import failed validation:', e);
+            logger.error('Import failed validation:', { message: e instanceof Error ? e.message : String(e) });
             return false;
         }
         const mode = opts?.mode ?? 'replace';
@@ -396,13 +429,13 @@ export class WebStorage implements StorageAdapter {
             }
             return true;
         } catch (e) {
-            console.error('Import failed mid-write, rolling back:', e);
+            logger.error('Import failed mid-write, rolling back:', { message: e instanceof Error ? e.message : String(e) });
             for (const [key, value] of snapshot) {
                 try {
                     if (value === null) localStorage.removeItem(key);
                     else localStorage.setItem(key, value);
                 } catch (restoreError) {
-                    console.error('Rollback failed for ' + key, restoreError);
+                    logger.error('Rollback failed for ' + key, { message: restoreError instanceof Error ? restoreError.message : String(restoreError) });
                 }
             }
             return false;

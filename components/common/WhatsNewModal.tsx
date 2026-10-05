@@ -1,7 +1,7 @@
 /**
  * What's-new modal (M4-T4).
  *
- * Mounted once at app level (post-onboarding) by App.tsx. When the user's
+ * Mounted once at app level by AppRouter. When the user's
  * `lastSeenVersion` is older than the current app version (or null on
  * first launch), the modal renders the entries shipped between the two
  * versions. The user dismisses once; the choice is persisted.
@@ -13,10 +13,10 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XMarkIcon, SparklesIcon } from '@heroicons/react/24/outline';
-import { loadChangelogEntries, entriesSince, type ChangelogEntry } from '../../utils/changelog';
+import { loadChangelogEntries, entriesSince, compareSemver, type ChangelogEntry } from '../../utils/changelog';
 
 interface WhatsNewModalProps {
-    /** True when the modal should be visible. App.tsx owns this state. */
+    /** True when the modal should be visible. AppRouter owns this state. */
     isOpen: boolean;
     /** User's last-seen version (null on first launch). */
     lastSeenVersion: string | null;
@@ -83,7 +83,7 @@ const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
 
     const handleDismiss = () => {
         const highest = newEntries.reduce((acc, e) =>
-            !acc || compareDesc(e.version, acc) > 0 ? e.version : acc, '' as string);
+            !acc || compareSemver(e.version, acc) > 0 ? e.version : acc, '' as string);
         onDismiss(highest || currentVersion);
     };
 
@@ -106,7 +106,7 @@ const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
                     animate={{ scale: 1, y: 0 }}
                     exit={{ scale: 0.95, y: 20 }}
                     transition={{ duration: 0.2 }}
-                    className="bg-white dark:bg-[#1A3129] rounded-2xl shadow-xl max-w-md w-full max-h-[80vh] flex flex-col overflow-hidden"
+                    className="bg-surface-card dark:bg-surface-card rounded-2xl shadow-xl max-w-md w-full max-h-[80vh] flex flex-col overflow-hidden"
                     onClick={(e) => e.stopPropagation()}
                 >
                     <header className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700">
@@ -119,7 +119,7 @@ const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
                         <button
                             onClick={handleDismiss}
                             aria-label="إغلاق"
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+                            className="p-2 hover:bg-surface-card-2 dark:hover:bg-midnight-800 rounded-full transition-colors"
                         >
                             <XMarkIcon className="w-5 h-5 text-gray-500" />
                         </button>
@@ -146,18 +146,5 @@ const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
     );
 };
 
-/** Internal: compare two semver strings descending. Returns >0 when `a`
- *  is newer than `b`. Mirrors compareSemver but inlined to avoid an
- *  import cycle in this file (the modal is the only consumer). */
-function compareDesc(a: string, b: string): number {
-    const pa = a.split('.').map((n) => parseInt(n, 10) || 0);
-    const pb = b.split('.').map((n) => parseInt(n, 10) || 0);
-    for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-        const x = pa[i] ?? 0;
-        const y = pb[i] ?? 0;
-        if (x !== y) return x - y;
-    }
-    return 0;
-}
 
 export default WhatsNewModal;

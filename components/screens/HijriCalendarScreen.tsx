@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState } from 'react';
-import { useAppContext } from '../../context/AppContext';
+import { useNavigationStore } from '../../stores/useNavigationStore';
 import { ArrowLeftIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { PrayerTimesService } from '../../services/PrayerTimesService';
 import { addHijriMonths, hijriPartsOf } from '../../utils/hijri';
@@ -8,14 +8,14 @@ import { addHijriMonths, hijriPartsOf } from '../../utils/hijri';
 const WEEKDAYS = ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
 
 const HijriCalendarScreen: React.FC = () => {
-    const { navigate } = useAppContext();
+    const navigate = useNavigationStore((state) => state.navigate);
     const [viewDate, setViewDate] = useState(new Date());
     // Derived directly during render - no effect/setState cycle needed
     const calendarData = useMemo(
         () => PrayerTimesService.getHijriMonthGrid(viewDate),
         [viewDate]
     );
-    const [today] = useState(new Date());
+    const [today] = useState(() => new Date());
 
     const changeMonth = (delta: number) => {
         // Land exactly on the first day of the previous/next Hijri month,
@@ -42,10 +42,10 @@ const HijriCalendarScreen: React.FC = () => {
     };
 
     return (
-        <div className="h-full flex flex-col bg-gray-50 dark:bg-[#12241C]">
+        <div className="h-full flex flex-col bg-surface dark:bg-surface">
             {/* Header */}
-            <header className="flex items-center justify-between p-4 bg-white dark:bg-[#1A3129] shadow-sm dark:shadow-none z-10">
-                <button onClick={() => navigate('home')} aria-label="رجوع" className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+            <header className="flex items-center justify-between p-4 bg-surface-card dark:bg-surface-card shadow-sm dark:shadow-none z-10">
+                <button onClick={() => navigate('home')} aria-label="رجوع" className="p-2 bg-surface-card-2 dark:bg-midnight-800 rounded-full hover:bg-surface-card dark:hover:bg-midnight-900 transition-colors">
                     <ArrowLeftIcon className="w-6 h-6 text-gray-900 dark:text-white rtl:rotate-180" />
                 </button>
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">التقويم الهجري</h1>
@@ -73,11 +73,17 @@ const HijriCalendarScreen: React.FC = () => {
                 {/* Weekday Headers */}
                 <div className="grid grid-cols-7 mb-2 text-center">
                     {WEEKDAYS.map(d => (
-                        <div key={d} className="text-xs font-bold text-gray-500 dark:text-gray-400 py-2">
+                        <div key={d} className="text-xs font-bold font-serif text-gray-500 dark:text-gray-400 py-2">
                             {d}
                         </div>
                     ))}
                 </div>
+
+                {calendarData.days.length === 0 && (
+                    <div className="text-center text-sm text-gray-500 dark:text-gray-400 py-8 mb-6 bg-surface-card-2 dark:bg-surface-card-2 rounded-xl">
+                        التقويم الهجري غير مدعوم على هذا المتصفح
+                    </div>
+                )}
 
                 {/* Days */}
                 <div className="grid grid-cols-7 gap-2 mb-6">
@@ -96,17 +102,17 @@ const HijriCalendarScreen: React.FC = () => {
                                     h-14 md:h-20 rounded-xl flex flex-col items-center justify-center relative border transition-all
                                     ${isTodayDate 
                                         ? 'bg-primary-500 text-white border-primary-500 shadow-lg scale-105 z-10' 
-                                        : 'bg-white dark:bg-[#1A3129] border-gray-100 dark:border-gray-800 text-gray-800 dark:text-gray-200'
+                                        : 'bg-surface-card dark:bg-surface-card border-surface-card-2 dark:border-midnight-800 text-gray-800 dark:text-gray-200'
                                     }
                                     ${isFriday && !isTodayDate ? 'bg-primary-50/50 dark:bg-primary-900/10 text-primary-700 dark:text-primary-400' : ''}
-                                    ${event ? 'border-amber-400 border-2' : ''}
+                                    ${event ? 'border-amber-400' : ''}
                                 `}
                             >
                                 <span className={`text-lg font-bold font-mono ${isTodayDate ? 'text-white' : ''}`}>
                                     {dayNum}
                                 </span>
                                 {/* Gregorian small text */}
-                                <span className={`text-[9px] mt-1 ${isTodayDate ? 'text-white/80' : 'text-gray-400'}`}>
+                                <span className={`text-xs mt-1 ${isTodayDate ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'}`}>
                                     {date.getDate()}
                                 </span>
 
@@ -127,12 +133,12 @@ const HijriCalendarScreen: React.FC = () => {
                             if(!d) return null;
                             const ev = getEventForDate(d);
                             return (
-                                <div key={idx} className="bg-white dark:bg-[#1A3129] p-4 rounded-xl flex items-center shadow-sm dark:shadow-none border border-gray-100 dark:border-none">
+                                <div key={idx} className="bg-surface-card dark:bg-surface-card p-4 rounded-xl flex items-center shadow-sm dark:shadow-none border border-gray-100 dark:border-midnight-800">
                                     <div className="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 font-bold text-lg w-10 h-10 flex items-center justify-center rounded-lg ml-4 rtl:mr-0 rtl:ml-4 font-mono">
                                         {getHijriDayNumber(d)}
                                     </div>
                                     <div>
-                                        <p className="font-bold text-gray-900 dark:text-white">{ev?.title}</p>
+                                        <p className="font-bold font-serif text-gray-900 dark:text-white">{ev?.title}</p>
                                         <p className="text-xs text-gray-500 dark:text-gray-400">
                                             {d.toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                                         </p>
@@ -141,7 +147,7 @@ const HijriCalendarScreen: React.FC = () => {
                             );
                         })}
                         {calendarData.days.filter(d => d && getEventForDate(d)).length === 0 && (
-                            <div className="text-center text-gray-400 text-sm py-4 bg-gray-100 dark:bg-gray-800/50 rounded-xl">
+                            <div className="text-center text-gray-500 dark:text-gray-400 text-sm py-4 bg-surface-card-2 dark:bg-midnight-800/50 rounded-xl">
                                 لا توجد مناسبات خاصة في هذا الشهر
                             </div>
                         )}

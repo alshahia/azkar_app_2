@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useAppContext } from '../../context/AppContext';
-import { ArrowLeftIcon, ShareIcon, PhotoIcon, SwatchIcon, MinusIcon, PlusIcon } from '@heroicons/react/24/outline';
+import React, { useState, useRef } from 'react';
+import { useNavigationStore } from '../../stores/useNavigationStore';
+import { ArrowLeftIcon, ShareIcon, MinusIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { toPng } from 'html-to-image';
 import { Share } from '@capacitor/share';
 import { useToast } from '../common/Toast';
@@ -14,7 +14,7 @@ const BACKGROUNDS = [
     { id: 'gradient-3', class: 'bg-gradient-to-br from-indigo-500 to-purple-600', name: 'Purple' },
     { id: 'gradient-4', class: 'bg-gradient-to-br from-amber-400 to-orange-600', name: 'Sunrise' },
     { id: 'solid-white', class: 'bg-white', name: 'Clean', textClass: 'text-gray-800' },
-    { id: 'solid-cream', class: 'bg-[#faf7f2]', name: 'Cream', textClass: 'text-[#4a4a4a]' },
+    { id: 'solid-cream', class: 'bg-sand-50', name: 'Cream', textClass: 'text-gray-700' },
 ];
 
 const FONTS = [
@@ -23,8 +23,8 @@ const FONTS = [
     { id: 'sans', class: 'font-sans', name: 'Modern' },
 ];
 
-const ShareEditorScreenWithProps: React.FC<{ data: any }> = ({ data }) => {
-    const { navigate } = useAppContext();
+const ShareEditorScreen: React.FC<{ data: any }> = ({ data }) => {
+    const navigate = useNavigationStore((state) => state.navigate);
     const toast = useToast();
     const { t } = useTranslation();
     const editorRef = useRef<HTMLDivElement>(null);
@@ -80,19 +80,23 @@ const ShareEditorScreenWithProps: React.FC<{ data: any }> = ({ data }) => {
         }
     };
 
-     return (
-        <div className="h-full flex flex-col bg-gray-50 dark:bg-[#12241C]">
-            <header className="flex items-center justify-between p-4 bg-white dark:bg-[#1A3129] shadow-sm dark:shadow-none z-10">
-                <button onClick={() => navigate('home')} aria-label="رجوع" className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+    return (
+        <div className="h-full flex flex-col bg-surface">
+            <header className="flex items-center justify-between p-4 bg-surface-card dark:bg-surface-card shadow-sm dark:shadow-none z-10">
+                <button onClick={() => navigate('home')} aria-label="رجوع" className="p-2 rounded-full hover:bg-surface-card-2 dark:hover:bg-midnight-800 transition-colors">
                     <ArrowLeftIcon className="w-6 h-6 text-gray-800 dark:text-white rtl:rotate-180" />
                 </button>
                 <h1 className="text-lg font-bold text-gray-900 dark:text-white">مشاركة كصورة</h1>
                 <button 
                     onClick={handleShare}
                     disabled={isGenerating}
-                    className="flex items-center space-x-2 rtl:space-x-reverse bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-full font-bold text-sm transition-all active:scale-95 disabled:opacity-50"
+                    aria-busy={isGenerating}
+                    aria-label={isGenerating ? 'جاري إنشاء الصورة' : undefined}
+                    className="flex items-center space-x-2 rtl:space-x-reverse bg-primary-500 hover:bg-primary-600 text-white px-4 h-10 rounded-full font-bold text-sm transition-all active:scale-95 disabled:opacity-50"
                 >
-                    {isGenerating ? <span>...</span> : (
+                    {isGenerating ? (
+                        <span aria-hidden="true" className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    ) : (
                         <>
                             <ShareIcon className="w-4 h-4" />
                             <span>مشاركة</span>
@@ -101,8 +105,8 @@ const ShareEditorScreenWithProps: React.FC<{ data: any }> = ({ data }) => {
                 </button>
             </header>
 
-            <div className="flex-grow flex items-center justify-center p-6 overflow-y-auto bg-gray-100 dark:bg-black/20">
-                <div className="w-full max-w-sm aspect-square shadow-2xl rounded-xl overflow-hidden relative group">
+            <div className="flex-grow flex items-center justify-center p-6 overflow-y-auto bg-surface-card-2 dark:bg-black/20">
+                <div className="w-full max-w-sm aspect-square shadow-2xl rounded-xl overflow-hidden relative">
                     <div 
                         ref={editorRef}
                         className={`w-full h-full flex flex-col justify-center items-center p-8 text-center relative ${selectedBg.class}`}
@@ -133,7 +137,7 @@ const ShareEditorScreenWithProps: React.FC<{ data: any }> = ({ data }) => {
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-[#1A3129] p-4 border-t border-gray-100 dark:border-gray-800 space-y-4 z-20">
+            <div className="bg-surface-card dark:bg-surface-card p-4 border-t border-surface-card-2 dark:border-midnight-800 space-y-4 z-20">
                 <div className="flex space-x-3 rtl:space-x-reverse overflow-x-auto pb-2 no-scrollbar">
                     {BACKGROUNDS.map(bg => (
                         <button
@@ -146,13 +150,13 @@ const ShareEditorScreenWithProps: React.FC<{ data: any }> = ({ data }) => {
                     ))}
                 </div>
 
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3 rtl:space-x-reverse bg-gray-100 dark:bg-gray-800 rounded-lg p-2">
-                        <button onClick={() => setFontSize(s => Math.max(14, s - 2))} aria-label="تصغير الخط" className="p-1 hover:text-primary-500 dark:text-gray-300">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center space-x-3 rtl:space-x-reverse bg-surface-card-2 dark:bg-midnight-800 rounded-lg p-1.5">
+                        <button onClick={() => setFontSize(s => Math.max(14, s - 2))} aria-label="تصغير الخط" className="h-10 w-10 flex items-center justify-center rounded-md hover:text-primary-500 dark:text-gray-300">
                             <MinusIcon className="w-4 h-4" />
                         </button>
                         <span className="text-xs font-mono w-6 text-center dark:text-gray-300">{fontSize}</span>
-                        <button onClick={() => setFontSize(s => Math.min(60, s + 2))} aria-label="تكبير الخط" className="p-1 hover:text-primary-500 dark:text-gray-300">
+                        <button onClick={() => setFontSize(s => Math.min(60, s + 2))} aria-label="تكبير الخط" className="h-10 w-10 flex items-center justify-center rounded-md hover:text-primary-500 dark:text-gray-300">
                             <PlusIcon className="w-4 h-4" />
                         </button>
                     </div>
@@ -162,7 +166,8 @@ const ShareEditorScreenWithProps: React.FC<{ data: any }> = ({ data }) => {
                             <button
                                 key={f.id}
                                 onClick={() => setSelectedFont(f)}
-                                className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${selectedFont.id === f.id ? 'bg-primary-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'}`}
+                                aria-pressed={selectedFont.id === f.id}
+                                className={`h-10 px-4 rounded-md text-xs font-bold transition-colors ${selectedFont.id === f.id ? 'bg-primary-500 text-white' : 'bg-surface-card-2 dark:bg-midnight-800 text-gray-600 dark:text-gray-300'}`}
                             >
                                 {f.name}
                             </button>
@@ -176,7 +181,7 @@ const ShareEditorScreenWithProps: React.FC<{ data: any }> = ({ data }) => {
                             type="checkbox" 
                             checked={showFooter} 
                             onChange={(e) => setShowFooter(e.target.checked)} 
-                            className="form-checkbox text-primary-500 rounded focus:ring-primary-500 bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600" 
+                            className="form-checkbox text-primary-500 rounded focus:ring-primary-500 bg-surface-card-2 dark:bg-midnight-800 border-gray-300 dark:border-gray-600" 
                         />
                         <span className="text-xs text-gray-600 dark:text-gray-300">إظهار الشعار</span>
                     </label>
@@ -186,14 +191,4 @@ const ShareEditorScreenWithProps: React.FC<{ data: any }> = ({ data }) => {
     );
 };
 
-const ShareEditorScreenWrapper = (props: any) => {
-    // This wrapper allows passing params via props which App.tsx will do
-    const [localParams, setLocalParams] = useState(props.data || null);
-    
-    // Hack to force update if props change (though typically they wont for this screen)
-    useEffect(() => { setLocalParams(props.data); }, [props.data]);
-
-    return React.createElement(ShareEditorScreenWithProps, { data: localParams });
-};
-
-export default ShareEditorScreenWrapper;
+export default ShareEditorScreen;

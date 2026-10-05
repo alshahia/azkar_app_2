@@ -1,6 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
-import { useAppContext } from '../../context/AppContext';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigationStore } from '../../stores/useNavigationStore';
+import { usePreferencesStore } from '../../stores/usePreferencesStore';
 import { PrayerTimesService } from '../../services/PrayerTimesService';
 import { MapPinIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -8,7 +9,9 @@ import { useToast } from '../common/Toast';
 import { PrayerTimes } from 'adhan';
 
 const PrayerTimesWidget: React.FC = () => {
-    const { location, setLocation, navigate } = useAppContext();
+    const location = usePreferencesStore((state) => state.location);
+    const setLocation = usePreferencesStore((state) => state.setLocation);
+    const navigate = useNavigationStore((state) => state.navigate);
     const { t } = useTranslation();
     const toast = useToast();
     
@@ -17,13 +20,39 @@ const PrayerTimesWidget: React.FC = () => {
     const [timeRemaining, setTimeRemaining] = useState<string>('');
 
     // Fetch Times if location exists
+    const calculateNextPrayer = useCallback((times: PrayerTimes) => {
+        const now = new Date();
+        const prayers = [
+            { name: 'الفجر', time: times.fajr },
+            { name: 'الشروق', time: times.sunrise },
+            { name: 'الظهر', time: times.dhuhr },
+            { name: 'العصر', time: times.asr },
+            { name: 'المغرب', time: times.maghrib },
+            { name: 'العشاء', time: times.isha }
+        ];
+
+        const next = prayers.find(p => p.time > now);
+        
+        if (next) {
+            setNextPrayer(next);
+        } else {
+            // Next is Fajr tomorrow
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            if(location) {
+                const tomorrowTimes = PrayerTimesService.getPrayerTimes(tomorrow, location);
+                setNextPrayer({ name: 'الفجر', time: tomorrowTimes.fajr });
+            }
+        }
+    }, [location]);
+
     useEffect(() => {
         if (location) {
             const times = PrayerTimesService.getPrayerTimes(new Date(), location);
-            setPrayerTimes(times);
-            calculateNextPrayer(times);
+            setTimeout(() => setPrayerTimes(times), 0);
+            setTimeout(() => calculateNextPrayer(times), 0);
         }
-    }, [location]);
+    }, [location, calculateNextPrayer]);
 
     // Update countdown every minute
     useEffect(() => {
@@ -54,43 +83,18 @@ const PrayerTimesWidget: React.FC = () => {
             const diff = target - now;
             const hours = Math.floor(diff / (1000 * 60 * 60));
             const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            setTimeRemaining(`${hours}س ${minutes}د`);
+            setTimeout(() => setTimeRemaining(`${hours}س ${minutes}د`), 0);
 
             return () => clearInterval(timer);
         }
-    }, [nextPrayer, location]);
+    }, [nextPrayer, location, calculateNextPrayer]);
 
-    const calculateNextPrayer = (times: PrayerTimes) => {
-        const now = new Date();
-        const prayers = [
-            { name: 'الفجر', time: times.fajr },
-            { name: 'الشروق', time: times.sunrise },
-            { name: 'الظهر', time: times.dhuhr },
-            { name: 'العصر', time: times.asr },
-            { name: 'المغرب', time: times.maghrib },
-            { name: 'العشاء', time: times.isha }
-        ];
-
-        const next = prayers.find(p => p.time > now);
-        
-        if (next) {
-            setNextPrayer(next);
-        } else {
-            // Next is Fajr tomorrow
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            if(location) {
-                const tomorrowTimes = PrayerTimesService.getPrayerTimes(tomorrow, location);
-                setNextPrayer({ name: 'الفجر', time: tomorrowTimes.fajr });
-            }
-        }
-    };
 
     const handleEnableLocation = async () => {
         try {
             const loc = await PrayerTimesService.getCurrentLocation();
             setLocation(loc);
-        } catch (e) {
+        } catch {
             toast.show(t('error_location_denied'), { variant: 'error' });
         }
     };
@@ -115,7 +119,7 @@ const PrayerTimesWidget: React.FC = () => {
 
     return (
         <div 
-            onClick={() => navigate('prayerTimes')}
+            role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate('prayerTimes'); } }} onClick={() => navigate('prayerTimes')}
             className="bg-gradient-to-br from-primary-600 to-primary-800 rounded-2xl p-5 text-white shadow-lg mb-4 cursor-pointer relative overflow-hidden"
         >
             {/* Background Decoration */}

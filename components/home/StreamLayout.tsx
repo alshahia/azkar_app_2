@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useAppContext } from '../../context/AppContext';
+import { usePreferencesStore } from '../../stores/usePreferencesStore';
 import { ShareIcon, HeartIcon, ClipboardIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
 import { shareText, copyText } from '../../utils/share';
@@ -15,7 +15,9 @@ interface StreamLayoutProps {
 }
 
 const StreamLayout: React.FC<StreamLayoutProps> = ({ allAzkar }) => {
-    const { fontSize, favorites, toggleFavorite } = useAppContext();
+    const fontSize = usePreferencesStore((state) => state.fontSize);
+    const favorites = usePreferencesStore((state) => state.favorites);
+    const toggleFavorite = usePreferencesStore((state) => state.toggleFavorite);
     const [streamData, setStreamData] = useState<any[]>([]);
     const [copiedId, setCopiedId] = useState<number | null>(null);
 
@@ -27,7 +29,9 @@ const StreamLayout: React.FC<StreamLayoutProps> = ({ allAzkar }) => {
     };
 
     useEffect(() => {
-        setStreamData(getRandomZikrList(allAzkar, 20));
+        setTimeout(() => {
+            setStreamData(getRandomZikrList(allAzkar, 20));
+        }, 0);
     }, [allAzkar]);
 
     const getArabicClass = (level: number) => {
@@ -41,7 +45,7 @@ const StreamLayout: React.FC<StreamLayoutProps> = ({ allAzkar }) => {
             {streamData.map((zikr, idx) => {
                 const isFavorite = favorites.includes(zikr.id);
                 return (
-                    <div key={`${zikr.id}-${idx}`} className="bg-white dark:bg-[#1A3129] rounded-xl p-5 border border-gray-100 dark:border-gray-800 shadow-sm dark:shadow-none transition-colors duration-300">
+                    <div key={`${zikr.id}-${idx}`} className="bg-surface-card dark:bg-surface-card rounded-xl p-5 border border-surface-card-2 dark:border-midnight-800 shadow-sm dark:shadow-none transition-colors duration-300">
                         <div className="flex justify-between items-start mb-3">
                             <div className="flex items-center space-x-2 rtl:space-x-reverse">
                                 <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-500/20 flex items-center justify-center text-primary-600 dark:text-primary-400 text-xs font-bold">
@@ -68,7 +72,9 @@ const StreamLayout: React.FC<StreamLayoutProps> = ({ allAzkar }) => {
                     </div>
                 );
             })}
-            <div className="text-center text-gray-500 text-sm py-4">انتهت القائمة</div>
+            {streamData.length > 0 && (
+                <div className="text-center text-gray-500 text-sm py-4">انتهت القائمة</div>
+            )}
         </div>
     );
 };

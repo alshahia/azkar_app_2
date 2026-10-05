@@ -1,5 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
+import { logger } from '../utils/logger';
 
 /** Optional bundled context injected into the zikr prompt for grounding. */
 export interface ZikrGrounding {
@@ -86,16 +87,32 @@ export const GeminiService = {
     async send(prompt: string, apiKey: string): Promise<string> {
         const ai = new GoogleGenAI({ apiKey: apiKey });
 
+        // Hard timeout so a hung request rejects instead of leaving the
+        // caller's spinner running forever. Promise.race subscribes to both
+        // promises, so a late generateContent rejection can't surface as an
+        // unhandled rejection.
+        let timeoutId: ReturnType<typeof setTimeout> | undefined;
+        const timeout = new Promise<never>((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error('GEMINI_TIMEOUT')), 30000);
+        });
+
         try {
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: prompt,
-            });
+            const response = await Promise.race([
+                ai.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: prompt,
+                }),
+                timeout,
+            ]);
 
             return response.text || "عذراً، لم أتمكن من توليد الشرح في الوقت الحالي.";
         } catch (error) {
-            console.error("Gemini API Error:", error);
+            // Log the message only — never the raw error object, which could
+            // embed request details.
+            logger.error('Gemini request failed', { message: error instanceof Error ? error.message : String(error) });
             throw error;
+        } finally {
+            if (timeoutId !== undefined) clearTimeout(timeoutId);
         }
     },
 

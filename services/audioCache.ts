@@ -234,6 +234,18 @@ function toArrayBuffer(view: Uint8Array): ArrayBuffer {
  *  4. commit the partial into a complete cached file
  * Backends without the partial protocol fall back to in-memory accumulation.
  */
+/**
+ * store()/commitPartial() hand back a playable URL - a blob: URL on web. The
+ * download path never plays it (playback resolves its own URL through
+ * lookup()), so leaving it alive leaks one blob per downloaded ayah: a full
+ * long surah retains hundreds of megabytes for the lifetime of the page.
+ */
+function revokeUnusedObjectUrl(url: unknown): void {
+    if (typeof url !== 'string' || !url.startsWith('blob:')) return;
+    if (typeof URL === 'undefined' || typeof URL.revokeObjectURL !== 'function') return;
+    URL.revokeObjectURL(url);
+}
+
 async function fetchAndStreamStore(
     backend: CacheBackend,
     reciterId: string,
@@ -265,7 +277,7 @@ async function fetchAndStreamStore(
         if (offset > 0) {
             try { await backend.discardPartial?.(reciterId, globalAyah); } catch { /* best-effort */ }
         }
-        await backend.store(reciterId, globalAyah, buf);
+        revokeUnusedObjectUrl(await backend.store(reciterId, globalAyah, buf));
         return buf.byteLength;
     }
 
@@ -289,8 +301,7 @@ async function fetchAndStreamStore(
             onFileBytes?.(written);
         }
         if (backend.appendPartial && backend.commitPartial) {
-            const url = await backend.commitPartial(reciterId, globalAyah);
-            void url;
+            revokeUnusedObjectUrl(await backend.commitPartial(reciterId, globalAyah));
         } else {
             const parts: ArrayBuffer[] = memoryChunks.map(c => toArrayBuffer(c));
             const merged = new Uint8Array(written);
@@ -299,7 +310,7 @@ async function fetchAndStreamStore(
                 merged.set(new Uint8Array(part), pos);
                 pos += part.byteLength;
             }
-            await backend.store(reciterId, globalAyah, merged.buffer as ArrayBuffer);
+            revokeUnusedObjectUrl(await backend.store(reciterId, globalAyah, merged.buffer as ArrayBuffer));
         }
         return written;
     } catch (e) {

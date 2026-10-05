@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { useAppContext } from '../../context/AppContext';
-import { HomeIcon, ArrowRightIcon, TrophyIcon, FireIcon, HandThumbUpIcon, ChartBarIcon } from '@heroicons/react/24/solid';
+import { useNavigationStore } from '../../stores/useNavigationStore';
+import { HomeIcon, ArrowRightIcon, ChartBarIcon, BookOpenIcon } from '@heroicons/react/24/solid';
 import Confetti from '../common/Confetti';
 
 interface SessionStats {
@@ -15,7 +15,7 @@ interface SessionSummaryScreenProps {
 }
 
 const SessionSummaryScreen: React.FC<SessionSummaryScreenProps> = ({ sessionStats }) => {
-    const { navigate } = useAppContext();
+    const navigate = useNavigationStore((state) => state.navigate);
     
     const percentage = sessionStats.totalAvailable > 0 
         ? Math.round((sessionStats.readCount / sessionStats.totalAvailable) * 100)
@@ -30,14 +30,14 @@ const SessionSummaryScreen: React.FC<SessionSummaryScreenProps> = ({ sessionStat
     };
 
     return (
-        <div className="h-full flex flex-col p-6 bg-gray-50 dark:bg-[#12241C] overflow-y-auto animate-fade-in relative">
+        <div className="h-full flex flex-col p-6 bg-surface overflow-y-auto animate-fade-in relative">
             {/* Confetti Celebration for high achievement */}
             {percentage >= 50 && <Confetti />}
 
             <header className="mb-8 flex items-center justify-between relative z-10">
                 <div className="w-8"></div> {/* Spacer for center alignment */}
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">ملخص الجلسة</h1>
-                <button onClick={() => navigate('categories')} aria-label="رجوع" className="p-2 bg-gray-200 dark:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">
+                <button onClick={() => navigate('categories')} aria-label="رجوع" className="p-2.5 bg-gray-200 dark:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">
                     <ArrowRightIcon className="w-5 h-5 rtl:rotate-180" />
                 </button>
             </header>
@@ -70,7 +70,7 @@ const SessionSummaryScreen: React.FC<SessionSummaryScreenProps> = ({ sessionStat
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
                         <span className="text-6xl font-extrabold text-gray-900 dark:text-white tracking-tighter">{sessionStats.readCount}</span>
-                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1 uppercase tracking-wide">ذكر تم قراءته</span>
+                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1">ذكر تم قراءته</span>
                     </div>
                 </div>
 
@@ -83,19 +83,19 @@ const SessionSummaryScreen: React.FC<SessionSummaryScreenProps> = ({ sessionStat
 
                 {/* Stat Grid */}
                 <div className="grid grid-cols-2 gap-4 w-full mt-4">
-                    <div className="bg-white dark:bg-[#1A3129] p-5 rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-none flex flex-col items-center justify-center text-center transition-transform hover:scale-[1.02]">
-                        <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-full mb-3 text-orange-500">
-                            <FireIcon className="w-6 h-6" />
+                    <div className="bg-surface-card p-5 rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-midnight-800 flex flex-col items-center justify-center text-center transition-transform hover:scale-[1.02]">
+                        <div className="p-3 bg-primary-50 dark:bg-primary-900/20 rounded-full mb-3 text-primary-600 dark:text-primary-400">
+                            <ChartBarIcon className="w-6 h-6" />
                         </div>
                         <span className="text-2xl font-bold text-gray-900 dark:text-white">{percentage}%</span>
                         <span className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1">نسبة الإنجاز</span>
                     </div>
 
-                    <div className="bg-white dark:bg-[#1A3129] p-5 rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-none flex flex-col items-center justify-center text-center transition-transform hover:scale-[1.02]">
-                        <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-3 text-blue-500">
-                            <ChartBarIcon className="w-6 h-6" />
+                    <div className="bg-surface-card p-5 rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-midnight-800 flex flex-col items-center justify-center text-center transition-transform hover:scale-[1.02]">
+                        <div className="p-3 bg-surface-card-2 dark:bg-midnight-800 rounded-full mb-3 text-gray-500 dark:text-gray-400">
+                            <BookOpenIcon className="w-6 h-6" />
                         </div>
-                        <span className="text-2xl font-bold text-gray-900 dark:text-white">{sessionStats.totalAvailable - sessionStats.readCount}</span>
+                        <span className="text-2xl font-bold text-gray-900 dark:text-white">{Math.max(0, sessionStats.totalAvailable - sessionStats.readCount)}</span>
                         <span className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1">المتبقي</span>
                     </div>
                 </div>

@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { useAppContext } from '../../context/AppContext';
+import { useNavigationStore } from '../../stores/useNavigationStore';
+import { usePreferencesStore } from '../../stores/usePreferencesStore';
 import { ArrowLeftIcon, SpeakerWaveIcon, KeyIcon, PlayIcon, StopIcon, CloudArrowDownIcon, ArrowPathIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { audioService } from '../../services/AudioService';
 import { Browser } from '@capacitor/browser';
@@ -10,14 +11,45 @@ import { useTranslation } from '../../hooks/useTranslation';
 
 const AVAILABLE_VOICES = ['Charon', 'Kore', 'Puck', 'Fenrir', 'Zephyr'];
 
+const SettingItem: React.FC<{ icon: React.ElementType, label: string, description?: string, hasToggle?: boolean, isChecked?: boolean, onToggle?: () => void, onClick?: () => void }> = ({ icon: Icon, label, description, hasToggle, isChecked, onToggle, onClick }) => {
+    const Container = hasToggle ? 'div' : 'button';
+    return (
+        <Container 
+            onClick={hasToggle ? undefined : onClick} 
+            className={`w-full flex items-center justify-between p-4 mb-2 bg-surface-card dark:bg-surface-card rounded-2xl transition-colors hover:bg-surface-card-2 dark:hover:bg-surface-card-2 shadow-sm dark:shadow-none border border-gray-100 dark:border-none ${hasToggle ? '' : 'cursor-pointer'}`}
+        >
+            <div className="flex flex-col items-start flex-1 ml-4 rtl:mr-4 rtl:ml-0">
+                <div className="flex items-center space-x-4 rtl:space-x-reverse">
+                    <Icon className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                    <span className="text-gray-900 dark:text-white font-medium">{label}</span>
+                </div>
+                {description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mr-10 rtl:mr-0 rtl:ml-10">{description}</p>}
+            </div>
+            
+            <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                {hasToggle ? (
+                    <label className="relative inline-flex items-center cursor-pointer min-h-[40px]">
+                        <input type="checkbox" checked={isChecked} onChange={onToggle} aria-label={label} role="switch" aria-checked={isChecked} className="sr-only peer" />
+                        <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] rtl:after:right-[2px] rtl:after:left-auto after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                    </label>
+                ) : (
+                    <ChevronRightIcon className="w-5 h-5 text-gray-400 dark:text-gray-500 rtl:rotate-180" />
+                )}
+            </div>
+        </Container>
+    );
+};
+
 const AudioSettingsScreen: React.FC = () => {
-    const { 
-        navigate, 
-        apiKey, setApiKey, 
-        voiceName, setVoiceName, 
-        audioAutoSave, setAudioAutoSave, 
-        audioLoopDefault, setAudioLoopDefault 
-    } = useAppContext();
+    const navigate = useNavigationStore((state) => state.navigate);
+    const apiKey = usePreferencesStore((state) => state.apiKey);
+    const setApiKey = usePreferencesStore((state) => state.setApiKey);
+    const voiceName = usePreferencesStore((state) => state.voiceName);
+    const setVoiceName = usePreferencesStore((state) => state.setVoiceName);
+    const audioAutoSave = usePreferencesStore((state) => state.audioAutoSave);
+    const setAudioAutoSave = usePreferencesStore((state) => state.setAudioAutoSave);
+    const audioLoopDefault = usePreferencesStore((state) => state.audioLoopDefault);
+    const setAudioLoopDefault = usePreferencesStore((state) => state.setAudioLoopDefault);
     const { t } = useTranslation();
     const toast = useToast();
     
@@ -57,35 +89,6 @@ const AudioSettingsScreen: React.FC = () => {
         }
     };
 
-    const SettingItem: React.FC<{ icon: React.ElementType, label: string, description?: string, hasToggle?: boolean, isChecked?: boolean, onToggle?: () => void }> = ({ icon: Icon, label, description, hasToggle, isChecked, onToggle }) => {
-        const Container = hasToggle ? 'div' : 'button';
-        return (
-            <Container 
-                onClick={hasToggle ? undefined : onToggle} 
-                className={`w-full flex items-center justify-between p-4 mb-2 bg-white dark:bg-[#1A3129] rounded-lg transition-colors hover:bg-gray-50 dark:hover:bg-[#203c31] shadow-sm dark:shadow-none border border-gray-100 dark:border-none ${hasToggle ? '' : 'cursor-pointer'}`}
-            >
-                <div className="flex flex-col items-start flex-1 ml-4 rtl:mr-4 rtl:ml-0">
-                    <div className="flex items-center space-x-4 rtl:space-x-reverse">
-                        <Icon className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-                        <span className="text-gray-900 dark:text-white font-medium">{label}</span>
-                    </div>
-                    {description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mr-10 rtl:mr-0 rtl:ml-10">{description}</p>}
-                </div>
-                
-                <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                    {hasToggle ? (
-                        <label className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" checked={isChecked} onChange={onToggle} aria-label={label} className="sr-only peer" />
-                            <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] rtl:after:right-[2px] rtl:after:left-auto after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-                        </label>
-                    ) : (
-                        <ChevronRightIcon className="w-5 h-5 text-gray-400 dark:text-gray-500 rtl:rotate-180" />
-                    )}
-                </div>
-            </Container>
-        );
-    };
-
     return (
         <div className="p-4 h-full flex flex-col">
             <header className="flex items-center mb-6 relative">
@@ -122,8 +125,8 @@ const AudioSettingsScreen: React.FC = () => {
                 {/* Voice Selection */}
                 <div>
                     <h2 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 px-2">الصوت والنبرة</h2>
-                    <div className="bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-none shadow-sm dark:shadow-none rounded-lg overflow-hidden">
-                        <div className="p-4 flex items-center space-x-4 rtl:space-x-reverse border-b border-gray-100 dark:border-gray-800">
+                    <div className="bg-surface-card dark:bg-surface-card border border-gray-100 dark:border-none shadow-sm dark:shadow-none rounded-lg overflow-hidden">
+                        <div className="p-4 flex items-center space-x-4 rtl:space-x-reverse border-b border-surface-card-2 dark:border-midnight-800">
                             <SpeakerWaveIcon className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                             <span className="text-gray-900 dark:text-white font-medium">اختر القارئ المفضل</span>
                         </div>
@@ -131,11 +134,14 @@ const AudioSettingsScreen: React.FC = () => {
                             {AVAILABLE_VOICES.map((voice) => (
                                 <div 
                                     key={voice} 
+                                    role="button"
+                                    tabIndex={0}
                                     onClick={() => setVoiceName(voice)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setVoiceName(voice); } }}
                                     className={`flex items-center justify-between p-4 cursor-pointer transition-colors ${
                                         voiceName === voice 
                                         ? 'bg-emerald-50 dark:bg-emerald-900/20' 
-                                        : 'hover:bg-gray-50 dark:hover:bg-[#203c31]'
+                                        : 'hover:bg-surface-card-2 dark:hover:bg-surface-card-2'
                                     }`}
                                 >
                                     <div className="flex items-center space-x-3 rtl:space-x-reverse">
@@ -148,7 +154,7 @@ const AudioSettingsScreen: React.FC = () => {
                                     <button 
                                         onClick={(e) => { e.stopPropagation(); handleVoicePreview(voice); }}
                                         aria-label={previewingVoice === voice ? "إيقاف المعاينة" : "معاينة الصوت"}
-                                        className={`p-2 rounded-full transition-colors ${previewingVoice === voice ? 'bg-emerald-100 text-emerald-600' : 'hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400'}`}
+                                        className={`p-2 rounded-full transition-colors ${previewingVoice === voice ? 'bg-emerald-100 text-emerald-600' : 'hover:bg-surface-card dark:hover:bg-midnight-900 text-gray-400'}`}
                                     >
                                         {previewingVoice === voice ? <StopIcon className="w-5 h-5" /> : <PlayIcon className="w-5 h-5" />}
                                     </button>
@@ -161,7 +167,7 @@ const AudioSettingsScreen: React.FC = () => {
                 {/* API Key */}
                 <div>
                     <h2 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 px-2">الإعدادات المتقدمة</h2>
-                    <div className="p-4 bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-none shadow-sm dark:shadow-none rounded-lg">
+                    <div className="p-4 bg-surface-card dark:bg-surface-card border border-gray-100 dark:border-none shadow-sm dark:shadow-none rounded-lg">
                         <div className="flex items-center space-x-4 rtl:space-x-reverse mb-3">
                             <KeyIcon className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                             <span className="text-gray-900 dark:text-white font-medium">مفتاح Google API</span>
@@ -171,7 +177,8 @@ const AudioSettingsScreen: React.FC = () => {
                             value={apiKey}
                             onChange={(e) => setApiKey(e.target.value)}
                             placeholder="أدخل مفتاح الـ API الخاص بك"
-                            className="w-full bg-gray-50 dark:bg-[#12241C] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-emerald-500 transition-colors text-sm mb-2"
+                            aria-label="مفتاح Google API"
+                            className="w-full bg-surface dark:bg-surface text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-emerald-500 transition-colors text-sm mb-2"
                             dir="ltr"
                         />
                         <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">

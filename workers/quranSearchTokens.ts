@@ -12,7 +12,7 @@
 
 const STRIP_MARKS = /[\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g;
 const ALEF_VARIANTS = /[\u0671\u0623\u0625\u0622]/g;
-const SPLIT_RE = /[\s\u060C\u061B\u061F.,;:!?()\[\]{}"'`]+/;
+const SPLIT_RE = /[\s\u060C\u061B\u061F.,;:!?()[\]{}"'`]+/;
 // CLITICS are stripped from the start of a normalized word to widen matching.
 // We deliberately do NOT include the bare article 'ال' - stripping it would
 // collapse 'الرحمن' and 'الرحيم' (closed forms users actively query) into

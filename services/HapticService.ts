@@ -22,7 +22,7 @@ export const HapticService = {
             } else if (typeof navigator !== 'undefined' && navigator.vibrate) {
                 navigator.vibrate(10);
             }
-        } catch (e) {
+        } catch {
             // Silently ignore haptic failures
         }
     },
@@ -35,7 +35,7 @@ export const HapticService = {
             } else if (typeof navigator !== 'undefined' && navigator.vibrate) {
                 navigator.vibrate(40);
             }
-        } catch (e) {
+        } catch {
             // Silently ignore haptic failures
         }
     },
@@ -48,7 +48,7 @@ export const HapticService = {
             } else if (typeof navigator !== 'undefined' && navigator.vibrate) {
                 navigator.vibrate(70);
             }
-        } catch (e) {
+        } catch {
             // Silently ignore haptic failures
         }
     },
@@ -61,7 +61,7 @@ export const HapticService = {
             } else if (typeof navigator !== 'undefined' && navigator.vibrate) {
                 navigator.vibrate([50, 50, 50]);
             }
-        } catch (e) {
+        } catch {
             // Silently ignore haptic failures
         }
     },
@@ -74,7 +74,7 @@ export const HapticService = {
             } else if (typeof navigator !== 'undefined' && navigator.vibrate) {
                 navigator.vibrate([50, 100, 50]);
             }
-        } catch (e) {
+        } catch {
             // Silently ignore haptic failures
         }
     },
@@ -87,7 +87,7 @@ export const HapticService = {
             } else if (typeof navigator !== 'undefined' && navigator.vibrate) {
                 navigator.vibrate(pattern);
             }
-        } catch (e) {
+        } catch {
             // Silently ignore haptic failures
         }
     }

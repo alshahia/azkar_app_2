@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>خمسة نماذج داكنة للوحة أذكار — Dark Mode Prototypes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --page-bg: #0a0a0a;
+    --ink: #f5f5f4;
+    --muted: #a8a29e;
+    --line: #292524;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--page-bg);
+    color: var(--ink);
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body { padding: 48px 24px 80px; }
+  .page-header {
+    max-width: 1200px;
+    margin: 0 auto 48px;
+    text-align: center;
+  }
+  .page-header .eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #34d399;
+    margin-bottom: 12px;
+  }
+  .page-header h1 {
+    font-family: 'Amiri', serif;
+    font-size: 44px;
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  .page-header p {
+    color: var(--muted);
+    font-size: 16px;
+    max-width: 680px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+  .grid {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 32px;
+  }
+  .prototype {
+    background: #131313;
+    border-radius: 28px;
+    padding: 24px;
+    border: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .prototype-meta { padding: 4px 8px; }
+  .prototype-meta .num {
+    display: inline-block;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: #34d399;
+    color: #022c22;
+    font-weight: 700;
+    font-size: 14px;
+    text-align: center;
+    line-height: 28px;
+    margin-left: 10px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .prototype-meta h2 {
+    font-family: 'Amiri', serif;
+    font-size: 24px;
+    font-weight: 700;
+    display: inline-block;
+    vertical-align: middle;
+    color: #f5f5f4;
+  }
+  .prototype-meta .sub {
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    margin-top: 4px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .prototype-meta .desc {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 10px;
+    line-height: 1.55;
+  }
+  .phone {
+    width: 100%;
+    max-width: 340px;
+    margin: 0 auto;
+    aspect-ratio: 9 / 19;
+    border-radius: 42px;
+    padding: 12px;
+    background: #050505;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.04) inset,
+      0 30px 60px -20px rgba(0,0,0,0.80),
+      0 18px 36px -18px rgba(0,0,0,0.80);
+    position: relative;
+  }
+  .phone .screen {
+    width: 100%;
+    height: 100%;
+    border-radius: 32px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px 10px;
+    flex-shrink: 0;
+  }
+  .topbar .icons { display: flex; gap: 8px; }
+  .topbar .icon-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    transition: background 200ms;
+  }
+  .topbar .title { font-weight: 700; font-size: 17px; }
+  .topbar svg { width: 20px; height: 20px; stroke-width: 1.75; fill: none; stroke: currentColor; }
+  .board {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 4px 14px 18px;
+  }
+  .featured {
+    flex: 3;
+    border-radius: 24px;
+    padding: 18px 18px 16px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .featured .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .chip {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    padding: 4px 8px;
+    border-radius: 9999px;
+  }
+  .refresh {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+  }
+  .refresh svg { width: 18px; height: 18px; stroke-width: 1.75; fill: none; stroke: currentColor; }
+  .verse {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    padding: 8px 6px;
+    position: relative;
+  }
+  .verse p {
+    font-family: 'Amiri', serif;
+    font-weight: 700;
+    line-height: 1.7;
+    text-align: center;
+  }
+  .ref {
+    text-align: center;
+    font-size: 10px;
+    font-weight: 600;
+    opacity: 0.7;
+  }
+  .tiles {
+    flex: 2;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .tile {
+    border-radius: 20px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-start;
+    border: none;
+    cursor: pointer;
+    text-align: right;
+    font-family: inherit;
+  }
+  .tile .disc {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+  }
+  .tile .disc svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; }
+  .tile .label-sm {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.65;
+    margin-bottom: 2px;
+  }
+  .tile .label-lg {
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  /* ============================================ */
+  /* DARK 1 — الزمرد الليلي (The Verdant Night)   */
+  /* Refined current emerald midnight             */
+  /* ============================================ */
+  .d1 .screen {
+    background: radial-gradient(ellipse at top right, #064e3b 0%, #022c22 40%, #011c16 100%);
+    color: #ecfdf5;
+  }
+  .d1 .topbar { background: linear-gradient(to bottom, rgba(1,28,22,0.6), transparent); }
+  .d1 .topbar .icon-btn { color: rgba(236,253,245,0.6); }
+  .d1 .topbar .icon-btn:hover { background: rgba(255,255,255,0.06); }
+  .d1 .topbar .title { color: #ecfdf5; }
+  .d1 .featured {
+    background: rgba(2,44,34,0.7);
+    border: 1px solid rgba(52,211,153,0.15);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 0 60px -20px rgba(16,185,129,0.25);
+  }
+  .d1 .featured::before {
+    /* top emerald accent line */
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(to left, transparent, #10b981, transparent);
+  }
+  .d1 .featured .chip { background: rgba(16,185,129,0.18); color: #6ee7b7; }
+  .d1 .refresh { color: rgba(236,253,245,0.5); }
+  .d1 .refresh:hover { color: #34d399; }
+  .d1 .verse p { color: #ecfdf5; font-size: 21px; }
+  .d1 .ref { color: rgba(236,253,245,0.55); }
+  .d1 .tile {
+    background: rgba(2,44,34,0.6);
+    border: 1px solid rgba(52,211,153,0.10);
+    color: #ecfdf5;
+  }
+  .d1 .tile.morning .disc { background: rgba(251,191,36,0.18); color: #fcd34d; }
+  .d1 .tile.evening .disc { background: rgba(167,139,250,0.18); color: #c4b5fd; }
+  .d1 .tile.random .disc { background: rgba(52,211,153,0.18); color: #6ee7b7; }
+
+  /* ============================================ */
+  /* DARK 2 — الكون النيلي (The Cosmic Indigo)    */
+  /* Deep space navy with gold accents            */
+  /* ============================================ */
+  .d2 .screen {
+    background: linear-gradient(to bottom, #0a0e27 0%, #050816 100%);
+    color: #e0e7ff;
+  }
+  .d2 .topbar { background: linear-gradient(to bottom, rgba(10,14,39,0.8), transparent); }
+  .d2 .topbar .icon-btn { color: rgba(224,231,255,0.6); }
+  .d2 .topbar .icon-btn:hover { background: rgba(255,255,255,0.06); }
+  .d2 .topbar .title { color: #e0e7ff; }
+  .d2 .star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+  }
+  .d2 .star.s1 { top: 30px; right: 28px; width: 2px; height: 2px; opacity: 0.8; box-shadow: 0 0 4px white; }
+  .d2 .star.s2 { top: 65px; left: 32px; width: 1.5px; height: 1.5px; opacity: 0.5; }
+  .d2 .star.s3 { top: 110px; right: 60px; width: 1px; height: 1px; opacity: 0.4; }
+  .d2 .star.s4 { bottom: 80px; left: 24px; width: 2px; height: 2px; opacity: 0.6; box-shadow: 0 0 4px white; }
+  .d2 .featured {
+    background: rgba(19,24,49,0.7);
+    border: 1px solid rgba(255,255,255,0.06);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .d2 .featured::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(to left, transparent, #fbbf24, transparent);
+  }
+  .d2 .featured .chip { background: rgba(251,191,36,0.15); color: #fcd34d; }
+  .d2 .refresh { color: rgba(224,231,255,0.5); }
+  .d2 .ring {
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    border: 1.5px solid #fbbf24;
+    margin: 0 auto;
+    display: grid;
+    place-items: center;
+    position: relative;
+    box-shadow: 0 0 32px rgba(251,191,36,0.20), inset 0 0 32px rgba(251,191,36,0.05);
+  }
+  .d2 .ring::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #fbbf24;
+    box-shadow: 0 0 8px #fbbf24;
+  }
+  .d2 .verse p { color: #e0e7ff; font-size: 21px; }
+  .d2 .ref { color: rgba(224,231,255,0.55); }
+  .d2 .tile {
+    background: rgba(19,24,49,0.6);
+    border: 1px solid rgba(255,255,255,0.06);
+    color: #e0e7ff;
+  }
+  .d2 .tile.morning .disc { background: rgba(251,191,36,0.18); color: #fcd34d; }
+  .d2 .tile.evening .disc { background: rgba(196,181,253,0.18); color: #c4b5fd; }
+  .d2 .tile.random .disc { background: rgba(110,231,183,0.18); color: #6ee7b7; }
+
+  /* ============================================ */
+  /* DARK 3 — الغابة المسحورة (Enchanted Forest)  */
+  /* Layered organic greens, breathing            */
+  /* ============================================ */
+  .d3 .screen {
+    background:
+      radial-gradient(ellipse at 20% 0%, rgba(6,95,70,0.5) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 100%, rgba(6,78,59,0.4) 0%, transparent 50%),
+      linear-gradient(to bottom, #0a1f17 0%, #061710 100%);
+    color: #d1fae5;
+  }
+  .d3 .topbar { background: transparent; }
+  .d3 .topbar .icon-btn { color: rgba(209,250,229,0.6); }
+  .d3 .topbar .icon-btn:hover { background: rgba(110,231,183,0.10); }
+  .d3 .topbar .title { color: #d1fae5; }
+  .d3 .featured {
+    background:
+      linear-gradient(135deg, rgba(21,48,42,0.7) 0%, rgba(10,31,23,0.7) 100%);
+    border: 1px solid rgba(110,231,183,0.12);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .d3 .featured::before {
+    /* subtle organic moss texture */
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 15% 25%, rgba(110,231,183,0.06) 0%, transparent 20%),
+      radial-gradient(circle at 85% 75%, rgba(110,231,183,0.04) 0%, transparent 25%),
+      radial-gradient(circle at 50% 50%, rgba(52,211,153,0.03) 0%, transparent 35%);
+    pointer-events: none;
+  }
+  .d3 .featured::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(to left, transparent, rgba(110,231,183,0.4), transparent);
+  }
+  .d3 .featured .chip { background: rgba(110,231,183,0.15); color: #a7f3d0; }
+  .d3 .refresh { color: rgba(209,250,229,0.5); }
+  .d3 .verse p { color: #ecfdf5; font-size: 22px; }
+  .d3 .ref { color: rgba(167,243,208,0.6); }
+  .d3 .tile {
+    background: linear-gradient(135deg, rgba(21,48,42,0.5) 0%, rgba(10,31,23,0.5) 100%);
+    border: 1px solid rgba(110,231,183,0.10);
+    color: #d1fae5;
+  }
+  .d3 .tile.morning .disc { background: rgba(252,211,77,0.18); color: #fde68a; }
+  .d3 .tile.evening .disc { background: rgba(167,139,250,0.18); color: #c4b5fd; }
+  .d3 .tile.random .disc { background: rgba(110,231,183,0.18); color: #a7f3d0; }
+
+  /* ============================================ */
+  /* DARK 4 — الليل المرجاني (The Coral Night)    */
+  /* Warm dark, romantic, sunset-after-dark       */
+  /* ============================================ */
+  .d4 .screen {
+    background:
+      radial-gradient(ellipse at bottom left, rgba(190,18,60,0.25) 0%, transparent 50%),
+      linear-gradient(to bottom, #1a0e0a 0%, #0e0806 100%);
+    color: #fce7e7;
+  }
+  .d4 .topbar { background: transparent; }
+  .d4 .topbar .icon-btn { color: rgba(252,231,231,0.6); }
+  .d4 .topbar .icon-btn:hover { background: rgba(251,113,133,0.10); }
+  .d4 .topbar .title { color: #fce7e7; }
+  .d4 .featured {
+    background: rgba(42,24,19,0.7);
+    border: 1px solid rgba(251,113,133,0.15);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 0 60px -20px rgba(251,113,133,0.18);
+  }
+  .d4 .featured::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(to left, transparent, #f87171, transparent);
+  }
+  .d4 .featured .chip { background: rgba(251,113,133,0.18); color: #fda4af; }
+  .d4 .refresh { color: rgba(252,231,231,0.5); }
+  .d4 .verse p { color: #fff5f5; font-size: 22px; }
+  .d4 .ref { color: rgba(253,164,175,0.6); }
+  .d4 .tile {
+    background: rgba(42,24,19,0.6);
+    border: 1px solid rgba(251,113,133,0.12);
+    color: #fce7e7;
+  }
+  .d4 .tile.morning .disc { background: rgba(252,165,165,0.20); color: #fecaca; }
+  .d4 .tile.evening .disc { background: rgba(196,181,253,0.18); color: #ddd6fe; }
+  .d4 .tile.random .disc { background: rgba(251,113,133,0.20); color: #fda4af; }
+
+  /* ============================================ */
+  /* DARK 5 — السبج (The Obsidian Mirror)         */
+  /* Pure black, ultra-modern, sleek              */
+  /* ============================================ */
+  .d5 .screen {
+    background: #0a0a0a;
+    color: #fafafa;
+  }
+  .d5 .topbar { background: transparent; }
+  .d5 .topbar .icon-btn { color: rgba(250,250,250,0.5); }
+  .d5 .topbar .icon-btn:hover { background: rgba(255,255,255,0.06); }
+  .d5 .topbar .title { color: #fafafa; }
+  .d5 .featured {
+    background: #161616;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.5);
+  }
+  .d5 .featured::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: 20%; right: 20%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, #10b981, transparent);
+    box-shadow: 0 0 12px #10b981;
+  }
+  .d5 .featured .chip { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+  .d5 .refresh { color: rgba(250,250,250,0.4); }
+  .d5 .refresh:hover { color: #10b981; }
+  .d5 .verse p { color: #fafafa; font-size: 22px; }
+  .d5 .ref { color: rgba(250,250,250,0.45); }
+  .d5 .tile {
+    background: #161616;
+    border: 1px solid rgba(255,255,255,0.06);
+    color: #fafafa;
+  }
+  .d5 .tile.morning .disc { background: rgba(16,185,129,0.15); color: #34d399; box-shadow: 0 0 16px rgba(16,185,129,0.20); }
+  .d5 .tile.evening .disc { background: rgba(255,255,255,0.06); color: #e5e5e5; }
+  .d5 .tile.random .disc { background: rgba(255,255,255,0.06); color: #e5e5e5; }
+
+  .page-footer {
+    max-width: 1200px;
+    margin: 64px auto 0;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  .page-footer code {
+    background: #131313;
+    padding: 2px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    font-family: 'Plus Jakarta Sans', monospace;
+    font-size: 12px;
+    color: #f5f5f4;
+  }
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <div class="eyebrow">Dark Mode Prototypes · خمسة نماذج داكنة</div>
+  <h1>خمسة نماذج داكنة للوحة أذكار</h1>
+  <p>بدائل داكنة لاستبدال التصميم الداكن الحالي لشاشة <strong>اللوحة</strong>. خمسة هويات ليلية مختلفة — من الزمرد الكلاسيكي إلى السبج النقي — كلها تحافظ على نفس البنية (شريط علوي + بطاقة مميزة 60% + بطاقتان 40%) ونفس سلوك الـ RTL.</p>
+</header>
+
+<main class="grid">
+
+  <!-- DARK 1 — الزمرد الليلي -->
+  <section class="prototype d1">
+    <div class="prototype-meta">
+      <div><span class="num">١</span><h2>الزمرد الليلي</h2></div>
+      <div class="sub">The Verdant Night · Refined Midnight</div>
+      <p class="desc">الاتجاه الحالي مُصقَّل. نفس midnight-950/#022c22 لكن مع توهج زمردي خفيف، حواف مُحدَّدة، ومساحة تنفُّس أكبر. الأكثر أماناً للتطبيق.</p>
+    </div>
+    <div class="phone">
+      <div class="screen">
+        <div class="topbar">
+          <div class="icons">
+            <div class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
+            <div class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+          </div>
+          <div class="title">أذكار</div>
+        </div>
+        <div class="board">
+          <div class="featured">
+            <div class="row">
+              <span class="chip">مميز لك</span>
+              <button class="refresh"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></button>
+            </div>
+            <div class="verse"><p>سُبْحَانَ اللَّهِ وَبِحَمْدِهِ<br>سُبْحَانَ اللَّهِ الْعَظِيم</p></div>
+            <div class="ref">أذكار الصباح</div>
+          </div>
+          <div class="tiles">
+            <button class="tile morning">
+              <div class="disc"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></div>
+              <div><div class="label-sm">ابدأ يومك</div><div class="label-lg">أذكار الصباح</div></div>
+            </button>
+            <button class="tile random">
+              <div class="disc"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+              <div><div class="label-sm">اكتشف</div><div class="label-lg">أذكار النوم</div></div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DARK 2 — الكون النيلي -->
+  <section class="prototype d2">
+    <div class="prototype-meta">
+      <div><span class="num">٢</span><h2>الكون النيلي</h2></div>
+      <div class="sub">The Cosmic Indigo · Deep Space · Gold</div>
+      <p class="desc">كوكب ليلي بنفسجي عميق مع نجوم متفرقة، حلقة ذهبية حول الآية. روح القبة السماوية والتأمل الفلكي.</p>
+    </div>
+    <div class="phone">
+      <div class="screen">
+        <div class="topbar">
+          <div class="icons">
+            <div class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
+            <div class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+          </div>
+          <div class="title">أذكار</div>
+        </div>
+        <div class="board">
+          <div class="featured">
+            <span class="star s1"></span>
+            <span class="star s2"></span>
+            <span class="star s3"></span>
+            <span class="star s4"></span>
+            <div class="row">
+              <span class="chip">مميز لك</span>
+              <button class="refresh"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></button>
+            </div>
+            <div class="verse"><div class="ring"><p>سُبْحَانَ اللَّهِ<br>وَبِحَمْدِهِ</p></div></div>
+            <div class="ref">أذكار الصباح</div>
+          </div>
+          <div class="tiles">
+            <button class="tile morning">
+              <div class="disc"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></div>
+              <div><div class="label-sm">ابدأ يومك</div><div class="label-lg">أذكار الصباح</div></div>
+            </button>
+            <button class="tile random">
+              <div class="disc"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+              <div><div class="label-sm">اكتشف</div><div class="label-lg">أذكار النوم</div></div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DARK 3 — الغابة المسحورة -->
+  <section class="prototype d3">
+    <div class="prototype-meta">
+      <div><span class="num">٣</span><h2>الغابة المسحورة</h2></div>
+      <div class="sub">The Enchanted Forest · Layered Greens</div>
+      <p class="desc">طبقات من الأخضر العضوي مع توهجات طحلبية خفيفة. الأكثر طبيعية وتنفساً، كأنك في غابة ليلية.</p>
+    </div>
+    <div class="phone">
+      <div class="screen">
+        <div class="topbar">
+          <div class="icons">
+            <div class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
+            <div class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+          </div>
+          <div class="title">أذكار</div>
+        </div>
+        <div class="board">
+          <div class="featured">
+            <div class="row">
+              <span class="chip">مميز لك</span>
+              <button class="refresh"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></button>
+            </div>
+            <div class="verse"><p>سُبْحَانَ اللَّهِ<br>وَبِحَمْدِهِ</p></div>
+            <div class="ref">أذكار الصباح</div>
+          </div>
+          <div class="tiles">
+            <button class="tile morning">
+              <div class="disc"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></div>
+              <div><div class="label-sm">ابدأ يومك</div><div class="label-lg">أذكار الصباح</div></div>
+            </button>
+            <button class="tile random">
+              <div class="disc"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+              <div><div class="label-sm">اكتشف</div><div class="label-lg">أذكار النوم</div></div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DARK 4 — الليل المرجاني -->
+  <section class="prototype d4">
+    <div class="prototype-meta">
+      <div><span class="num">٤</span><h2>الليل المرجاني</h2></div>
+      <div class="sub">The Coral Night · Warm Dark · Rose</div>
+      <p class="desc">ظلام دافئ بلون المارون مع توهج مرجاني رومانسي. أكثر النماذج عاطفية ودفئاً، مثالي للسهرات الروحية.</p>
+    </div>
+    <div class="phone">
+      <div class="screen">
+        <div class="topbar">
+          <div class="icons">
+            <div class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
+            <div class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+          </div>
+          <div class="title">أذكار</div>
+        </div>
+        <div class="board">
+          <div class="featured">
+            <div class="row">
+              <span class="chip">مميز لك</span>
+              <button class="refresh"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></button>
+            </div>
+            <div class="verse"><p>سُبْحَانَ اللَّهِ<br>وَبِحَمْدِهِ</p></div>
+            <div class="ref">أذكار الصباح</div>
+          </div>
+          <div class="tiles">
+            <button class="tile morning">
+              <div class="disc"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></div>
+              <div><div class="label-sm">ابدأ يومك</div><div class="label-lg">أذكار الصباح</div></div>
+            </button>
+            <button class="tile random">
+              <div class="disc"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+              <div><div class="label-sm">اكتشف</div><div class="label-lg">أذكار النوم</div></div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DARK 5 — السبج -->
+  <section class="prototype d5">
+    <div class="prototype-meta">
+      <div><span class="num">٥</span><h2>السبج</h2></div>
+      <div class="sub">The Obsidian Mirror · Pure Black · Minimal</div>
+      <p class="desc">أسود نقي #0a0a0a، توهج زمردي على الأيقونات فقط، مساحات بيضاء سوداء. الأكثر عصرية وأناقة.</p>
+    </div>
+    <div class="phone">
+      <div class="screen">
+        <div class="topbar">
+          <div class="icons">
+            <div class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
+            <div class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+          </div>
+          <div class="title">أذكار</div>
+        </div>
+        <div class="board">
+          <div class="featured">
+            <div class="row">
+              <span class="chip">مميز لك</span>
+              <button class="refresh"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></button>
+            </div>
+            <div class="verse"><p>سُبْحَانَ اللَّهِ<br>وَبِحَمْدِهِ</p></div>
+            <div class="ref">أذكار الصباح</div>
+          </div>
+          <div class="tiles">
+            <button class="tile morning">
+              <div class="disc"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></div>
+              <div><div class="label-sm">ابدأ يومك</div><div class="label-lg">أذكار الصباح</div></div>
+            </button>
+            <button class="tile random">
+              <div class="disc"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+              <div><div class="label-sm">اكتشف</div><div class="label-lg">أذكار النوم</div></div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="page-footer">
+  <p>كل النماذج داكنة بالكامل · تحافظ على نفس بنية <code>DashboardLayout.tsx</code> · نفس الـ props · نفس السلوك · نفس الـ RTL.</p>
+  <p style="margin-top:8px;">افتح <code>prototypes.html</code> في المتصفح لمقارنة النماذج جنباً إلى جنب.</p>
+</footer>
+
+</body>
+</html>

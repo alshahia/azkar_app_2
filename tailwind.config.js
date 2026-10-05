@@ -4,9 +4,7 @@ export default {
   content: [
     "./index.html",
     "./components/**/*.{js,ts,jsx,tsx}",
-    "./hooks/**/*.{js,ts,jsx,tsx}",
-    "./App.tsx",
-    "./src/**/*.{js,ts,jsx,tsx}"
+    "./hooks/**/*.{js,ts,jsx,tsx}"
   ],
   darkMode: 'class',
   theme: {
@@ -34,10 +32,26 @@ export default {
           100: '#f5f5f4',
           200: '#e7e5e4',
         },
+        // Midnight tokens are now driven by CSS variables (see index.css
+        // DARK STYLE ENGINE). The legacy hex values still serve as a sane
+        // fallback during the very first paint before variables resolve.
         midnight: {
-          800: '#111827',
-          900: '#022c22', // Deep Midnight Forest
-          950: '#011c16', // Darkest Background
+          800: 'rgb(var(--midnight-800) / <alpha-value>)',
+          900: 'rgb(var(--midnight-900) / <alpha-value>)',
+          950: 'rgb(var(--midnight-950) / <alpha-value>)',
+        },
+        // New surface tokens — body background, card surface, layered surface,
+        // hairline border. Values come from the active data-dark-style.
+        surface: {
+          DEFAULT: 'rgb(var(--surface) / <alpha-value>)',
+          card:    'rgb(var(--surface-card) / <alpha-value>)',
+          'card-2':'rgb(var(--surface-card-2) / <alpha-value>)',
+        },
+        // Gold accents for the Cosmic and Obsidian identities (and the
+        // complementary accent for the other three styles).
+        gold: {
+          DEFAULT: 'rgb(var(--gold) / <alpha-value>)',
+          deep:    'rgb(var(--gold-deep) / <alpha-value>)',
         }
       },
       fontFamily: {

@@ -23,6 +23,7 @@ import { readFileSync, writeFileSync, mkdirSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { tokenizeAyah } from '../workers/quranSearchTokens.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const RAW_DIR = join(ROOT, '.tmp_quran_raw');
@@ -159,7 +160,6 @@ writeFileSync(join(OUT_DIR, 'juz.json'), JSON.stringify(juzStarts));
 
 // Tokenization lives in workers/quranSearchTokens.ts so the runtime
 // worker and the generator agree byte-for-byte.
-const { tokenizeAyah } = require('../workers/quranSearchTokens.ts');
 
 const tokenSet = new Map(); // normalized token -> integer id
 const posts = [];

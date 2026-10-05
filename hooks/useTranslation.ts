@@ -1,9 +1,8 @@
-
-import { useAppContext } from '../context/AppContext';
+import { usePreferencesStore } from '../stores/usePreferencesStore';
 import { translations } from '../translations';
 
 export const useTranslation = () => {
-    const { language } = useAppContext();
+    const language = usePreferencesStore((state) => state.language);
     
     // Arabic-only by product decision: unknown keys degrade to the key itself.
     const t = (key: keyof typeof translations['ar']): string => {

@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { useAppContext } from '../../context/AppContext';
+import { useNavigationStore } from '../../stores/useNavigationStore';
+import { usePreferencesStore } from '../../stores/usePreferencesStore';
 import { ArrowLeftIcon, SunIcon, MoonIcon, BellIcon, PlusIcon, TrashIcon, MapPinIcon, BookOpenIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from '../../hooks/useTranslation';
 import TimePicker from '../common/TimePicker';
@@ -9,19 +10,28 @@ import { CustomReminder } from '../../types';
 import { useToast } from '../common/Toast';
 
 const NotificationSettingsScreen: React.FC = () => {
-    const { navigate,
-            morningReminderEnabled, setMorningReminderEnabled,
-            morningReminderTime, setMorningReminderTime,
-            eveningReminderEnabled, setEveningReminderEnabled,
-            eveningReminderTime, setEveningReminderTime,
-            categories,
-            customReminders, addCustomReminder, removeCustomReminder,
-            prayerNotificationsEnabled, setPrayerNotificationsEnabled,
-            location,
-            wakeLockEnabled, setWakeLockEnabled,
-            votdEnabled, setVotdEnabled,
-            votdTime, setVotdTime
-    } = useAppContext();
+    const navigate = useNavigationStore((state) => state.navigate);
+    const morningReminderEnabled = usePreferencesStore((state) => state.morningReminderEnabled);
+    const setMorningReminderEnabled = usePreferencesStore((state) => state.setMorningReminderEnabled);
+    const morningReminderTime = usePreferencesStore((state) => state.morningReminderTime);
+    const setMorningReminderTime = usePreferencesStore((state) => state.setMorningReminderTime);
+    const eveningReminderEnabled = usePreferencesStore((state) => state.eveningReminderEnabled);
+    const setEveningReminderEnabled = usePreferencesStore((state) => state.setEveningReminderEnabled);
+    const eveningReminderTime = usePreferencesStore((state) => state.eveningReminderTime);
+    const setEveningReminderTime = usePreferencesStore((state) => state.setEveningReminderTime);
+    const categories = usePreferencesStore((state) => state.categories);
+    const customReminders = usePreferencesStore((state) => state.customReminders);
+    const addCustomReminder = usePreferencesStore((state) => state.addCustomReminder);
+    const removeCustomReminder = usePreferencesStore((state) => state.removeCustomReminder);
+    const prayerNotificationsEnabled = usePreferencesStore((state) => state.prayerNotificationsEnabled);
+    const setPrayerNotificationsEnabled = usePreferencesStore((state) => state.setPrayerNotifications);
+    const location = usePreferencesStore((state) => state.location);
+    const wakeLockEnabled = usePreferencesStore((state) => state.wakeLockEnabled);
+    const setWakeLockEnabled = usePreferencesStore((state) => state.setWakeLockEnabled);
+    const votdEnabled = usePreferencesStore((state) => state.votdEnabled);
+    const setVotdEnabled = usePreferencesStore((state) => state.setVotdEnabled);
+    const votdTime = usePreferencesStore((state) => state.votdTime);
+    const setVotdTime = usePreferencesStore((state) => state.setVotdTime);
     const { t } = useTranslation();
     const toast = useToast();
 
@@ -34,7 +44,7 @@ const NotificationSettingsScreen: React.FC = () => {
     // Helper to parse "05:00 AM" -> { hour: 5, minute: 0 }
     const parseTime = (timeStr: string) => {
         const [time, period] = timeStr.split(' ');
-        let [hours, minutes] = time.split(':').map(Number);
+        let [hours, minutes] = time.split(':').map(Number); // eslint-disable-line prefer-const
         if (period === 'PM' && hours !== 12) hours += 12;
         if (period === 'AM' && hours === 12) hours = 0;
         return { hours, minutes };
@@ -193,7 +203,7 @@ const NotificationSettingsScreen: React.FC = () => {
                 </div>
 
                 {/* Prayer Times Section */}
-                <div className="bg-white dark:bg-[#1A3129] rounded-xl p-4 shadow-sm dark:shadow-none border border-gray-100 dark:border-none">
+                <div className="bg-surface-card dark:bg-surface-card rounded-xl p-4 shadow-sm dark:shadow-none border border-gray-100 dark:border-none">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-3 rtl:space-x-reverse">
                             <div className="bg-primary-100 dark:bg-primary-900/30 p-2 rounded-full">
@@ -204,8 +214,8 @@ const NotificationSettingsScreen: React.FC = () => {
                                 <span className="text-xs text-gray-500 dark:text-gray-400">تنبيه عند دخول وقت الصلاة</span>
                             </div>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" checked={prayerNotificationsEnabled} onChange={handleTogglePrayer} aria-label="مواقيت الصلاة" className="sr-only peer" />
+                        <label className="relative inline-flex items-center cursor-pointer min-h-[40px]">
+                            <input type="checkbox" checked={prayerNotificationsEnabled} onChange={handleTogglePrayer} aria-label="مواقيت الصلاة" role="switch" aria-checked={prayerNotificationsEnabled} className="sr-only peer" />
                             <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] rtl:after:right-[2px] rtl:after:left-auto after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
                         </label>
                     </div>
@@ -215,7 +225,7 @@ const NotificationSettingsScreen: React.FC = () => {
                 </div>
 
                 {/* Verse of the Day (M4-T1) */}
-                <div className="bg-white dark:bg-[#1A3129] rounded-xl p-4 shadow-sm dark:shadow-none border border-gray-100 dark:border-none">
+                <div className="bg-surface-card dark:bg-surface-card rounded-xl p-4 shadow-sm dark:shadow-none border border-gray-100 dark:border-none">
                     <div className="flex justify-between items-center mb-4">
                         <div className="flex items-center space-x-3 rtl:space-x-reverse">
                             <div className="bg-violet-100 dark:bg-violet-900/30 p-2 rounded-full">
@@ -226,7 +236,7 @@ const NotificationSettingsScreen: React.FC = () => {
                                 <span className="text-xs text-gray-500 dark:text-gray-400">آية جديدة من القرآن كل يوم</span>
                             </div>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
+                        <label className="relative inline-flex items-center cursor-pointer min-h-[40px]">
                             <input
                                 type="checkbox"
                                 checked={votdEnabled}
@@ -252,6 +262,8 @@ const NotificationSettingsScreen: React.FC = () => {
                                     }
                                 }}
                                 aria-label="آية اليوم"
+                                role="switch"
+                                aria-checked={votdEnabled}
                                 className="sr-only peer"
                             />
                             <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] rtl:after:right-[2px] rtl:after:left-auto after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
@@ -262,7 +274,7 @@ const NotificationSettingsScreen: React.FC = () => {
                             <span className="text-sm text-gray-500 dark:text-gray-400">وقت الإشعار</span>
                             <button
                                 onClick={() => setActivePicker('votd')}
-                                className="bg-gray-50 dark:bg-gray-800 px-4 py-2 rounded-lg text-primary-600 dark:text-primary-400 font-bold font-mono"
+                                className="bg-surface-card-2 dark:bg-midnight-800 px-4 py-2 rounded-lg text-primary-600 dark:text-primary-400 font-bold font-mono"
                             >
                                 {votdTime}
                             </button>
@@ -271,7 +283,7 @@ const NotificationSettingsScreen: React.FC = () => {
                 </div>
 
                 {/* Screen Wake Lock (M4-T5) */}
-                <div className="bg-white dark:bg-[#1A3129] rounded-xl p-4 shadow-sm dark:shadow-none border border-gray-100 dark:border-none">
+                <div className="bg-surface-card dark:bg-surface-card rounded-xl p-4 shadow-sm dark:shadow-none border border-gray-100 dark:border-none">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-3 rtl:space-x-reverse">
                             <div className="bg-emerald-100 dark:bg-emerald-900/30 p-2 rounded-full">
@@ -282,12 +294,14 @@ const NotificationSettingsScreen: React.FC = () => {
                                 <span className="text-xs text-gray-500 dark:text-gray-400">منع انطفاء الشاشة أثناء قراءة القرآن</span>
                             </div>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
+                        <label className="relative inline-flex items-center cursor-pointer min-h-[40px]">
                             <input
                                 type="checkbox"
                                 checked={wakeLockEnabled}
                                 onChange={(e) => setWakeLockEnabled(e.target.checked)}
                                 aria-label="إبقاء الشاشة مضاءة"
+                                role="switch"
+                                aria-checked={wakeLockEnabled}
                                 className="sr-only peer"
                             />
                             <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] rtl:after:right-[2px] rtl:after:left-auto after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
@@ -296,7 +310,7 @@ const NotificationSettingsScreen: React.FC = () => {
                 </div>
 
                 {/* Morning Section */}
-                <div className="bg-white dark:bg-[#1A3129] rounded-xl p-4 shadow-sm dark:shadow-none border border-gray-100 dark:border-none">
+                <div className="bg-surface-card dark:bg-surface-card rounded-xl p-4 shadow-sm dark:shadow-none border border-gray-100 dark:border-none">
                     <div className="flex justify-between items-center mb-4">
                         <div className="flex items-center space-x-3 rtl:space-x-reverse">
                             <div className="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-full">
@@ -304,8 +318,8 @@ const NotificationSettingsScreen: React.FC = () => {
                             </div>
                             <span className="font-bold text-gray-900 dark:text-white">أذكار الصباح</span>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" checked={morningReminderEnabled} onChange={handleToggleMorning} aria-label="أذكار الصباح" className="sr-only peer" />
+                        <label className="relative inline-flex items-center cursor-pointer min-h-[40px]">
+                            <input type="checkbox" checked={morningReminderEnabled} onChange={handleToggleMorning} aria-label="أذكار الصباح" role="switch" aria-checked={morningReminderEnabled} className="sr-only peer" />
                             <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] rtl:after:right-[2px] rtl:after:left-auto after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
                         </label>
                     </div>
@@ -315,7 +329,7 @@ const NotificationSettingsScreen: React.FC = () => {
                             <span className="text-sm text-gray-500 dark:text-gray-400">وقت التنبيه</span>
                             <button 
                                 onClick={() => setActivePicker('morning')}
-                                className="bg-gray-50 dark:bg-gray-800 px-4 py-2 rounded-lg text-primary-600 dark:text-primary-400 font-bold font-mono"
+                                className="bg-surface-card-2 dark:bg-midnight-800 px-4 py-2 rounded-lg text-primary-600 dark:text-primary-400 font-bold font-mono"
                             >
                                 {morningReminderTime}
                             </button>
@@ -324,7 +338,7 @@ const NotificationSettingsScreen: React.FC = () => {
                 </div>
 
                 {/* Evening Section */}
-                <div className="bg-white dark:bg-[#1A3129] rounded-xl p-4 shadow-sm dark:shadow-none border border-gray-100 dark:border-none">
+                <div className="bg-surface-card dark:bg-surface-card rounded-xl p-4 shadow-sm dark:shadow-none border border-gray-100 dark:border-none">
                     <div className="flex justify-between items-center mb-4">
                         <div className="flex items-center space-x-3 rtl:space-x-reverse">
                             <div className="bg-indigo-100 dark:bg-indigo-900/30 p-2 rounded-full">
@@ -332,8 +346,8 @@ const NotificationSettingsScreen: React.FC = () => {
                             </div>
                             <span className="font-bold text-gray-900 dark:text-white">أذكار المساء</span>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" checked={eveningReminderEnabled} onChange={handleToggleEvening} aria-label="أذكار المساء" className="sr-only peer" />
+                        <label className="relative inline-flex items-center cursor-pointer min-h-[40px]">
+                            <input type="checkbox" checked={eveningReminderEnabled} onChange={handleToggleEvening} aria-label="أذكار المساء" role="switch" aria-checked={eveningReminderEnabled} className="sr-only peer" />
                             <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] rtl:after:right-[2px] rtl:after:left-auto after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
                         </label>
                     </div>
@@ -343,7 +357,7 @@ const NotificationSettingsScreen: React.FC = () => {
                             <span className="text-sm text-gray-500 dark:text-gray-400">وقت التنبيه</span>
                             <button 
                                 onClick={() => setActivePicker('evening')}
-                                className="bg-gray-50 dark:bg-gray-800 px-4 py-2 rounded-lg text-primary-600 dark:text-primary-400 font-bold font-mono"
+                                className="bg-surface-card-2 dark:bg-midnight-800 px-4 py-2 rounded-lg text-primary-600 dark:text-primary-400 font-bold font-mono"
                             >
                                 {eveningReminderTime}
                             </button>
@@ -354,14 +368,15 @@ const NotificationSettingsScreen: React.FC = () => {
                 {/* Custom Reminders Section */}
                 <h2 className="text-lg font-bold text-primary-600 dark:text-primary-400 mt-6 px-2">تذكيرات مخصصة</h2>
                 
-                <div className="bg-white dark:bg-[#1A3129] rounded-xl p-4 shadow-sm dark:shadow-none border border-gray-100 dark:border-none">
+                <div className="bg-surface-card dark:bg-surface-card rounded-xl p-4 shadow-sm dark:shadow-none border border-gray-100 dark:border-none">
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">اختر الفئة</label>
-                            <select 
+                            <label htmlFor="category-select" className="block text-sm text-gray-600 dark:text-gray-400 mb-2">اختر الفئة</label>
+                            <select
+                                id="category-select" 
                                 value={selectedCategory}
                                 onChange={(e) => setSelectedCategory(e.target.value)}
-                                className="w-full bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white p-3 rounded-lg border-none focus:ring-2 focus:ring-primary-500"
+                                className="w-full bg-surface-card-2 dark:bg-midnight-800 text-gray-900 dark:text-white p-3 rounded-lg border-none focus:ring-2 focus:ring-primary-500"
                             >
                                 {categories.map(cat => (
                                     <option key={cat.id} value={cat.id}>{cat.title}</option>
@@ -370,10 +385,11 @@ const NotificationSettingsScreen: React.FC = () => {
                         </div>
                         
                         <div className="flex justify-between items-center">
-                            <label className="block text-sm text-gray-600 dark:text-gray-400">الوقت</label>
-                            <button 
+                            <label htmlFor="time-button" className="block text-sm text-gray-600 dark:text-gray-400">الوقت</label>
+                            <button
+                                id="time-button" 
                                 onClick={() => setActivePicker('custom')}
-                                className="bg-gray-50 dark:bg-gray-800 px-4 py-2 rounded-lg text-primary-600 dark:text-primary-400 font-bold font-mono"
+                                className="bg-surface-card-2 dark:bg-midnight-800 px-4 py-2 rounded-lg text-primary-600 dark:text-primary-400 font-bold font-mono"
                             >
                                 {customTime}
                             </button>
@@ -390,10 +406,10 @@ const NotificationSettingsScreen: React.FC = () => {
                 </div>
 
                 {/* List of Custom Reminders */}
-                {customReminders.length > 0 && (
+                {customReminders.length > 0 ? (
                     <div className="space-y-2 mt-4">
                         {customReminders.map(reminder => (
-                            <div key={reminder.id} className="bg-white dark:bg-[#1A3129] p-4 rounded-lg flex justify-between items-center shadow-sm dark:shadow-none">
+                            <div key={reminder.id} className="bg-surface-card dark:bg-surface-card p-4 rounded-2xl flex justify-between items-center shadow-sm dark:shadow-none">
                                 <div>
                                     <p className="font-bold text-gray-900 dark:text-white">{reminder.categoryTitle}</p>
                                     <p className="text-sm text-primary-600 dark:text-primary-400 font-mono">{reminder.time}</p>
@@ -408,6 +424,10 @@ const NotificationSettingsScreen: React.FC = () => {
                             </div>
                         ))}
                     </div>
+                ) : (
+                    <p className="text-center text-sm text-gray-400 dark:text-gray-500 mt-4 py-3">
+                        لا توجد تذكيرات مخصصة بعد — أضف تذكيراً من الأعلى.
+                    </p>
                 )}
             </div>
 

@@ -1,9 +1,9 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { XMarkIcon, BookOpenIcon, SpeakerWaveIcon } from '@heroicons/react/24/outline';
-import { PrayerTimesService } from '../../services/PrayerTimesService';
+import { XMarkIcon, SpeakerWaveIcon, BookOpenIcon } from '@heroicons/react/24/outline';
+import { AnimatePresence, motion } from 'framer-motion';
 import { HapticService } from '../../services/HapticService';
+import { PrayerTimesService } from '../../services/PrayerTimesService';
 import {
     type WatchedPrayer,
     DEFAULT_OVERLAY_DURATION_MS,
@@ -69,7 +69,7 @@ const PrePrayerOverlay: React.FC<PrePrayerOverlayProps> = ({
             return;
         }
         dismissedRef.current = null;
-        setCountdownMs(durationMs);
+        setTimeout(() => setCountdownMs(durationMs), 0);
 
         // Single thock haptic — heavy because this is a sacred moment,
         // not a button confirm. Falls through to no-op if haptics off.
@@ -104,24 +104,6 @@ const PrePrayerOverlay: React.FC<PrePrayerOverlayProps> = ({
         };
     }, [prayer, durationMs, audioEnabled]);
 
-    // Countdown tick
-    useEffect(() => {
-        if (!prayer) return;
-        const start = Date.now();
-        const initialRemaining = durationMs;
-        const tick = () => {
-            const elapsed = Date.now() - start;
-            const remaining = Math.max(0, initialRemaining - elapsed);
-            setCountdownMs(remaining);
-            if (remaining <= 0) {
-                handleDismiss();
-            }
-        };
-        const interval = window.setInterval(tick, 100);
-        return () => window.clearInterval(interval);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [prayer, durationMs]);
-
     const handleDismiss = () => {
         if (!prayer) return;
         if (dismissedRef.current?.time.getTime() === prayer.time.getTime()) return;
@@ -132,6 +114,24 @@ const PrePrayerOverlay: React.FC<PrePrayerOverlayProps> = ({
         }
         onDismiss(prayer);
     };
+
+    // Countdown tick
+    useEffect(() => {
+        if (!prayer) return;
+        const start = Date.now();
+        const initialRemaining = durationMs;
+        const tick = () => {
+            const elapsed = Date.now() - start;
+            const remaining = Math.max(0, initialRemaining - elapsed);
+            setTimeout(() => setCountdownMs(remaining), 0);
+            if (remaining <= 0) {
+                handleDismiss();
+            }
+        };
+        const interval = window.setInterval(tick, 100);
+        return () => window.clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [prayer, durationMs]);
 
     const handleOpenAdhkar = () => {
         if (!prayer) return;
@@ -164,7 +164,7 @@ const PrePrayerOverlay: React.FC<PrePrayerOverlayProps> = ({
                         exit={{ opacity: 0, y: -10, scale: 0.98 }}
                         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                         onClick={(e) => e.stopPropagation()}
-                        className="relative w-[88vw] max-w-sm mx-auto bg-gradient-to-b from-[#0f2820] via-[#0a1d17] to-[#04140f] border border-primary-500/30 rounded-3xl px-7 pt-9 pb-6 shadow-2xl shadow-black/60 text-center"
+                        className="relative w-[88vw] max-w-sm mx-auto bg-gradient-to-b from-[rgb(var(--surface))] via-[rgb(var(--surface-card))] to-[rgb(var(--midnight-950))] border border-primary-500/30 rounded-3xl px-7 pt-9 pb-6 shadow-2xl shadow-black/60 text-center"
                     >
                         {/* Background decoration — soft green halo, matches the brand's dawn-lit sanctuary */}
                         <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
@@ -173,7 +173,7 @@ const PrePrayerOverlay: React.FC<PrePrayerOverlayProps> = ({
                         </div>
 
                         {/* Eyebrow */}
-                        <div className="relative flex items-center justify-center gap-2 text-primary-300/90 text-xs font-bold tracking-widest mb-5">
+                        <div className="relative flex items-center justify-center gap-2 text-primary-300/90 text-xs font-bold mb-5">
                             <SpeakerWaveIcon className="w-4 h-4" aria-hidden="true" />
                             <span>حان الآن</span>
                         </div>
@@ -216,7 +216,7 @@ const PrePrayerOverlay: React.FC<PrePrayerOverlayProps> = ({
                         <button
                             onClick={handleDismiss}
                             aria-label="إغلاق"
-                            className="absolute top-3 left-3 rtl:left-auto rtl:right-3 w-9 h-9 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                            className="absolute top-3 left-3 rtl:left-auto rtl:right-3 w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
                         >
                             <XMarkIcon className="w-5 h-5" />
                         </button>

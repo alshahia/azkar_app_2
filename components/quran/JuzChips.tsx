@@ -1,17 +1,15 @@
 import React from 'react';
 import { JUZ_STARTS, getSurah } from '../../services/QuranService';
-import { useAppContext } from '../../context/AppContext';
+import { useNavigationStore } from '../../stores/useNavigationStore';
 import { useTranslation } from '../../hooks/useTranslation';
-
-interface JuzChipsProps {
-    onPick: (surah: number, ayah: number) => void;
-}
 
 /**
  * Horizontal strip of 30 juz shortcuts. Tapping opens the start of the juz.
+ * Navigation goes straight through the navigation store - the component
+ * owns the destination, so it takes no props.
  */
-const JuzChips: React.FC<JuzChipsProps> = ({ onPick }) => {
-    const { navigate } = useAppContext();
+const JuzChips: React.FC = () => {
+    const navigate = useNavigationStore((state) => state.navigate);
     const { t } = useTranslation();
 
     return (
@@ -28,7 +26,7 @@ const JuzChips: React.FC<JuzChipsProps> = ({ onPick }) => {
                         <button
                             key={j.juz}
                             onClick={() => navigate('surahReader', { surahId: j.surah, ayah: j.ayah })}
-                            className="flex-shrink-0 w-14 h-14 rounded-2xl bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-primary-500/10 hover:border-primary-300 dark:hover:border-primary-500/40 active:scale-95 transition-all flex flex-col items-center justify-center shadow-sm dark:shadow-none"
+                            className="flex-shrink-0 w-14 h-14 rounded-2xl bg-surface-card dark:bg-surface-card border border-gray-100 dark:border-primary-500/10 hover:border-primary-300 dark:hover:border-primary-500/40 active:scale-95 transition-all flex flex-col items-center justify-center shadow-sm dark:shadow-none"
                             aria-label={'الجزء ' + j.juz + ' - ' + label}
                         >
                             <span className="text-[10px] text-gray-400 dark:text-gray-500">جزء</span>

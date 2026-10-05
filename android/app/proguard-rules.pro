@@ -19,9 +19,3 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
-
-# Capacitor & Plugins Proguard Rules
--keep class com.getcapacitor.** { *; }
--keep class com.capacitorjs.** { *; }
--keep class com.getcapacitor.community.database.sqlite.** { *; }
-

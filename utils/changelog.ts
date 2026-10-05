@@ -40,37 +40,91 @@ async function loadChangelogRaw(): Promise<string> {
     } catch {
         // Fall through to the Node fallback below.
     }
-    // Vitest / Node path: read from disk. Both node:fs and node:path
-    // are loaded dynamically so the browser bundle never references
-    // them. The try/catch wraps the dynamic imports too because the
-    // browser shim throws at parse time on `import('node:fs')`.
+    // Vitest / Node path: read from disk. The Node built-ins are loaded
+    // dynamically so the browser bundle never references them. Vite's
+    // browser shim does NOT throw on the dynamic imports: it returns empty
+    // stub objects (e.g. node:fs -> {}, node:url -> {} with no
+    // fileURLToPath). So we can't rely on the try/catch alone to detect the
+    // browser path — we also need to confirm the methods we actually call
+    // exist as functions. Without that check, the cwd fallback below would
+    // evaluate `process.cwd()` in a context where `process` is undefined
+    // (ReferenceError).
     let fsMod: typeof import('node:fs') | null = null;
     let pathMod: typeof import('node:path') | null = null;
+    let urlMod: typeof import('node:url') | null = null;
     try {
         fsMod = await import('node:fs');
         pathMod = await import('node:path');
+        urlMod = await import('node:url');
     } catch {
-        // No node runtime available. Caller will treat the failure as
+        // Dynamic import itself failed (older bundlers / strict CSP).
+        // No Node runtime available. Caller treats the failure as
         // "no entries" so the UI degrades to a hidden modal.
+        return '';
+    }
+    // Some bundler/browser shims (Vite) return Proxy stubs that throw on
+    // property access. Wrap each method probe so a hostile shim can't
+    // escape into the cwd fallback and crash with a ReferenceError.
+    const safeHasFn = (mod: unknown, name: string): boolean => {
+        try {
+            const fn = (mod as Record<string, unknown> | null)?.[name];
+            return typeof fn === 'function';
+        } catch {
+            return false;
+        }
+    };
+    const hasFsRead = safeHasFn(fsMod, 'readFileSync');
+    const hasPathResolve = safeHasFn(pathMod, 'resolve');
+    const hasPathDirname = safeHasFn(pathMod, 'dirname');
+    const hasUrlFile = safeHasFn(urlMod, 'fileURLToPath');
+    if (!hasFsRead || !hasPathResolve || !hasPathDirname) {
+        // Browser path (or a stub that lacks the methods we need). The
+        // production bundle above already serves CHANGELOG.md via Vite's
+        // import.meta.glob, so reaching here means there really is nothing
+        // to show.
         return '';
     }
     // Walk up from this module's URL until CHANGELOG.md is found, then
     // fall back to cwd. Vitest is configured to run with cwd at the
     // repo root, so the cwd fallback is the common case.
-    const urlMod = await import('node:url');
-    const here = pathMod.dirname(urlMod.fileURLToPath(import.meta.url));
-    let dir = here;
-    for (let i = 0; i < 6; i++) {
-        const candidate = pathMod.resolve(dir, 'CHANGELOG.md');
+    const candidates: string[] = [];
+    if (hasUrlFile) {
         try {
-            return fsMod.readFileSync(candidate, 'utf8');
+            const here = (pathMod as typeof import('node:path')).dirname(
+                (urlMod as typeof import('node:url')).fileURLToPath(import.meta.url)
+            );
+            let dir = here;
+            for (let i = 0; i < 6; i++) {
+                candidates.push((pathMod as typeof import('node:path')).resolve(dir, 'CHANGELOG.md'));
+                const parent = (pathMod as typeof import('node:path')).dirname(dir);
+                if (parent === dir) break;
+                dir = parent;
+            }
         } catch {
-            const parent = pathMod.dirname(dir);
-            if (parent === dir) break;
-            dir = parent;
+            // fileURLToPath can throw on exotic import.meta.url shapes;
+            // fall through to the cwd candidate.
         }
     }
-    return fsMod.readFileSync(pathMod.resolve(process.cwd(), 'CHANGELOG.md'), 'utf8');
+    // `process` only exists in a Node runtime. The function checks above
+    // already require real node:fs, so we're effectively in Node, but guard
+    // the access so a partially-stubbed environment can't crash here.
+    if (typeof process !== 'undefined' && typeof process.cwd === 'function') {
+        try {
+            candidates.push(
+                (pathMod as typeof import('node:path')).resolve(process.cwd(), 'CHANGELOG.md')
+            );
+        } catch {
+            // ignore — fall through to the empty result
+        }
+    }
+    for (const candidate of candidates) {
+        try {
+            return (fsMod as typeof import('node:fs')).readFileSync(candidate, 'utf8');
+        } catch {
+            // try the next candidate
+        }
+    }
+    return '';
 }
 
 export interface ChangelogEntry {

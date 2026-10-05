@@ -44,7 +44,7 @@ const SurahPageHeader: React.FC<{ surah: SurahMeta }> = ({ surah }) => {
                 </g>
             </svg>
             <p
-                className="font-quran text-2xl sm:text-3xl text-primary-800 dark:text-primary-100 -mt-9 px-6 bg-gray-50 dark:bg-[#12241C] relative z-10"
+                className="font-quran text-2xl sm:text-3xl text-primary-800 dark:text-primary-100 -mt-9 px-6 bg-surface dark:bg-surface relative z-10"
                 style={{ lineHeight: '2' }}
             >
                 سُورَةُ {surah.name.replace(/^سُورَةُ\s*/, '')}

@@ -1,11 +1,20 @@
-
 import { Category, UserZikr, UserCategory } from '../types';
 import { STATIC_AZKAR_DATA, STATIC_ZIKR_IDS } from './static/azkar';
 import { normalizeArabic } from './arabic';
 import { ICON_MAPPING } from '../constants';
 import { getStorage } from './storage';
 
+/**
+ * Azkar Repository
+ * Encapsulates all azkar data access (categories, user customizations).
+ * 
+ * This is a singleton repository that provides a consistent interface
+ * for all azkar-related data operations.
+ */
 export const azkarRepository = {
+    /**
+     * Get all categories (static + user-created).
+     */
     getAllCategories: async (): Promise<Category[]> => {
         const storage = getStorage();
         const userAzkar = await storage.getUserAzkar();
@@ -56,6 +65,9 @@ export const azkarRepository = {
         return [...staticCategories, ...customCategories];
     },
 
+    /**
+     * Search azkar by query.
+     */
     search: async (query: string): Promise<{ categories: Category[], azkar: UserZikr[] }> => {
         const rawQuery = query.trim();
         if (!rawQuery) return { categories: [], azkar: [] };
@@ -96,21 +108,33 @@ export const azkarRepository = {
         };
     },
 
+    /**
+     * Get a category by ID.
+     */
     getCategoryById: async (id: string): Promise<Category | undefined> => {
         const all = await azkarRepository.getAllCategories();
         return all.find(c => c.id === id);
     },
 
+    /**
+     * Add a new user category.
+     */
     addCategory: async (category: UserCategory): Promise<void> => {
         const storage = getStorage();
         await storage.addUserCategory(category);
     },
 
+    /**
+     * Add a new user zikr.
+     */
     addZikr: async (zikr: UserZikr): Promise<void> => {
         const storage = getStorage();
         await storage.addUserZikr(zikr);
     },
 
+    /**
+     * Update an existing zikr.
+     */
     updateZikr: async (zikr: UserZikr): Promise<void> => {
         const storage = getStorage();
         
@@ -134,6 +158,9 @@ export const azkarRepository = {
         }
     },
 
+    /**
+     * Delete a zikr.
+     */
     deleteZikr: async (id: number): Promise<void> => {
         const storage = getStorage();
         

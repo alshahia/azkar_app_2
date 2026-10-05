@@ -27,7 +27,8 @@ const RECITERS_PATH = path.join(REPO, 'data', 'static', 'reciters.json');
 mkdirSync(TIMINGS_DIR, { recursive: true });
 
 /** Permissive licenses we accept for bundled timings. */
-const ACCEPTED_LICENSES = new Set([
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _ACCEPTED_LICENSES = new Set([
     'CC-BY 4.0',
     'CC-BY-SA 4.0',
     'public-domain',

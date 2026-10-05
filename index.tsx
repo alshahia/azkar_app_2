@@ -2,7 +2,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import App from './App';
+import { AppShell } from './components/app/AppShell';
 
 // Register Service Worker for PWA
 if ('serviceWorker' in navigator) {
@@ -23,6 +23,6 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <App />
+    <AppShell />
   </React.StrictMode>
 );

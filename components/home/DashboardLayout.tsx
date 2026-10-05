@@ -1,27 +1,29 @@
 
-import React, { useMemo } from 'react';
-import { useAppContext } from '../../context/AppContext';
+import React, { useState } from 'react';
+import { useNavigationStore } from '../../stores/useNavigationStore';
+import { usePreferencesStore } from '../../stores/usePreferencesStore';
 import { ArrowPathIcon, SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from '../../hooks/useTranslation';
 
 interface DashboardLayoutProps {
-    allAzkar: any[];
     onRefresh: () => void;
     currentZikr: any;
 }
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onRefresh, currentZikr }) => {
-    const { navigate, fontSize, categories } = useAppContext();
+    const navigate = useNavigationStore((state) => state.navigate);
+    const fontSize = usePreferencesStore((state) => state.fontSize);
+    const categories = usePreferencesStore((state) => state.categories);
     const { t } = useTranslation();
     
     const timeOfDay = new Date().getHours();
-    const isMorning = timeOfDay >= 4 && timeOfDay < 17;
+    const isMorning = timeOfDay >= 5 && timeOfDay < 17;
     
-    // Pick a random category for the "Discover" tile
-    const randomCategory = useMemo(() => {
+    // Pick a random category for the "Discover" tile (lazy init so Math.random() runs once)
+    const [randomCategory] = useState(() => {
         const cats = categories.filter(c => c.id !== 'morning' && c.id !== 'evening');
         return cats[Math.floor(Math.random() * cats.length)];
-    }, [categories]);
+    });
 
     const getArabicClass = (level: number) => {
         // Slightly smaller for dashboard card
@@ -33,8 +35,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onRefresh, currentZik
     return (
         <div className="h-full flex flex-col gap-4 pb-4">
             {/* Top Section: Featured Zikr (60%) */}
-            <div className="flex-grow-[3] bg-white dark:bg-[#1A3129] rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-none border border-gray-100 dark:border-none transition-colors duration-300">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary-500 to-primary-300"></div>
+            <div className="flex-grow-[3] bg-surface-card dark:bg-surface-card rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-none border border-gray-100 dark:border-white/5 transition-colors duration-300">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-gold to-gold-deep"></div>
                 <div className="flex justify-between items-start">
                     <span className="bg-primary-100 dark:bg-primary-500/20 text-primary-600 dark:text-primary-400 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">
                         مميز لك
@@ -75,9 +77,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onRefresh, currentZik
 
                 {/* Random Category Tile */}
                 {randomCategory && (
-                    <button 
+                    <button
                         onClick={() => navigate('azkarList', { categoryId: randomCategory.id })}
-                        className="bg-white dark:bg-[#1A3129] rounded-2xl p-4 flex flex-col justify-between items-start border border-gray-100 dark:border-primary-500/10 hover:border-primary-200 dark:hover:border-primary-500/30 shadow-sm dark:shadow-none transition-colors"
+                        className="bg-surface-card dark:bg-surface-card rounded-2xl p-4 flex flex-col justify-between items-start border border-gray-100 dark:border-white/5 hover:border-gold/40 dark:hover:border-gold/40 shadow-sm dark:shadow-none transition-colors"
                     >
                         <div className="p-2 rounded-full bg-primary-100 dark:bg-primary-500/20 text-primary-600 dark:text-primary-400">
                             <randomCategory.icon className="w-6 h-6" />

@@ -3,8 +3,11 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
     ArrowLeftIcon, MinusIcon, PlusIcon, BookmarkIcon, AdjustmentsHorizontalIcon, CloudArrowDownIcon,
 } from '@heroicons/react/24/outline';
-import { useAppContext } from '../../context/AppContext';
+import { useNavigationStore } from '../../stores/useNavigationStore';
+import { usePreferencesStore } from '../../stores/usePreferencesStore';
+import { useQuranStore } from '../../stores/useQuranStore';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useToast } from '../common/Toast';
 import {
     loadSurah, getSurah, showsBismillahHeader, type QuranAyah,
 } from '../../services/QuranService';
@@ -21,6 +24,7 @@ import { preloadUthmaniFonts } from '../../utils/fontReady';
 import { loadTimings, hasTimings, getCurrentAyah, type QuranTimingsFile } from '../../services/quranTimings';
 import { useWakeLock } from '../../hooks/useWakeLock';
 import { useAutoScrollOnHighlight } from '../../hooks/useAutoScrollOnHighlight';
+import type { PlaybackCommand } from '../../services/audioQueue';
 
 const FONT_LOAD_TIMEOUT_MS = 800;
 
@@ -34,15 +38,24 @@ const FONT_DEFAULT = 26;
  * adjustable font size, audio recitation, bookmarks, and inline Tafsir.
  */
 const SurahReaderScreen: React.FC<{ params?: { surahId: number; ayah?: number; bookmarksOnly?: boolean } }> = ({ params }) => {
-    const { navigate, quranBookmarks, addQuranBookmark, removeQuranBookmark, setQuranLastRead, tafsirId, setTafsirId, appendQuranHistory, wakeLockEnabled } = useAppContext();
+    const navigate = useNavigationStore((state) => state.navigate);
+    const bookmarks = useQuranStore((state) => state.bookmarks);
+    const addBookmark = useQuranStore((state) => state.addBookmark);
+    const removeBookmark = useQuranStore((state) => state.removeBookmark);
+    const setLastRead = useQuranStore((state) => state.setLastRead);
+    const tafsirId = usePreferencesStore((state) => state.tafsirId);
+    const setTafsirId = usePreferencesStore((state) => state.setTafsirId);
+    const addReadHistory = useQuranStore((state) => state.addReadHistory);
+    const wakeLockEnabled = usePreferencesStore((state) => state.wakeLockEnabled);
     const { setRange: setRepeatRange } = useRepeatSettings();
-    const verseAction = useVerseAction();
     const { t } = useTranslation();
     // Playback lives at app level (QuranAudioContext) so recitation
     // continues across navigation; the reader only starts it and follows.
     const { playback, reciterId, play } = useQuranAudio();
-    const [lastRepeatToast, setLastRepeatToast] = useState<string | null>(null);
-    const onRepeatRangeToast = () => setLastRepeatToast('تم إعداد نطاق التكرار');
+    // Feedback for the repeat-range picker. This used to write to a state
+    // value nothing rendered, so the confirmation never reached the user.
+    const toast = useToast();
+    const onRepeatRangeToast = () => toast.show('تم إعداد نطاق التكرار');
 
     const surahId = params?.surahId ?? 1;
     const surah = getSurah(surahId);
@@ -64,30 +77,33 @@ const SurahReaderScreen: React.FC<{ params?: { surahId: number; ayah?: number; b
     const [currentAyah, setCurrentAyah] = useState<number>(params?.ayah ?? 1);
     const observerRef = useRef<IntersectionObserver | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
-    // Stable refs so the IO + unmount-save effects don't churn on every App re-render.
-    // setQuranLastRead is defined inline in App.tsx and is a fresh reference each render;
-    // the ref is synced inside an effect (matching AzkarListScreen's pattern) so the
-    // IO + unmount-save effects can read the latest value without listing the inline
-    // function as a dep.
-    const setQuranLastReadRef = useRef(setQuranLastRead);
+    // Stable refs so the IO + unmount-save effects keep minimal deps. The store
+    // actions are stable, but the refs let the effects read the latest value
+    // without listing the action as a dep.
+    const setLastReadRef = useRef(setLastRead);
     const surahIdRef = useRef(surahId);
     const currentAyahRef = useRef(currentAyah);
-    const appendQuranHistoryRef = useRef(appendQuranHistory);
-    useEffect(() => { setQuranLastReadRef.current = setQuranLastRead; }, [setQuranLastRead]);
+    const addReadHistoryRef = useRef(addReadHistory);
+    useEffect(() => { setLastReadRef.current = setLastRead; }, [setLastRead]);
     useEffect(() => { surahIdRef.current = surahId; }, [surahId]);
     useEffect(() => { currentAyahRef.current = currentAyah; }, [currentAyah]);
-    useEffect(() => { appendQuranHistoryRef.current = appendQuranHistory; }, [appendQuranHistory]);
+    useEffect(() => { addReadHistoryRef.current = addReadHistory; }, [addReadHistory]);
 
     // Load surah text
     useEffect(() => {
         let cancelled = false;
-        setLoading(true);
-        setError(null);
+        const loadingTimer = window.setTimeout(() => {
+            setLoading(true);
+            setError(null);
+        }, 0);
         loadSurah(surahId)
             .then(arr => { if (!cancelled) setAyahs(arr); })
             .catch(e => { if (!cancelled) setError(String(e?.message || e)); })
             .finally(() => { if (!cancelled) setLoading(false); });
-        return () => { cancelled = true; };
+        return () => {
+            cancelled = true;
+            window.clearTimeout(loadingTimer);
+        };
     }, [surahId]);
 
     // Scroll to initial ayah
@@ -98,7 +114,7 @@ const SurahReaderScreen: React.FC<{ params?: { surahId: number; ayah?: number; b
     }, [loading, params?.ayah, surahId]);
 
     // Track current ayah via IntersectionObserver for the sticky header + last-read.
-    // Uses refs for setQuranLastRead / surahId so the effect only tears down when the
+    // Uses refs for setLastRead / surahId so the effect only tears down when the
     // ayah list actually changes, not on every App re-render.
     useEffect(() => {
         if (ayahs.length === 0) return;
@@ -118,7 +134,7 @@ const SurahReaderScreen: React.FC<{ params?: { surahId: number; ayah?: number; b
                 // pick the ayah closest to the top that is intersecting
                 const top = Math.min(...Array.from(visible.keys()));
                 setCurrentAyah(top);
-                setQuranLastReadRef.current({ surah: surahIdRef.current, ayah: top }).catch(() => undefined);
+                setLastReadRef.current({ surah: surahIdRef.current, ayah: top });
             },
             { root: containerRef.current, rootMargin: '-20% 0px -55% 0px', threshold: [0, 0.25, 0.5, 1] }
         );
@@ -174,22 +190,21 @@ const SurahReaderScreen: React.FC<{ params?: { surahId: number; ayah?: number; b
             const ayah = currentAyahRef.current;
             const surah = surahIdRef.current;
             if (ayah > 0) {
-                setQuranLastReadRef.current({ surah, ayah }).catch(() => undefined);
+                setLastReadRef.current({ surah, ayah });
                 // M3-T5: append the deepest ayah reached this session to the
                 // read history ring buffer so the index screen can render
                 // recent reading sessions.
-                appendQuranHistoryRef.current({ surah, ayah, ts: Date.now() });
+                addReadHistoryRef.current({ surah, ayah, ts: Date.now() });
             }
         };
-        // Empty deps: unmount cleanup only. appendQuranHistory is captured
+        // Empty deps: unmount cleanup only. addReadHistory is captured
         // via the ref below so this effect does not need to re-bind when
         // the inline function re-creates.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const isBookmarked = useCallback(
-        (ayah: number) => quranBookmarks.some(b => b.surah === surahId && b.ayah === ayah),
-        [quranBookmarks, surahId]
+        (ayah: number) => bookmarks.some(b => b.surah === surahId && b.ayah === ayah),
+        [bookmarks, surahId]
     );
 
     // Tap-to-seek: when the user taps an ayah, restart playback exactly at
@@ -201,11 +216,11 @@ const SurahReaderScreen: React.FC<{ params?: { surahId: number; ayah?: number; b
 
     const toggleBookmark = useCallback(async (ayah: number) => {
         if (isBookmarked(ayah)) {
-            await removeQuranBookmark(surahId, ayah);
+            removeBookmark(surahId, ayah);
         } else {
-            await addQuranBookmark({ surah: surahId, ayah, createdAt: Date.now() });
+            addBookmark({ surah: surahId, ayah, createdAt: Date.now() });
         }
-    }, [isBookmarked, surahId, addQuranBookmark, removeQuranBookmark]);
+    }, [isBookmarked, surahId, addBookmark, removeBookmark]);
 
     const playAyah = useCallback((ayah: QuranAyah) => {
         play(surahId, ayah.number);
@@ -258,9 +273,16 @@ const SurahReaderScreen: React.FC<{ params?: { surahId: number; ayah?: number; b
         ['--quran-fs' as never]: fontSize + 'px',
     }), [fontSize]);
 
+    // Stable identity for the download sheet: it memoises on this array, so a
+    // fresh map on every render would needlessly restart its effects.
+    const surahAyat = useMemo(
+        () => ayahs.map(a => ({ number: a.number, globalNumber: a.globalNumber })),
+        [ayahs],
+    );
+
     if (loading || !fontReady) {
         return (
-            <div className="h-full flex flex-col items-center justify-center bg-gray-50 dark:bg-[#12241C]" dir="rtl">
+            <div className="h-full flex flex-col items-center justify-center bg-surface dark:bg-surface" dir="rtl">
                 <div className="w-10 h-10 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mb-3" aria-hidden></div>
                 <p className="text-gray-500 dark:text-gray-400 text-sm">{loading ? t('quran_loading') : 'جارٍ تحضير الخط...'}</p>
             </div>
@@ -269,7 +291,7 @@ const SurahReaderScreen: React.FC<{ params?: { surahId: number; ayah?: number; b
 
     if (error || !surah) {
         return (
-            <div className="h-full flex flex-col items-center justify-center bg-gray-50 dark:bg-[#12241C] px-6 text-center" dir="rtl">
+            <div className="h-full flex flex-col items-center justify-center bg-surface dark:bg-surface px-6 text-center" dir="rtl">
                 <p className="text-red-600 dark:text-red-400 mb-3">{error || 'تعذر تحميل السورة.'}</p>
                 <button onClick={() => navigate('quran')} className="text-primary-600 dark:text-primary-400 font-bold">
                     العودة لفهرس السور
@@ -280,7 +302,6 @@ const SurahReaderScreen: React.FC<{ params?: { surahId: number; ayah?: number; b
 
     return (
         <VerseActionModalContainer
-            ayahLookup={(_, __) => undefined}
             openTafsir={(surah, ayah) => {
                 navigate('surahReader', { surahId: surah, ayah });
                 setTafsirFor(ayah);
@@ -308,7 +329,7 @@ const SurahReaderScreen: React.FC<{ params?: { surahId: number; ayah?: number; b
                 close: 'إغلاق',
             }}
         >
-        <div className="h-full flex flex-col bg-gray-50 dark:bg-[#12241C]">
+        <div className="h-full flex flex-col bg-surface dark:bg-surface">
             {/* Header */}
             <div className="bg-primary-600 dark:bg-primary-700 pb-3 pt-4 px-4 shadow-md relative z-30">
                 <header className="flex items-center justify-between mb-2">
@@ -382,33 +403,18 @@ const SurahReaderScreen: React.FC<{ params?: { surahId: number; ayah?: number; b
             {/* Body */}
             <div ref={containerRef} className="flex-1 overflow-y-auto pb-32" style={cssVars as React.CSSProperties} dir="rtl">
                 {showsBismillahHeader(surahId) && <BismillahHeader />}
-                {ayahs.map(ayah => {
-                    // Highlight sources: timingAyah (QUL) wins when the
-                    // bundle is loaded; otherwise the audio queue's
-                    // current ayah is the always-on fallback.
-                    const isHighlighted = !!timingAyah && timingAyah.surah === surahId && timingAyah.ayah === ayah.number;
-                    return (
-                        <AyahCard
-                            key={ayah.number}
-                            ayah={ayah}
-                            isBookmarked={isBookmarked(ayah.number)}
-                            isCurrentAudio={playback?.surahId === surahId && playback?.ayahNumber === ayah.number}
-                            isHighlighted={isHighlighted}
-                            onPlay={() => playAyah(ayah)}
-                            onSeek={() => seekToAyah(ayah.number)}
-                            onLongPress={() => {
-                                verseAction.open({
-                                    surah: surahId,
-                                    ayah: ayah.number,
-                                    text: ayah.text,
-                                });
-                            }}
-                            onToggleBookmark={() => toggleBookmark(ayah.number)}
-                            onShowTafsir={() => setTafsirFor(ayah.number)}
-                            sajdaLabel={ayah.sajda === 2 ? t('quran_sajda_obligatory') : t('quran_sajda_recommended')}
-                        />
-                    );
-                })}
+                <SurahAyahListWithAction
+                    ayahs={ayahs}
+                    surahId={surahId}
+                    timingAyah={timingAyah}
+                    playback={playback}
+                    playAyah={playAyah}
+                    seekToAyah={seekToAyah}
+                    toggleBookmark={toggleBookmark}
+                    isBookmarked={isBookmarked}
+                    setTafsirFor={setTafsirFor}
+                    t={t}
+                />
             </div>
 
             {/* Sheets + player */}
@@ -418,26 +424,94 @@ const SurahReaderScreen: React.FC<{ params?: { surahId: number; ayah?: number; b
                 ayahNumber={tafsirFor ?? 1}
                 onClose={() => setTafsirFor(null)}
                 tafsirId={tafsirId}
-                onTafsirChange={(id) => setTafsirId(id).catch(() => undefined)}
+                onTafsirChange={(id) => setTafsirId(id)}
             />
             <BookmarkSheet
                 open={bookmarksOpen}
-                bookmarks={quranBookmarks.filter(b => b.surah === surahId || params?.bookmarksOnly)}
+                bookmarks={bookmarks.filter(b => b.surah === surahId || params?.bookmarksOnly)}
                 onClose={() => { setBookmarksOpen(false); if (params?.bookmarksOnly) navigate('quran'); }}
                 onJump={(s, a) => navigate('surahReader', { surahId: s, ayah: a })}
-                onRemove={(s, a) => removeQuranBookmark(s, a)}
+                onRemove={(s, a) => removeBookmark(s, a)}
             />
             {ayahs.length > 0 && (
                 <AudioDownloadSheet
                     open={downloadOpen}
                     reciterId={reciterId}
                     reciterName={getReciter(reciterId)?.name || reciterId}
-                    surahAyat={ayahs.map(a => ({ number: a.number, globalNumber: a.globalNumber }))}
+                    surahAyat={surahAyat}
                     onClose={() => setDownloadOpen(false)}
                 />
             )}
         </div>
         </VerseActionModalContainer>
+    );
+};
+
+interface SurahAyahListWithActionProps {
+    ayahs: QuranAyah[];
+    surahId: number;
+    timingAyah: { surah: number; ayah: number } | null;
+    playback: PlaybackCommand | null;
+    playAyah: (ayah: QuranAyah) => void;
+    seekToAyah: (ayahNumber: number) => void;
+    toggleBookmark: (ayah: number) => Promise<void>;
+    isBookmarked: (ayah: number) => boolean;
+    setTafsirFor: (ayah: number) => void;
+    t: (key: 'quran_sajda_obligatory' | 'quran_sajda_recommended') => string;
+}
+
+/**
+ * Inner component rendered as a child of <VerseActionModalContainer>. It
+ * owns the only useVerseAction() consumer on this screen so the hook can
+ * resolve the provider that the parent renders. Calling the hook from
+ * SurahReaderScreen itself was the original bug: a hook looks *up* the
+ * tree for its context provider, but SurahReaderScreen was rendering
+ * <VerseActionModalContainer> as part of its own output, so the hook
+ * always saw a missing provider and threw.
+ */
+const SurahAyahListWithAction: React.FC<SurahAyahListWithActionProps> = ({
+    ayahs,
+    surahId,
+    timingAyah,
+    playback,
+    playAyah,
+    seekToAyah,
+    toggleBookmark,
+    isBookmarked,
+    setTafsirFor,
+    t,
+}) => {
+    const verseAction = useVerseAction();
+    return (
+        <>
+            {ayahs.map(ayah => {
+                // Highlight sources: timingAyah (QUL) wins when the
+                // bundle is loaded; otherwise the audio queue's
+                // current ayah is the always-on fallback.
+                const isHighlighted = !!timingAyah && timingAyah.surah === surahId && timingAyah.ayah === ayah.number;
+                return (
+                    <AyahCard
+                        key={ayah.number}
+                        ayah={ayah}
+                        isBookmarked={isBookmarked(ayah.number)}
+                        isCurrentAudio={playback?.surahId === surahId && playback?.ayahNumber === ayah.number}
+                        isHighlighted={isHighlighted}
+                        onPlay={() => playAyah(ayah)}
+                        onSeek={() => seekToAyah(ayah.number)}
+                        onLongPress={() => {
+                            verseAction.open({
+                                surah: surahId,
+                                ayah: ayah.number,
+                                text: ayah.text,
+                            });
+                        }}
+                        onToggleBookmark={() => toggleBookmark(ayah.number)}
+                        onShowTafsir={() => setTafsirFor(ayah.number)}
+                        sajdaLabel={ayah.sajda === 2 ? t('quran_sajda_obligatory') : t('quran_sajda_recommended')}
+                    />
+                );
+            })}
+        </>
     );
 };
 

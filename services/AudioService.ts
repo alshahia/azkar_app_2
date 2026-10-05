@@ -2,6 +2,7 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 import { getStorage } from "../data/storage";
 import { setMediaSessionHandlers, setMediaSessionPlaybackState, updateMediaSessionMetadata } from "../utils/mediaSession";
+import { logger } from "../utils/logger";
 
 class AudioService {
   private audioContext: AudioContext | null = null;
@@ -127,7 +128,13 @@ class AudioService {
           base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || null;
           
           if (!base64Audio) {
-            console.warn("No audio data returned from Gemini API");
+            logger.warn('No audio data returned from Gemini API');
+            // Nothing was scheduled, but claimMediaSession() already told the OS
+            // this track is playing. Release the lock-screen session and the
+            // half-initialised state, otherwise the OS shows a phantom
+            // "now playing" entry for audio that never existed.
+            setMediaSessionPlaybackState('none');
+            this.cleanup();
             return false;
           }
 
@@ -158,7 +165,10 @@ class AudioService {
       });
 
     } catch (error) {
-      console.error("Audio playback failed", error);
+      // Message only: this is the one path that handles the user's Gemini key,
+      // and the SDK's error objects can carry request details.
+      logger.error('Audio playback failed', { message: error instanceof Error ? error.message : String(error) });
+      setMediaSessionPlaybackState('none');
       this.cleanup();
       throw error;
     }
@@ -230,7 +240,7 @@ class AudioService {
               // Remove listener to prevent firing true on manual stop
               this.currentSource.onended = null;
               this.currentSource.stop();
-          } catch(e) {}
+          } catch { /* ignore */ }
       }
       
       if (this.completionResolver) {
@@ -257,7 +267,7 @@ class AudioService {
       // Stop current source without triggering completion
       if (this.currentSource) {
           this.currentSource.onended = null;
-          try { this.currentSource.stop(); } catch(e){}
+          try { this.currentSource.stop(); } catch { /* ignore */ }
       }
       
       // Update position

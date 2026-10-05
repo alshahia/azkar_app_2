@@ -22,6 +22,33 @@ export interface QuranAudioApi extends AudioQueueState {
 
 const QuranAudioContext = createContext<QuranAudioApi | null>(null);
 
+/**
+ * Safe no-op default used by the per-provider error boundary in App.tsx.
+ * If QuranAudioProvider crashes, the boundary re-supplies this value so
+ * consumers keep working: every method is a no-op, every state field is
+ * a safe empty value (no playback, no resume target, empty reciter id).
+ * The audio mini player and other UI continue to render instead of
+ * unmounting — they just show a stopped / idle state.
+ *
+ * `play` accepts the same shape the real API expects but does nothing,
+ * so callers that ignore the return value (e.g. `<button onClick={() =>
+ * play(1, 1)}>`) keep working without conditional checks.
+ */
+export const NOOP_QURAN_AUDIO: QuranAudioApi = {
+    playback: null,
+    reciterId: '',
+    listen: null,
+    play: () => {},
+    stop: () => {},
+    advance: () => {},
+    prev: () => {},
+    setReciter: () => {},
+    reportPosition: () => {},
+    flushPosition: () => {},
+};
+
+export { QuranAudioContext };
+
 export const QuranAudioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [state, setState] = useState<AudioQueueState>(() => audioQueue.getState());
 

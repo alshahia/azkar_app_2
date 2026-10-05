@@ -1,11 +1,13 @@
 
 import React, { useState } from 'react';
-import { useAppContext } from '../../context/AppContext';
+import { useNavigationStore } from '../../stores/useNavigationStore';
+import { usePreferencesStore } from '../../stores/usePreferencesStore';
 import { MagnifyingGlassIcon, ChevronRightIcon, PlusIcon, TagIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from '../../hooks/useTranslation';
 
 const CategoriesScreen: React.FC = () => {
-  const { navigate, categories } = useAppContext();
+  const navigate = useNavigationStore((state) => state.navigate);
+  const categories = usePreferencesStore((state) => state.categories);
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -14,8 +16,8 @@ const CategoriesScreen: React.FC = () => {
   );
 
   return (
-    <div className="p-4 h-full flex flex-col relative bg-slate-50/50 dark:bg-transparent">
-      <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white text-center mb-8 tracking-tight">{t('categories_title')}</h1>
+    <div className="p-4 h-full flex flex-col relative bg-sand-50/50 dark:bg-transparent">
+      <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white text-center mb-8">{t('categories_title')}</h1>
       
       {/* Search Bar - Floating Style */}
       <div className="relative mb-8 z-10">
@@ -24,10 +26,11 @@ const CategoriesScreen: React.FC = () => {
         </div>
         <input
           type="text"
+          aria-label={t('categories_search_placeholder')}
           placeholder={t('categories_search_placeholder')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full bg-white dark:bg-[#1A3129] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-2xl py-4 pl-12 pr-4 rtl:pr-12 rtl:pl-4 focus:ring-2 focus:ring-primary-500/50 focus:outline-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none transition-all"
+          className="w-full bg-surface-card dark:bg-surface-card text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-2xl py-4 pl-12 pr-4 rtl:pr-12 rtl:pl-4 focus:ring-2 focus:ring-primary-500/50 focus:outline-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none transition-all"
         />
       </div>
 
@@ -36,13 +39,13 @@ const CategoriesScreen: React.FC = () => {
           <button 
             key={category.id} 
             onClick={() => navigate('azkarList', { categoryId: category.id })}
-            className="w-full flex items-center justify-between p-5 mb-4 bg-white dark:bg-[#1A3129] rounded-2xl transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:hover:bg-[#203c31] shadow-[0_2px_10px_rgb(0,0,0,0.03)] border border-transparent dark:border-gray-800 group relative"
+            className="w-full flex items-center justify-between p-5 mb-4 bg-surface-card dark:bg-surface-card rounded-2xl transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:hover:bg-surface-card-2 shadow-[0_2px_10px_rgb(0,0,0,0.03)] border border-transparent dark:border-midnight-800 group relative"
           >
             <div className="flex items-center space-x-5 rtl:space-x-reverse">
               {/* Islamic Star Icon Container - Filled Style */}
               <div className="relative w-14 h-14 flex items-center justify-center shrink-0">
-                  <div className="absolute inset-0 bg-primary-50 dark:bg-[#12241C] rounded-xl rotate-45 transition-colors group-hover:bg-primary-100 dark:group-hover:bg-primary-900/30"></div>
-                  <div className="absolute inset-0 bg-primary-50 dark:bg-[#12241C] rounded-xl transition-colors group-hover:bg-primary-100 dark:group-hover:bg-primary-900/30"></div>
+                  <div className="absolute inset-0 bg-primary-50 dark:bg-surface rounded-xl rotate-45 transition-colors group-hover:bg-primary-100 dark:group-hover:bg-primary-900/30"></div>
+                  <div className="absolute inset-0 bg-primary-50 dark:bg-surface rounded-xl transition-colors group-hover:bg-primary-100 dark:group-hover:bg-primary-900/30"></div>
                   {/* Standard Icon */}
                   <category.icon className="relative w-7 h-7 text-primary-600 dark:text-primary-400 transition-transform duration-300 group-hover:scale-110" />
               </div>
@@ -59,17 +62,27 @@ const CategoriesScreen: React.FC = () => {
                         </span>
                     )}
                 </div>
-                <p className="text-sm text-slate-500 dark:text-gray-400 font-medium">
+                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
                     {category.count} {category.id === 'quranic' ? t('categories_duas_count') : t('categories_azkar_count')}
                 </p>
               </div>
             </div>
             
-            <div className="w-8 h-8 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center group-hover:bg-primary-500 group-hover:text-white transition-all duration-300">
+            <div className="w-8 h-8 rounded-full bg-surface-card-2 dark:bg-midnight-800 flex items-center justify-center group-hover:bg-primary-500 group-hover:text-white transition-all duration-300">
                 <ChevronRightIcon className="w-4 h-4 text-gray-400 dark:text-gray-500 rtl:rotate-180 group-hover:text-white" />
             </div>
           </button>
         ))}
+
+        {searchTerm.trim() !== '' && filteredCategories.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-64 text-center">
+            <div className="bg-surface-card-2 dark:bg-midnight-800 p-6 rounded-full mb-4">
+              <MagnifyingGlassIcon className="w-12 h-12 text-gray-300 dark:text-gray-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">لا توجد نتائج مطابقة</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">جرّب كلمة بحث مختلفة.</p>
+          </div>
+        )}
       </div>
 
       {/* Floating Action Button for Adding Custom Zikr */}

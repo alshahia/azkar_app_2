@@ -29,9 +29,21 @@ const noopReporter: CrashReporter = {
     },
 };
 
+/** Context keys whose values must never reach the console (credentials). */
+const SENSITIVE_CONTEXT_KEYS = /^(api_?key|apikey|token|secret|password|authorization)$/i;
+
+/** Redacts sensitive values so catch blocks can't leak credentials into logs. */
+const sanitizeContext = (context: CrashContext): CrashContext => {
+    const sanitized: CrashContext = {};
+    for (const [key, value] of Object.entries(context)) {
+        sanitized[key] = SENSITIVE_CONTEXT_KEYS.test(key) ? '[REDACTED]' : value;
+    }
+    return sanitized;
+};
+
 const devReporter: CrashReporter = {
     reportError(error, context) {
-        console.error('[CrashReporter]', error, context ?? {});
+        console.error('[CrashReporter]', error, context ? sanitizeContext(context) : {});
     },
 };
 

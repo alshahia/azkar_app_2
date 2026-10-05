@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 *.local
+.env.local
 
 # Editor directories and files
 .vscode/*
@@ -38,3 +39,9 @@ _research/repos/
 .qoder/
 .rovodev/
 .vibe/
+# Python virtual environment (local tooling)
+Python/
+
+# Generated lint reports
+eslint-report.json
+lint-output.json

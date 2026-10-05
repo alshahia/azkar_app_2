@@ -1,4 +1,5 @@
 import React from 'react';
+import { BookOpenIcon } from '@heroicons/react/24/outline';
 import type { QuranAyah } from '../../services/QuranService';
 import { getSurah } from '../../services/QuranService';
 import { toArabicDigits } from '../../services/QuranService';
@@ -12,6 +13,14 @@ interface MushafModernViewProps {
     /** When true, swap font-quran -> font-quran-colored (Tajweed rules as
      *  OpenType color glyphs). */
     tajweed: boolean;
+    /**
+     * Optional callback fired when the user taps the per-ayah "التفسير" chip
+     * rendered next to the ayah-number marker. Parents that wire a Tafsir
+     * sheet can open it for the (surahId, ayah) tuple. When this prop is
+     * omitted, the chip is hidden entirely so the modern view stays a
+     * pure reader.
+     */
+    onAyahTap?: (surahId: number, ayahNumber: number) => void;
 }
 
 /**
@@ -22,8 +31,14 @@ interface MushafModernViewProps {
  * is mobile-friendly, requires no per-line layout database, and keeps the
  * existing AyahCard's typographic vocabulary so the page mode and ayah mode
  * feel like one product.
+ *
+ * The ayah-number marker uses a fully transparent fill (only a thin outline)
+ * so the previous ayah's last word stays visible underneath instead of
+ * being masked by a 15%-opacity green diamond. The optional Tafsir chip
+ * sits inline next to the marker so each ayah has an in-app Tafsir opener
+ * without forcing the reader into the continuous-flow screen.
  */
-const MushafModernView: React.FC<MushafModernViewProps> = ({ page, ayahs, tajweed }) => {
+const MushafModernView: React.FC<MushafModernViewProps> = ({ page, ayahs, tajweed, onAyahTap }) => {
     const fontClass = tajweed ? 'font-quran-colored' : 'font-quran';
 
     return (
@@ -48,6 +63,19 @@ const MushafModernView: React.FC<MushafModernViewProps> = ({ page, ayahs, tajwee
                     block.push(<BismillahHeader key={'b-' + ayah.surahId + '-' + ayah.number} />);
                 }
 
+                const tafsirChip = onAyahTap ? (
+                    <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onAyahTap(ayah.surahId, ayah.number); }}
+                        className="inline-flex items-center justify-center gap-1 align-middle mx-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-primary-700 dark:text-primary-300 bg-primary-50/70 dark:bg-primary-900/30 hover:bg-primary-100 dark:hover:bg-primary-800/40 border border-primary-200/60 dark:border-primary-700/50 transition-colors select-none"
+                        aria-label={`التفسير - سورة ${surah?.name ?? ayah.surahId} آية ${arabicNumber}`}
+                        title="التفسير"
+                    >
+                        <BookOpenIcon className="w-3.5 h-3.5" aria-hidden />
+                        <span>التفسير</span>
+                    </button>
+                ) : null;
+
                 block.push(
                     <p
                         key={'a-' + ayah.surahId + '-' + ayah.number}
@@ -61,13 +89,16 @@ const MushafModernView: React.FC<MushafModernViewProps> = ({ page, ayahs, tajwee
                             className="inline-flex items-center justify-center align-middle mx-2 select-none"
                         >
                             <span className="relative inline-flex items-center justify-center w-8 h-8">
+                                {/* Outline-only diamond; fill is transparent so it
+                                    doesn't mask the previous ayah's last word. */}
                                 <svg viewBox="0 0 40 40" className="absolute inset-0 w-full h-full text-primary-600/70 dark:text-primary-400/70" aria-hidden>
-                                    <path d="M20 2 L24.7 15.3 L38 20 L24.7 24.7 L20 38 L15.3 24.7 L2 20 L15.3 15.3 Z" fill="currentColor" opacity="0.15" />
+                                    <path d="M20 2 L24.7 15.3 L38 20 L24.7 24.7 L20 38 L15.3 24.7 L2 20 L15.3 15.3 Z" fill="transparent" />
                                     <path d="M20 2 L24.7 15.3 L38 20 L24.7 24.7 L20 38 L15.3 24.7 L2 20 L15.3 15.3 Z" fill="none" stroke="currentColor" strokeWidth="1" />
                                 </svg>
                                 <span className="relative text-[11px] font-bold text-primary-700 dark:text-primary-300 tabular-nums">{arabicNumber}</span>
                             </span>
                         </span>
+                        {tafsirChip}
                     </p>
                 );
                 return block;

@@ -135,6 +135,15 @@ export const translations = {
     settings_preferences: 'التفضيلات',
     settings_layout_title: 'تصميم الصفحة الرئيسية',
     settings_dark_mode: 'الوضع الداكن',
+    // Dark Style picker — the five surface identities from prototypes.html,
+    // each with a light/dark pair. Labels are bilingual in parentheses to
+    // match the design system documentation naming.
+    settings_dark_style: 'نمط السطح',
+    settings_dark_style_verdant: 'الزمرد الليلي',
+    settings_dark_style_cosmic: 'الكون النيلي',
+    settings_dark_style_forest: 'الغابة المسحورة',
+    settings_dark_style_coral: 'الليل المرجاني',
+    settings_dark_style_obsidian: 'السبج',
     settings_notifications: 'الإشعارات',
     settings_language: 'اللغة',
     settings_language_english: 'English',
@@ -187,6 +196,8 @@ export const translations = {
     report_bug_attachments_cta: 'إرفاق لقطة شاشة',
     report_bug_info: 'سيتم إرسال معلومات الجهاز والتطبيق مع تقريرك لمساعدتنا في حل المشكلة بشكل أسرع.',
     report_bug_submit_button: 'إرسال التقرير',
+    report_bug_error_required: 'يرجى إدخال عنوان الخطأ ووصفه قبل إرسال التقرير.',
+    report_bug_success: 'تم تجهيز تقريرك وفتح تطبيق البريد لإرساله. شكراً لمساعدتك في تحسين التطبيق.',
 
     // Quran feature
     quran_title: 'القرآن الكريم',

@@ -34,6 +34,7 @@
 body {
   font-family: 'Plus Jakarta Sans', sans-serif;
   -webkit-tap-highlight-color: transparent;
+  caret-color: rgb(var(--color-primary-600));
   padding-top: env(safe-area-inset-top);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
@@ -60,6 +61,19 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgb(var(--color-primary-500) / 0.5); 
+}
+
+/* Firefox scrollbar — same palette as the WebKit rules above, so the
+   scrollbar follows the active theme instead of the OS default. */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--color-primary-500) / 0.3) transparent;
+}
+
+/* Text selection tinted from the primary scale rather than the browser
+   default blue, which clashes with every theme in the app. */
+::selection {
+  background-color: rgb(var(--color-primary-500) / 0.25);
 }
 
 /* prefers-reduced-motion: respect the OS-level accessibility preference.
@@ -162,3 +176,264 @@ body {
   --color-primary-800: 21 94 117;
   --color-primary-900: 22 78 99;
 }
+
+/* quran-madina-html (the printed-Mushaf "pixel" view) paints a lightgrey
+   background on the hovered / clicked ayah-marker div via inline JS
+   (style.backgroundColor = 'lightgrey' on onmouseover, 'transparent' on
+   mouseout). The marker div wraps the whole ayah, including any line breaks
+   the printed Mushaf makes for that ayah, so the gray block visually extends
+   back over the previous ayah's last words and makes them unreadable.
+   Force the background to transparent with !important so the inline JS
+   stylesheet cannot win. Click-to-popup (copy / open on quran.com) and the
+   pointer cursor are unaffected - only the background fill is suppressed. */
+.quran-madina-html-part {
+  background-color: transparent !important;
+}
+
+/* ===========================================================================
+ * DARK STYLE ENGINE
+ *
+ * Each style below defines a complete palette (surface, card, border, gold
+ * accents). The variable values are RGB triplets so Tailwind's `<alpha-value>`
+ * substitution works through `rgb(var(--surface) / 1)` style declarations.
+ *
+ * The tokens that get redefined here:
+ *   --surface / --surface-card / --surface-card-2 — new Tailwind colors
+ *   --midnight-800/900/950 — re-bound so the 247 existing `dark:bg-midnight-*`
+ *     references across the codebase automatically pick up the chosen style.
+ *     This is what makes a single picker choice restyle the whole app shell
+ *     without touching every call-site.
+ *   --gold / --gold-deep — gold/amber accents for the Cosmic and Obsidian
+ *     identities (and a complementary accent for the others).
+ *   --border-soft — RGB for hairline borders on cards, blended at 15% alpha.
+ *   --statusbar — what the Android/iOS StatusBar fills with when in dark mode.
+ *
+ * The `data-dark-style` attribute is set on the root <div> in App.tsx; the
+ * `.dark` class is also toggled there. Default (cosmic) ships in `:root`.
+ * ========================================================================= */
+
+:root {
+  /* Default light (used when no data-dark-style is set; also cosmic's light default) */
+  --surface: 250 232 218;
+  --surface-card: 253 244 235;
+  --surface-card-2: 244 224 208;
+  --midnight-800: 215 195 180;
+  --midnight-900: 244 224 208;
+  --midnight-950: 250 232 218;
+  --border-soft: 229 183 104;
+  --gold: 200 160 90;
+  --gold-deep: 165 120 50;
+  --statusbar: 250 232 218;
+}
+
+:root.dark {
+  /* Default dark = Cosmic (Deep Space Indigo + Gold). */
+  --surface: 11 11 42;
+  --surface-card: 27 27 63;
+  --surface-card-2: 36 36 80;
+  --midnight-800: 17 17 50;
+  --midnight-900: 27 27 63;
+  --midnight-950: 11 11 42;
+  --border-soft: 229 183 104;
+  --gold: 229 183 104;
+  --gold-deep: 184 140 56;
+  --statusbar: 11 11 42;
+}
+
+/* — Verdant (الزمرد الليلي) · paired with Ivory Dawn — */
+[data-dark-style='verdant'] {
+  --surface: 232 240 218;       /* sage linen */
+  --surface-card: 250 252 244;  /* sage-tinted white */
+  --surface-card-2: 220 232 204;/* hover */
+  --midnight-800: 190 205 170;
+  --midnight-900: 220 232 204;
+  --midnight-950: 232 240 218;
+  --border-soft: 16 185 129;
+  --gold: 180 140 60;
+  --gold-deep: 140 100 40;
+  --statusbar: 232 240 218;
+}
+.dark[data-dark-style='verdant'] {
+  --surface: 2 44 34;
+  --surface-card: 19 78 64;
+  --surface-card-2: 13 59 48;
+  --midnight-800: 11 33 25;
+  --midnight-900: 19 78 64;
+  --midnight-950: 2 44 34;
+  --border-soft: 16 185 129;
+  --gold: 212 175 55;
+  --gold-deep: 170 130 30;
+  --statusbar: 2 44 34;
+}
+
+/* — Cosmic (الكون النيلي) · paired with Rose Dawn — DEFAULT — */
+[data-dark-style='cosmic'] {
+  --surface: 250 232 218;       /* warm rose sand */
+  --surface-card: 253 244 235;  /* warm cream card */
+  --surface-card-2: 244 224 208;/* hover */
+  --midnight-800: 215 195 180;
+  --midnight-900: 244 224 208;
+  --midnight-950: 250 232 218;
+  --border-soft: 229 183 104;
+  --gold: 200 160 90;
+  --gold-deep: 165 120 50;
+  --statusbar: 250 232 218;
+}
+.dark[data-dark-style='cosmic'] {
+  --surface: 11 11 42;
+  --surface-card: 27 27 63;
+  --surface-card-2: 36 36 80;
+  --midnight-800: 17 17 50;
+  --midnight-900: 27 27 63;
+  --midnight-950: 11 11 42;
+  --border-soft: 229 183 104;
+  --gold: 229 183 104;
+  --gold-deep: 184 140 56;
+  --statusbar: 11 11 42;
+}
+
+/* — Forest (الغابة المسحورة) · paired with Mint Orchard — */
+[data-dark-style='forest'] {
+  --surface: 218 238 218;       /* mint grove */
+  --surface-card: 240 250 236;  /* mint-tinted white */
+  --surface-card-2: 200 228 198;/* hover */
+  --midnight-800: 170 200 170;
+  --midnight-900: 200 228 198;
+  --midnight-950: 218 238 218;
+  --border-soft: 110 231 183;
+  --gold: 60 150 70;
+  --gold-deep: 40 110 50;
+  --statusbar: 218 238 218;
+}
+.dark[data-dark-style='forest'] {
+  --surface: 10 40 24;
+  --surface-card: 19 68 50;
+  --surface-card-2: 15 53 38;
+  --midnight-800: 13 30 18;
+  --midnight-900: 19 68 50;
+  --midnight-950: 10 40 24;
+  --border-soft: 110 231 183;
+  --gold: 80 200 120;
+  --gold-deep: 60 160 90;
+  --statusbar: 10 40 24;
+}
+
+/* — Coral (الليل المرجاني) · paired with Coral Bloom — */
+[data-dark-style='coral'] {
+  --surface: 248 218 212;       /* coral petal */
+  --surface-card: 252 234 230;  /* blush-tinted white */
+  --surface-card-2: 240 200 192;/* hover */
+  --midnight-800: 215 175 165;
+  --midnight-900: 240 200 192;
+  --midnight-950: 248 218 212;
+  --border-soft: 244 63 94;
+  --gold: 220 100 80;
+  --gold-deep: 180 70 60;
+  --statusbar: 248 218 212;
+}
+.dark[data-dark-style='coral'] {
+  --surface: 59 15 26;
+  --surface-card: 92 26 42;
+  --surface-card-2: 75 22 36;
+  --midnight-800: 45 12 22;
+  --midnight-900: 92 26 42;
+  --midnight-950: 59 15 26;
+  --border-soft: 244 63 94;
+  --gold: 251 113 133;
+  --gold-deep: 225 29 72;
+  --statusbar: 59 15 26;
+}
+
+/* — Obsidian (السبج) · paired with Marble — */
+[data-dark-style='obsidian'] {
+  --surface: 232 232 226;       /* cool marble */
+  --surface-card: 244 244 240;  /* very pale marble white */
+  --surface-card-2: 218 218 212;/* hover */
+  --midnight-800: 200 200 195;
+  --midnight-900: 218 218 212;
+  --midnight-950: 232 232 226;
+  --border-soft: 120 120 120;
+  --gold: 180 160 110;
+  --gold-deep: 140 120 80;
+  --statusbar: 232 232 226;
+}
+.dark[data-dark-style='obsidian'] {
+  --surface: 0 0 0;
+  --surface-card: 14 14 14;
+  --surface-card-2: 22 22 22;
+  --midnight-800: 8 8 8;
+  --midnight-900: 14 14 14;
+  --midnight-950: 0 0 0;
+  --border-soft: 255 255 255;
+  --gold: 229 183 104;
+  --gold-deep: 184 140 56;
+  --statusbar: 0 0 0;
+}
+
+/* Native Status Bar color binding — uses the active dark style. The CSS
+   variable is updated by App.tsx via StatusBar.setBackgroundColor() at the
+   same time as the picker flips, so the OS chrome matches. */
+:root {
+  --statusbar-color: rgb(var(--statusbar));
+}
+/* Accessibility: High Contrast Mode */
+.high-contrast {
+    --contrast-boost: 1.2;
+}
+
+.high-contrast .text-gray-500 {
+    color: #374151 !important;
+}
+
+.high-contrast .text-gray-400 {
+    color: #4b5563 !important;
+}
+
+.high-contrast .dark\:text-gray-400 {
+    color: #9ca3af !important;
+}
+
+/* Accessibility: Large Text Mode */
+.large-text {
+    font-size: 18px;
+}
+
+.large-text .text-sm {
+    font-size: 16px;
+}
+
+.large-text .text-xs {
+    font-size: 14px;
+}
+
+/* Accessibility: Reduce Motion */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+}
+
+/* Focus styles for keyboard navigation — themed from the primary scale so
+   the ring follows the active theme instead of a fixed emerald. */
+*:focus-visible {
+    outline: 2px solid rgb(var(--color-primary-500));
+    outline-offset: 2px;
+}
+
+/* Skip to main content link */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: rgb(var(--color-primary-500));
+    color: white;
+    padding: 8px;
+    z-index: 100;
+}
+
+.skip-link:focus {
+    top: 0;
+}
+

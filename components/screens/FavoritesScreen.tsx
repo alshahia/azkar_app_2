@@ -1,12 +1,16 @@
 
 import React, { useState } from 'react';
-import { useAppContext } from '../../context/AppContext';
+import { useNavigationStore } from '../../stores/useNavigationStore';
+import { usePreferencesStore } from '../../stores/usePreferencesStore';
 import { MagnifyingGlassIcon, ArrowLeftIcon, HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
 import { HeartIcon as HeartOutline } from '@heroicons/react/24/outline';
 import { useTranslation } from '../../hooks/useTranslation';
 
 const FavoritesScreen: React.FC = () => {
-    const { navigate, favorites, toggleFavorite, categories } = useAppContext();
+    const navigate = useNavigationStore((state) => state.navigate);
+    const favorites = usePreferencesStore((state) => state.favorites);
+    const toggleFavorite = usePreferencesStore((state) => state.toggleFavorite);
+    const categories = usePreferencesStore((state) => state.categories);
     const { t } = useTranslation();
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -33,16 +37,17 @@ const FavoritesScreen: React.FC = () => {
                 <input
                     type="text"
                     placeholder={t('favorites_search_placeholder')}
+                    aria-label={t('favorites_search_placeholder')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-white dark:bg-[#1A3129] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 border border-gray-200 dark:border-none rounded-full py-3 pl-12 pr-4 rtl:pr-12 rtl:pl-4 focus:ring-2 focus:ring-primary-500 focus:outline-none shadow-sm dark:shadow-none transition-colors"
+                    className="w-full bg-surface-card dark:bg-surface-card text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 border border-gray-200 dark:border-none rounded-full py-3 pl-12 pr-4 rtl:pr-12 rtl:pl-4 focus:ring-2 focus:ring-primary-500 focus:outline-none shadow-sm dark:shadow-none transition-colors"
                 />
             </div>
 
             <div className="flex-grow overflow-y-auto">
                 {filteredFavorites.length > 0 ? (
                     filteredFavorites.map(zikr => (
-                        <div key={zikr.id} className="flex items-start justify-between p-4 mb-3 bg-white dark:bg-[#1A3129] rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-none transition-colors">
+                        <div key={zikr.id} className="flex items-start justify-between p-4 mb-3 bg-surface-card dark:bg-surface-card rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-none transition-colors">
                             <div className="flex-grow pr-4 rtl:pr-0 rtl:pl-4">
                                 <p className="text-lg font-serif text-right mb-2 text-gray-900 dark:text-white">{zikr.arabic}</p>
                                 <p className="text-sm text-gray-600 dark:text-gray-300 text-left rtl:text-right">{zikr.translation}</p>
@@ -54,7 +59,7 @@ const FavoritesScreen: React.FC = () => {
                     ))
                 ) : (
                     <div className="flex flex-col items-center justify-center h-64 text-center">
-                        <div className="bg-gray-100 dark:bg-gray-800 p-6 rounded-full mb-4">
+                        <div className="bg-surface-card-2 dark:bg-midnight-800 p-6 rounded-full mb-4">
                             <HeartOutline className="w-12 h-12 text-gray-300 dark:text-gray-600" />
                         </div>
                         <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">{t('favorites_empty_title')}</h3>

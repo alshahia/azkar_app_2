@@ -1,20 +1,29 @@
 
 import React from 'react';
-import { useAppContext } from '../../context/AppContext';
+import { SunIcon, BellIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+import { usePreferencesStore } from '../../stores/usePreferencesStore';
+import { useNavigationStore } from '../../stores/useNavigationStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { getStorage } from '../../data/storage';
 
-const WelcomeScreen: React.FC = () => {
-    const { navigate, darkMode } = useAppContext();
-    const { t } = useTranslation();
+interface FeatureCardProps {
+    icon: React.ReactNode;
+    title: string;
+    description: string;
+}
 
-    const FeatureCard: React.FC<{ icon: string; title: string; description: string }> = ({ icon, title, description }) => (
-        <div className="bg-white/80 dark:bg-[#1A3129]/50 backdrop-blur-sm rounded-lg p-4 flex flex-col items-start text-start shadow-sm dark:shadow-none transition-colors duration-300">
-            <div className="text-2xl mb-2">{icon}</div>
-            <h3 className="font-bold text-gray-900 dark:text-white transition-colors">{title}</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-300 transition-colors">{description}</p>
-        </div>
-    );
+const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) => (
+    <div className="bg-white/80 dark:bg-surface-card/50 backdrop-blur-sm rounded-2xl p-4 flex flex-col items-start text-start shadow-sm dark:shadow-none transition-colors duration-300">
+        <div className="w-10 h-10 mb-3 rounded-full bg-primary-100 dark:bg-surface-card flex items-center justify-center text-primary-600 dark:text-primary-400 transition-colors">{icon}</div>
+        <h3 className="font-bold font-serif text-gray-900 dark:text-white transition-colors">{title}</h3>
+        <p className="text-sm font-serif text-gray-600 dark:text-gray-300 transition-colors">{description}</p>
+    </div>
+);
+
+const WelcomeScreen: React.FC = () => {
+    const navigate = useNavigationStore((s) => s.navigate);
+    const darkMode = usePreferencesStore((s) => s.darkMode);
+    const { t } = useTranslation();
 
     const handleSkip = async () => {
         await getStorage().setOnboardingComplete();
@@ -23,6 +32,8 @@ const WelcomeScreen: React.FC = () => {
     
     return (
         <div 
+            id="main-content"
+            tabIndex={-1}
             className="h-full flex flex-col justify-between p-6 bg-cover bg-center transition-all duration-500" 
             style={{ 
                 backgroundImage: darkMode 
@@ -38,13 +49,13 @@ const WelcomeScreen: React.FC = () => {
                     <div className="inline-block bg-primary-100 dark:bg-primary-500/20 p-4 rounded-full mb-4 transition-colors">
                         <svg className="w-12 h-12 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
                     </div>
-                    <h1 className="text-4xl font-bold text-gray-900 dark:text-white transition-colors">{t('welcome_title')}</h1>
-                    <p className="text-gray-600 dark:text-gray-300 mt-2 transition-colors">{t('welcome_subtitle')}</p>
+                    <h1 className="text-4xl font-bold font-serif text-gray-900 dark:text-white transition-colors">{t('welcome_title')}</h1>
+                    <p className="font-serif text-gray-600 dark:text-gray-300 mt-2 transition-colors">{t('welcome_subtitle')}</p>
                 </div>
                 <div className="space-y-4 mt-12">
-                    <FeatureCard icon="☀️" title={t('welcome_feature1_title')} description={t('welcome_feature1_desc')} />
-                    <FeatureCard icon="🔔" title={t('welcome_feature2_title')} description={t('welcome_feature2_desc')} />
-                    <FeatureCard icon="📈" title={t('welcome_feature3_title')} description={t('welcome_feature3_desc')} />
+                    <FeatureCard icon={<SunIcon className="w-5 h-5" />} title={t('welcome_feature1_title')} description={t('welcome_feature1_desc')} />
+                    <FeatureCard icon={<BellIcon className="w-5 h-5" />} title={t('welcome_feature2_title')} description={t('welcome_feature2_desc')} />
+                    <FeatureCard icon={<ChartBarIcon className="w-5 h-5" />} title={t('welcome_feature3_title')} description={t('welcome_feature3_desc')} />
                 </div>
             </div>
             

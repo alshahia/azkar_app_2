@@ -1,6 +1,7 @@
 
 import React, { useMemo, useState } from 'react';
-import { useAppContext } from '../../context/AppContext';
+import { useNavigationStore } from '../../stores/useNavigationStore';
+import { usePreferencesStore } from '../../stores/usePreferencesStore';
 import { Cog6ToothIcon, MagnifyingGlassIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from '../../hooks/useTranslation';
 import { WelcomeCard, QuickAccessGrid } from '../home/HomeHeader';
@@ -104,8 +105,9 @@ const WidgetsLayout: React.FC = () => {
 };
 
 const HomeScreen: React.FC = () => {
-    const { navigate, homeLayout, categories } = useAppContext();
-    const { t } = useTranslation();
+    const navigate = useNavigationStore((state) => state.navigate);
+    const homeLayout = usePreferencesStore((state) => state.homeLayout);
+    const categories = usePreferencesStore((state) => state.categories);
 
     // Flatten all Azkar for Focus/Stream layouts to use
     // Using simple mapping to ensure categoryName is available
@@ -136,7 +138,7 @@ const HomeScreen: React.FC = () => {
             case 'stream':
                 return <StreamLayout allAzkar={allAzkar} />;
             case 'simple':
-                return <DashboardLayout allAzkar={allAzkar} onRefresh={refreshRandomZikr} currentZikr={currentRandomZikr} />;
+                return <DashboardLayout onRefresh={refreshRandomZikr} currentZikr={currentRandomZikr} />;
             case 'dashboard':
             default:
                 return <WidgetsLayout />;
@@ -146,19 +148,19 @@ const HomeScreen: React.FC = () => {
     return (
         <div className="h-full flex flex-col">
             {/* Header (Top Bar) */}
-            <header className="flex justify-between items-center p-4 shrink-0 bg-gray-50 dark:bg-[#12241C] z-20">
+            <header className="flex justify-between items-center p-4 shrink-0 bg-surface dark:bg-surface-card z-20 border-b border-transparent dark:border-white/5">
                 <div className="flex items-center space-x-3 rtl:space-x-reverse">
                     <button 
                         onClick={() => navigate('settings')}
                         aria-label="الإعدادات"
-                        className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
+                        className="p-2 rounded-full hover:bg-surface-card dark:hover:bg-midnight-800 transition-colors"
                     >
                         <Cog6ToothIcon className="w-6 h-6 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition-colors" />
                     </button>
                     <button 
                         onClick={() => navigate('search')}
                         aria-label="البحث"
-                        className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
+                        className="p-2 rounded-full hover:bg-surface-card dark:hover:bg-midnight-800 transition-colors"
                     >
                         <MagnifyingGlassIcon className="w-6 h-6 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition-colors" />
                     </button>

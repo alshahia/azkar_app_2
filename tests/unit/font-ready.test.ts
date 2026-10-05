@@ -81,7 +81,7 @@ describe('fontReady - preloadUthmaniFonts', () => {
     it('absorbs load() rejections without flipping ready:false', async () => {
         _resetFontReadyForTests();
         const load = vi.fn().mockRejectedValue(new Error('synth-fail'));
-        const ready = vi.fn().mockResolvedValue(undefined);
+        const _ready = vi.fn().mockResolvedValue(undefined);
         attachFakeFonts({ load, ready: Promise.resolve() });
         const status = await preloadUthmaniFonts();
         expect(load).toHaveBeenCalledTimes(2);
@@ -92,7 +92,7 @@ describe('fontReady - preloadUthmaniFonts', () => {
     it('captures document.fonts.ready rejection and flips ready:false', async () => {
         _resetFontReadyForTests();
         const load = vi.fn().mockResolvedValue([]);
-        const ready = vi.fn().mockRejectedValue(new Error('synth-ready-fail'));
+        const _ready = vi.fn().mockRejectedValue(new Error('synth-ready-fail'));
         attachFakeFonts({ load, ready: Promise.reject(new Error('synth-ready-fail')) });
         const status = await preloadUthmaniFonts();
         expect(status.errors).toContain('document.fonts.ready rejected');
@@ -102,7 +102,7 @@ describe('fontReady - preloadUthmaniFonts', () => {
     it('resolves ready:true on a happy path', async () => {
         _resetFontReadyForTests();
         const load = vi.fn().mockResolvedValue([]);
-        const ready = vi.fn().mockResolvedValue(undefined);
+        const _ready = vi.fn().mockResolvedValue(undefined);
         attachFakeFonts({ load, ready: Promise.resolve() });
         const status = await preloadUthmaniFonts();
         expect(load).toHaveBeenCalledTimes(2);

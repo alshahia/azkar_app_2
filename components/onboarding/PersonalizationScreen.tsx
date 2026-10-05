@@ -1,24 +1,28 @@
 
 import React, { useState } from 'react';
-import { useAppContext } from '../../context/AppContext';
+import { usePreferencesStore } from '../../stores/usePreferencesStore';
+import { useNavigationStore } from '../../stores/useNavigationStore';
 import { getStorage } from '../../data/storage';
 import { useTranslation } from '../../hooks/useTranslation';
 import TimePicker from '../common/TimePicker';
 import { NotificationService } from '../../services/NotificationService';
 
 const PersonalizationScreen: React.FC = () => {
-    const { 
-        navigate, 
-        setFontSize: setContextFontSize, 
-        setMorningReminderEnabled,
-        setMorningReminderTime,
-        toggleNotifications
-    } = useAppContext();
+    const navigate = useNavigationStore((s) => s.navigate);
+    const setContextFontSize = usePreferencesStore((s) => s.setFontSize);
+    const setMorningReminderEnabled = usePreferencesStore((s) => s.setMorningReminderEnabled);
+    const setMorningReminderTime = usePreferencesStore((s) => s.setMorningReminderTime);
+    const setNotifications = usePreferencesStore((s) => s.setNotifications);
+    const storedFontSize = usePreferencesStore((s) => s.fontSize);
+    const storedReminderEnabled = usePreferencesStore((s) => s.morningReminderEnabled);
+    const storedReminderTime = usePreferencesStore((s) => s.morningReminderTime);
     const { t } = useTranslation();
-    const [fontSizeValue, setFontSizeValue] = useState(2); 
-    const [reminders, setReminders] = useState(true);
+    // Seed the controls from persisted preferences so re-running onboarding
+    // shows the user's current settings instead of hardcoded defaults.
+    const [fontSizeValue, setFontSizeValue] = useState(storedFontSize); 
+    const [reminders, setReminders] = useState(storedReminderEnabled);
     const [isTimePickerOpen, setTimePickerOpen] = useState(false);
-    const [reminderTime, setReminderTime] = useState('05:30 AM');
+    const [reminderTime, setReminderTime] = useState(storedReminderTime);
 
     const getPreviewClass = (size: number) => {
         const sizes = [
@@ -36,7 +40,7 @@ const PersonalizationScreen: React.FC = () => {
             if (permission) {
                 // Parse 12h format to 24h
                 const [time, period] = reminderTime.split(' ');
-                let [hours, minutes] = time.split(':').map(Number);
+                let [hours, minutes] = time.split(':').map(Number); // eslint-disable-line prefer-const
                 if (period === 'PM' && hours !== 12) hours += 12;
                 if (period === 'AM' && hours === 12) hours = 0;
                 
@@ -53,7 +57,7 @@ const PersonalizationScreen: React.FC = () => {
         setMorningReminderEnabled(remindersGranted);
         setMorningReminderTime(reminderTime);
         if (!remindersGranted) {
-            toggleNotifications(false);
+            setNotifications(false);
         }
         
         await getStorage().setOnboardingComplete();
@@ -61,14 +65,14 @@ const PersonalizationScreen: React.FC = () => {
     };
 
     return (
-        <div className="h-full flex flex-col justify-between p-6">
+        <div id="main-content" tabIndex={-1} className="h-full flex flex-col justify-between p-6">
             <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{t('personalize_title')}</h1>
+                <h1 className="text-3xl font-bold font-serif text-gray-900 dark:text-white mb-2">{t('personalize_title')}</h1>
 
                 <div className="my-8">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('personalize_font_title')}</h2>
+                    <h2 className="text-lg font-semibold font-serif text-gray-900 dark:text-white mb-2">{t('personalize_font_title')}</h2>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">{t('personalize_font_desc')}</p>
-                    <div className="h-32 bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-none shadow-sm dark:shadow-none rounded-lg flex items-center justify-center p-4 mb-6 overflow-hidden transition-colors">
+                    <div className="h-32 bg-surface-card dark:bg-surface-card border border-gray-100 dark:border-none shadow-sm dark:shadow-none rounded-lg flex items-center justify-center p-4 mb-6 overflow-hidden transition-colors">
                         <p className={`${getPreviewClass(fontSizeValue)} text-gray-900 dark:text-white font-serif text-center transition-all duration-200`}>
                             سُبْحَانَ اللَّهِ
                         </p>
@@ -77,6 +81,7 @@ const PersonalizationScreen: React.FC = () => {
                         <span className="text-lg font-medium text-gray-400">A</span>
                         <input 
                             type="range" 
+                            aria-label={t('personalize_font_title')}
                             min="1" 
                             max="8" 
                             step="1"
@@ -89,9 +94,9 @@ const PersonalizationScreen: React.FC = () => {
                 </div>
 
                 <div className="my-8">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('personalize_reminder_title')}</h2>
+                    <h2 className="text-lg font-semibold font-serif text-gray-900 dark:text-white mb-2">{t('personalize_reminder_title')}</h2>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{t('personalize_reminder_desc')}</p>
-                    <div className="flex justify-between items-center bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-none shadow-sm dark:shadow-none p-4 rounded-lg transition-colors">
+                    <div className="flex justify-between items-center bg-surface-card dark:bg-surface-card border border-gray-100 dark:border-none shadow-sm dark:shadow-none p-4 rounded-lg transition-colors">
                         <span className="font-medium text-gray-900 dark:text-white">{t('personalize_reminder_enable')}</span>
                         <label className="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" checked={reminders} onChange={() => setReminders(!reminders)} aria-label="تفعيل التذكيرات" className="sr-only peer" />
@@ -100,7 +105,7 @@ const PersonalizationScreen: React.FC = () => {
                     </div>
                      {reminders && (
                          <>
-                            <div className="flex justify-between items-center bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-none shadow-sm dark:shadow-none p-4 rounded-lg mt-3 transition-colors">
+                            <div className="flex justify-between items-center bg-surface-card dark:bg-surface-card border border-gray-100 dark:border-none shadow-sm dark:shadow-none p-4 rounded-lg mt-3 transition-colors">
                                 <span className="font-medium text-gray-900 dark:text-white">{t('personalize_reminder_time')}</span>
                                 <button onClick={() => setTimePickerOpen(true)} className="font-medium text-primary-600 dark:text-primary-400">
                                     {reminderTime}

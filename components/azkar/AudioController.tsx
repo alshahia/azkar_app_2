@@ -36,9 +36,11 @@ const AudioController: React.FC<AudioControllerProps> = ({
         // We want to update state even if not visible, if it is playing, 
         // so that when opened it shows correct info.
         if (!isPlaying) {
-            setProgress(0);
-            setDuration(0);
-            return;
+            const resetTimer = setTimeout(() => {
+                setProgress(0);
+                setDuration(0);
+            }, 0);
+            return () => clearTimeout(resetTimer);
         }
 
         // Throttle React state writes: RAF fires at display refresh (~60/s);
@@ -110,22 +112,22 @@ const AudioController: React.FC<AudioControllerProps> = ({
             }`}
         >
             <div className="overflow-hidden">
-                <div className="mx-1 mt-2 mb-4 bg-white dark:bg-[#1A3129] rounded-xl border border-gray-100 dark:border-primary-500/20 shadow-sm dark:shadow-none p-4 relative">
+                <div className="mx-1 mt-2 mb-4 bg-surface-card dark:bg-surface-card rounded-xl border border-gray-100 dark:border-primary-500/20 shadow-sm dark:shadow-none p-4 relative">
                     
                     {/* Close Button (Optional) */}
                     {onClose && (
                         <button 
                             onClick={onClose}
                             aria-label="إغلاق"
-                            className="absolute top-2 left-2 rtl:right-auto rtl:left-2 p-1 text-gray-400 hover:text-red-500 transition-colors"
+                            className="absolute top-2 left-2 rtl:right-auto rtl:left-2 p-2.5 text-gray-400 hover:text-red-500 transition-colors"
                         >
-                            <XMarkIcon className="w-4 h-4" />
+                            <XMarkIcon className="w-5 h-5" />
                         </button>
                     )}
 
                     {/* Progress Bar Row */}
                     <div className="flex items-center space-x-3 rtl:space-x-reverse mb-4 pt-1">
-                        <span className="text-[10px] text-gray-500 font-mono w-8 text-center">{formatTime(progress)}</span>
+                        <span className="text-[10px] text-gray-500 dark:text-gray-400 font-mono w-8 text-center">{formatTime(progress)}</span>
                         <div className="flex-grow relative h-2 bg-gray-200 dark:bg-gray-700 rounded-full">
                              <div 
                                 className="absolute top-0 left-0 rtl:right-0 rtl:left-auto h-full bg-primary-500 rounded-full pointer-events-none" 
@@ -138,10 +140,11 @@ const AudioController: React.FC<AudioControllerProps> = ({
                                 step="0.1"
                                 value={progress} 
                                 onChange={handleSeek}
+                                aria-label="موضع التشغيل"
                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                             />
                         </div>
-                        <span className="text-[10px] text-gray-500 font-mono w-8 text-center">{formatTime(duration)}</span>
+                        <span className="text-[10px] text-gray-500 dark:text-gray-400 font-mono w-8 text-center">{formatTime(duration)}</span>
                     </div>
 
                     {/* Controls Row */}
@@ -150,7 +153,9 @@ const AudioController: React.FC<AudioControllerProps> = ({
                         {/* Speed (Left) */}
                         <button 
                             onClick={cycleSpeed}
-                            className="flex flex-col items-center justify-center w-10 h-10 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors text-primary-600 dark:text-primary-400"
+                            aria-label="سرعة القراءة"
+                            title="سرعة القراءة"
+                            className="flex flex-col items-center justify-center w-10 h-10 rounded-lg bg-surface-card-2 dark:bg-midnight-800 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors text-primary-600 dark:text-primary-400"
                         >
                             <span className="text-xs font-bold">{speed}x</span>
                         </button>
@@ -160,7 +165,7 @@ const AudioController: React.FC<AudioControllerProps> = ({
                             <button 
                                 onClick={onStop}
                                 aria-label="إيقاف"
-                                className="p-2 text-gray-400 hover:text-red-500 transition-colors bg-gray-50 dark:bg-gray-800 rounded-full"
+                                className="p-2.5 text-gray-400 hover:text-red-500 transition-colors bg-surface-card-2 dark:bg-midnight-800 rounded-full"
                                 title="إيقاف"
                             >
                                 <StopIcon className="w-5 h-5" />
@@ -182,16 +187,16 @@ const AudioController: React.FC<AudioControllerProps> = ({
                             className={`flex flex-col items-center justify-center w-10 h-10 rounded-lg transition-colors ${
                                 isLoopMode 
                                 ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800' 
-                                : 'bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-gray-600'
+                                : 'bg-surface-card-2 dark:bg-midnight-800 text-gray-400 hover:text-gray-600'
                             }`}
                             title="تكرار تلقائي"
                         >
-                            <ArrowPathIcon className={`w-5 h-5 ${isLoopMode ? '' : ''}`} />
+                            <ArrowPathIcon className="w-5 h-5" />
                         </button>
                     </div>
                     
                     {/* Labels under buttons */}
-                    <div className="flex justify-between px-2 mt-1 text-[9px] text-gray-400">
+                    <div className="flex justify-between px-2 mt-1 text-[10px] text-gray-500 dark:text-gray-400">
                         <span className="w-10 text-center">سرعة</span>
                         <div className="w-24 text-center opacity-0"></div> 
                         <span className="w-10 text-center">تكرار</span>

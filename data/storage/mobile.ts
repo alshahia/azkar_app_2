@@ -5,6 +5,7 @@ import { defaultPreferences, defaultStats } from './defaults';
 import { validateBackup, normalizeUserZikr, envelopePayload, mergePayload, type BackupPayload } from '../backup';
 import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from '@capacitor-community/sqlite';
 import { secureKeyStore } from '../../services/secureKey';
+import { logger } from '../../utils/logger';
 
 export class MobileStorage implements StorageAdapter {
     private sqlite: SQLiteConnection;
@@ -28,12 +29,12 @@ export class MobileStorage implements StorageAdapter {
     initialize(): Promise<void> {
         if (!this.initPromise) {
             this.initPromise = this.doInitialize().catch(error => {
-                console.error('SQLite initialization failed:', error);
+                logger.error('SQLite initialization failed:', { message: error instanceof Error ? error.message : String(error) });
                 try {
                     if (typeof window !== 'undefined') {
                         window.dispatchEvent(new CustomEvent('azkar-storage-error'));
                     }
-                } catch {}
+                } catch { /* window dispatch is best-effort */ }
                 throw error;
             });
         }
@@ -122,7 +123,7 @@ export class MobileStorage implements StorageAdapter {
                 version = Number(row.user_version !== undefined ? row.user_version : Object.values(row)[0]) || 0;
             }
         } catch (e) {
-            console.error('Could not read user_version, assuming 0:', e);
+            logger.error('Could not read user_version, assuming 0:', { message: e instanceof Error ? e.message : String(e) });
         }
 
         const migrations: Array<(db: SQLiteDBConnection) => Promise<void>> = [
@@ -158,7 +159,7 @@ export class MobileStorage implements StorageAdapter {
                 return JSON.parse(res.values[0].value) as T;
             }
         } catch (e) {
-            console.error('Corrupted kv value for ' + key + ', treating as missing.', e);
+            logger.error('Corrupted kv value for ' + key + ', treating as missing.', { message: e instanceof Error ? e.message : String(e) });
         }
         return null;
     }
@@ -182,7 +183,7 @@ export class MobileStorage implements StorageAdapter {
                     sanitized = { ...stored, apiKey: '' };
                     await this.setKV('preferences', sanitized);
                 } catch (e) {
-                    console.error('Legacy apiKey migration failed:', e);
+                    logger.error('Legacy apiKey migration failed:', { message: e instanceof Error ? e.message : String(e) });
                 }
             }
             return { ...defaultPreferences, ...sanitized, apiKey: '', language: 'ar' };
@@ -441,7 +442,7 @@ export class MobileStorage implements StorageAdapter {
         try {
             incoming = validateBackup(JSON.parse(jsonData));
         } catch (e) {
-            console.error('Import failed validation:', e);
+            logger.error('Import failed validation:', { message: e instanceof Error ? e.message : String(e) });
             return false;
         }
         const mode = opts?.mode ?? 'replace';
@@ -507,9 +508,9 @@ export class MobileStorage implements StorageAdapter {
             await db.commitTransaction();
             return true;
         } catch (e) {
-            console.error('Import failed, rolling back:', e);
+            logger.error('Import failed, rolling back:', { message: e instanceof Error ? e.message : String(e) });
             try { await db.rollbackTransaction(); } catch (rollbackError) {
-                console.error('Rollback itself failed:', rollbackError);
+                logger.error('Rollback itself failed:', { message: rollbackError instanceof Error ? rollbackError.message : String(rollbackError) });
             }
             return false;
         }

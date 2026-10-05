@@ -2,7 +2,7 @@
 // Verifies the auto-tracked "تابع من حيث توقفت" feature in SurahReaderScreen.
 //
 // The reader mounts an IntersectionObserver that watches every ayah card and
-// pushes the topmost intersecting ayah into the AppContext.setQuranLastRead
+// pushes the topmost intersecting ayah into the setQuranLastRead
 // callback on every intersection change. An unmount cleanup guarantees the
 // last seen ayah is also flushed to storage. These tests pin both behaviours
 // so the resume banner always reflects the ayah the user actually reached
@@ -10,8 +10,6 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, cleanup, act } from '@testing-library/react';
-import { AppContext } from '../../context/AppContext';
-import type { AppContextType } from '../../types';
 
 // jsdom doesn't ship a working IntersectionObserver. We install a capture-style
 // fake on globalThis so the production code path runs untouched, and so the
@@ -113,82 +111,6 @@ const SurahReaderHarness: React.FC<{
     );
 };
 
-function makeContext(overrides: Partial<AppContextType> = {}): AppContextType {
-    return {
-        navigate: vi.fn(),
-        favorites: [],
-        toggleFavorite: vi.fn(),
-        darkMode: false,
-        toggleDarkMode: vi.fn(),
-        theme: 'emerald',
-        setTheme: vi.fn(),
-        notifications: false,
-        toggleNotifications: vi.fn(),
-        morningReminderEnabled: false,
-        setMorningReminderEnabled: vi.fn(),
-        morningReminderTime: '06:00 AM',
-        setMorningReminderTime: vi.fn(),
-        eveningReminderEnabled: false,
-        setEveningReminderEnabled: vi.fn(),
-        eveningReminderTime: '06:00 PM',
-        setEveningReminderTime: vi.fn(),
-        fontSize: 18,
-        setFontSize: vi.fn(),
-        progress: {},
-        updateProgress: vi.fn(),
-        incrementProgress: vi.fn(),
-        language: 'ar',
-        setLanguage: vi.fn(),
-        homeLayout: 'dashboard',
-        setHomeLayout: vi.fn(),
-        categories: [],
-        refreshData: vi.fn(),
-        editZikr: vi.fn(),
-        deleteZikr: vi.fn(),
-        apiKey: '',
-        setApiKey: vi.fn(),
-        voiceName: '',
-        setVoiceName: vi.fn(),
-        audioAutoSave: false,
-        setAudioAutoSave: vi.fn(),
-        audioLoopDefault: false,
-        setAudioLoopDefault: vi.fn(),
-        hapticsEnabled: false,
-        toggleHaptics: vi.fn(),
-        customReminders: [],
-        addCustomReminder: vi.fn(),
-        removeCustomReminder: vi.fn(),
-        location: null,
-        setLocation: vi.fn(),
-        prayerNotificationsEnabled: false,
-        setPrayerNotificationsEnabled: vi.fn(),
-        stats: { streak: 0, totalReads: 0, lastActiveDate: '', timezone: null },
-        incrementStreak: vi.fn().mockReturnValue({ kind: 'same-day', streak: 0 }),
-        incrementTotalReads: vi.fn(),
-        quranBookmarks: [],
-        addQuranBookmark: vi.fn(),
-        removeQuranBookmark: vi.fn(),
-        quranLastRead: null,
-        setQuranLastRead: vi.fn().mockResolvedValue(undefined),
-        clearQuranLastRead: vi.fn().mockResolvedValue(undefined),
-        mushafMode: 'modern',
-        setMushafMode: vi.fn().mockResolvedValue(undefined),
-        mushafTajweed: false,
-        setMushafTajweed: vi.fn().mockResolvedValue(undefined),
-        tafsirId: 'muyassar',
-        setTafsirId: vi.fn().mockResolvedValue(undefined),
-        wakeLockEnabled: true,
-        setWakeLockEnabled: vi.fn(),
-        votdEnabled: true,
-        setVotdEnabled: vi.fn(),
-        votdTime: '06:00 AM',
-        setVotdTime: vi.fn(),
-        quranReadHistory: [],
-        appendQuranHistory: vi.fn(),
-        ...overrides,
-    };
-}
-
 function driveObserver(entries: { id: string; isIntersecting: boolean; ratio?: number }[]) {
     if (!lastObserver) throw new Error('IntersectionObserver was not constructed');
     act(() => {
@@ -203,16 +125,13 @@ function driveObserver(entries: { id: string; isIntersecting: boolean; ratio?: n
 describe('SurahReaderScreen - auto-tracked resume position', () => {
     it('writes the topmost intersecting ayah to setQuranLastRead when IO fires', async () => {
         const setQuranLastRead = vi.fn().mockResolvedValue(undefined);
-        const ctx = makeContext({ setQuranLastRead });
 
         const { container } = render(
-            <AppContext.Provider value={ctx}>
-                <SurahReaderHarness
-                    setQuranLastRead={setQuranLastRead}
-                    surahId={2}
-                    ayahs={[{ number: 1 }, { number: 2 }, { number: 3 }]}
-                />
-            </AppContext.Provider>
+            <SurahReaderHarness
+                setQuranLastRead={setQuranLastRead}
+                surahId={2}
+                ayahs={[{ number: 1 }, { number: 2 }, { number: 3 }]}
+            />
         );
 
         expect(lastObserver).not.toBeNull();
@@ -225,16 +144,13 @@ describe('SurahReaderScreen - auto-tracked resume position', () => {
 
     it('updates the saved position as the user scrolls forward without bookmarking', async () => {
         const setQuranLastRead = vi.fn().mockResolvedValue(undefined);
-        const ctx = makeContext({ setQuranLastRead });
 
         render(
-            <AppContext.Provider value={ctx}>
-                <SurahReaderHarness
-                    setQuranLastRead={setQuranLastRead}
-                    surahId={1}
-                    ayahs={[{ number: 1 }, { number: 2 }, { number: 3 }, { number: 4 }, { number: 5 }]}
-                />
-            </AppContext.Provider>
+            <SurahReaderHarness
+                setQuranLastRead={setQuranLastRead}
+                surahId={1}
+                ayahs={[{ number: 1 }, { number: 2 }, { number: 3 }, { number: 4 }, { number: 5 }]}
+            />
         );
 
         // Step through five sequential scrolls - no bookmark involved at any point.
@@ -263,21 +179,18 @@ describe('SurahReaderScreen - auto-tracked resume position', () => {
         expect(setQuranLastRead).toHaveBeenLastCalledWith({ surah: 1, ayah: 5 });
 
         // No bookmark was ever added - the resume banner tracks reading alone.
-        expect(ctx.addQuranBookmark).not.toHaveBeenCalled();
+        // (The harness only wires setQuranLastRead; no bookmark callback exists.)
     });
 
     it('flushes the latest ayah on unmount so quick exits are not lost', async () => {
         const setQuranLastRead = vi.fn().mockResolvedValue(undefined);
-        const ctx = makeContext({ setQuranLastRead });
 
         const { unmount } = render(
-            <AppContext.Provider value={ctx}>
-                <SurahReaderHarness
-                    setQuranLastRead={setQuranLastRead}
-                    surahId={114}
-                    ayahs={[{ number: 1 }, { number: 2 }, { number: 3 }, { number: 4 }, { number: 5 }, { number: 6 }]}
-                />
-            </AppContext.Provider>
+            <SurahReaderHarness
+                setQuranLastRead={setQuranLastRead}
+                surahId={114}
+                ayahs={[{ number: 1 }, { number: 2 }, { number: 3 }, { number: 4 }, { number: 5 }, { number: 6 }]}
+            />
         );
 
         // Scroll deep quickly, then exit before another IO callback can fire.
@@ -300,7 +213,6 @@ describe('SurahReaderScreen - auto-tracked resume position', () => {
         const clearQuranLastRead = vi.fn().mockImplementation(async () => {
             saveQuranLastRead(null);
         });
-        const ctx = makeContext({ setQuranLastRead, clearQuranLastRead, quranLastRead: { surah: 2, ayah: 5 } });
 
         await clearQuranLastRead();
         expect(clearQuranLastRead).toHaveBeenCalledTimes(1);
@@ -309,7 +221,5 @@ describe('SurahReaderScreen - auto-tracked resume position', () => {
         // Smoke-test the setQuranLastRead surface for symmetry.
         await setQuranLastRead({ surah: 3, ayah: 7 });
         expect(setQuranLastRead).toHaveBeenCalledWith({ surah: 3, ayah: 7 });
-        // Unused in this assertion but ensures context is consumed.
-        void ctx;
     });
 });

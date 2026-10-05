@@ -59,7 +59,8 @@ export type Screen =
   | 'azkarDay'
   | 'reportBug'
   | 'aboutUs'
-  | 'contactUs'
+  | 'khatma'
+  | 'globalSearch'
   | 'completion'
   | 'addZikr'
   | 'sessionSummary'
@@ -71,7 +72,16 @@ export type Screen =
   | 'shareEditor'
   | 'quran'
   | 'surahReader'
-  | 'mushafPage';
+  | 'mushafPage'
+  | 'asmaUlHusna'
+  | 'hadith'
+  | 'zakat'
+  | 'duas'
+  | 'wordByWord'
+  | 'moonSighting'
+  | 'readingStats'
+  | 'islamicLibrary'
+  | 'memorization';
 
 export type ProgressState = {
     // Keys stringify on every JSON/storage round-trip, so the signature is
@@ -81,6 +91,22 @@ export type ProgressState = {
 
 export type AppLanguage = 'ar';
 export type AppTheme = 'emerald' | 'blue' | 'rose' | 'amber' | 'purple' | 'cyan';
+
+/**
+ * Visual identity of the dark surface of the app. Each style defines its own
+ * body background, card surface, border, text, and accent — applied through
+ * CSS variables in index.css. The picker in SettingsScreen lists all five.
+ *
+ * Each dark style has a paired light variant in the LightStyleFamily below;
+ * when darkMode is off the user still keeps the same family.
+ *
+ * - verdant   → الزمرد الليلي · النور       (refined emerald midnight → ivory)
+ * - cosmic    → الكون النيلي · الفجر الوردي  (deep space indigo → rose dawn) — DEFAULT
+ * - forest    → الغابة المسحورة · البستان   (layered emerald → mint sage)
+ * - coral     → الليل المرجاني · الزهرة     (warm maroon → coral bloom)
+ * - obsidian  → السبج · الرخام              (pure black → clean marble)
+ */
+export type DarkStyle = 'verdant' | 'cosmic' | 'forest' | 'coral' | 'obsidian';
 
 export type HomeLayout = 'focus' | 'stream' | 'dashboard' | 'simple';
 
@@ -116,6 +142,10 @@ export type { StreakOutcome };
 
 export interface UserPreferences {
     darkMode: boolean;
+    // Dark surface identity. Optional for backward compat with prefs records
+    // persisted before the multi-style picker shipped; the App.tsx hydration
+    // falls back to 'cosmic' (the default) and writes it back on next save.
+    darkStyle?: DarkStyle;
     theme: AppTheme; // Added Theme
     notifications: boolean; // Deprecated or Master switch, keeping for backward compat
     morningReminderEnabled: boolean;
@@ -173,6 +203,10 @@ export interface AppContextType {
   toggleFavorite: (id: number) => void;
   darkMode: boolean;
   toggleDarkMode: () => void;
+  // The dark surface identity — chooses which of the 5 DarkStyle palettes
+  // (cosmic / verdant / forest / coral / obsidian) the app renders.
+  darkStyle: DarkStyle;
+  setDarkStyle: (s: DarkStyle) => void;
   theme: AppTheme;
   setTheme: (theme: AppTheme) => void;
   notifications: boolean;
@@ -288,3 +322,112 @@ export interface QuranReadHistoryEntry {
 }
 
 export const QURAN_READ_HISTORY_MAX = 10;
+
+// === Prayer Types (merged from types/prayer.ts) ===
+
+export interface PrayerTimes {
+  fajr: Date;
+  dhuhr: Date;
+  asr: Date;
+  maghrib: Date;
+  isha: Date;
+}
+
+export interface WatchedPrayer {
+  name: string;
+  key: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha';
+  time: Date;
+  msUntil: number;
+}
+
+export type PrayerName = 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha';
+
+// === Quran Types (merged from types/quran.ts — only non-conflicting) ===
+
+export interface Surah {
+  id: number;
+  name: string;
+  englishName: string;
+  ayahCount: number;
+  revelationType: 'Meccan' | 'Medinan';
+}
+
+export interface Ayah {
+  number: number;
+  text: string;
+  surah: number;
+  juz: number;
+  page: number;
+}
+
+// === Khatma Types (merged from types/khatma.ts) ===
+
+export interface Khatma {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  targetDays: number;
+  completedDays: number;
+  pagesRead: number[];
+  ayahsRead: number[];
+  status: 'active' | 'completed' | 'paused';
+  createdAt: string;
+  completedAt?: string;
+}
+
+export interface KhatmaProgress {
+  khatmaId: string;
+  date: string;
+  pagesRead: number[];
+  ayahsRead: number[];
+  duration?: number;
+}
+
+export interface ReadingStats {
+  totalAyahsRead: number;
+  totalPagesRead: number;
+  currentStreak: number;
+  longestStreak: number;
+  lastReadDate: string | null;
+  dailyStats: DailyReadingStats[];
+  weeklyStats: WeeklyReadingStats[];
+  monthlyStats: MonthlyReadingStats[];
+}
+
+export interface DailyReadingStats {
+  date: string;
+  ayahsRead: number;
+  pagesRead: number;
+  duration: number;
+}
+
+export interface WeeklyReadingStats {
+  weekStart: string;
+  weekEnd: string;
+  ayahsRead: number;
+  pagesRead: number;
+  duration: number;
+}
+
+export interface MonthlyReadingStats {
+  month: string;
+  ayahsRead: number;
+  pagesRead: number;
+  duration: number;
+}
+
+export interface KhatmaPreset {
+  id: string;
+  name: string;
+  nameAr: string;
+  days: number;
+  description: string;
+}
+
+export const KHATMA_PRESETS: KhatmaPreset[] = [
+  { id: '30days', name: '30 Days', nameAr: '٣٠ يوم', days: 30, description: 'ختمة في شهر واحد' },
+  { id: '3months', name: '3 Months', nameAr: '٣ أشهر', days: 90, description: 'ختمة في ثلاثة أشهر' },
+  { id: '6months', name: '6 Months', nameAr: '٦ أشهر', days: 180, description: 'ختمة في ستة أشهر' },
+  { id: '1year', name: '1 Year', nameAr: 'سنة', days: 365, description: 'ختمة في سنة كاملة' },
+];

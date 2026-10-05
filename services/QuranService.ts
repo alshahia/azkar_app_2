@@ -10,6 +10,9 @@
  * Audio recitation is streamed from cdn.islamic.network; URLs follow the
  * convention documented at https://alquran.cloud and accept the same global
  * ayah numbering (1..6236) that is bundled in each row of text/{n}.json.
+ *
+ * OPTIMIZED: Page loading now only loads surahs that appear on the requested
+ * page, instead of loading all 114 surahs on first access.
  */
 
 import surahIndex from '../data/static/quran/index.json';
@@ -24,8 +27,13 @@ export type { MushafMode } from '../types';
 const textLoaders = import.meta.glob<{ s: number; a: AyatRow }>(
     '../data/static/quran/text/*.json'
 );
+// `import: 'default'` makes the loader resolve directly to the parsed
+// string array. Without it, Vite wraps every JSON module as
+// `{ default: ... }`, so `arr[ayahNumber - 1]` would always be
+// `undefined` and TafsirSheet would render its empty-state copy.
 const tafsirLoaders = import.meta.glob<string[]>(
-    '../data/static/quran/tafsir/*.json'
+    '../data/static/quran/tafsir/*.json',
+    { import: 'default' }
 );
 
 // --- Types ---------------------------------------------------------------
@@ -162,11 +170,11 @@ export function globalAyahNumber(surahId: number, ayahInSurah: number): number {
 export function normalizeArabic(input: string): string {
     return input
         .normalize('NFKC')
-        .replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g, '')
-        .replace(/[\u0622\u0623\u0625\u0671]/g, '\u0627')
-        .replace(/\u0649/g, '\u064A')
-        .replace(/\u0629/g, '\u0647')
-        .replace(/\s+/g, ' ')
+        .replace(/[ؐ-ًؚ-ٰٟۖ-ۭـ]/g, '')
+        .replace(/[آأإٱ]/g, 'ا')
+        .replace(/ى/g, 'ي')
+        .replace(/ة/g, 'ه')
+        .replace(/s+/g, ' ')
         .trim()
         .toLowerCase();
 }
@@ -191,7 +199,7 @@ export function searchSurahs(query: string): SurahMeta[] {
             normalizeArabic(s.transliteration),
             normalizeArabic(s.meaning),
             String(s.id),
-            normalizeArabic('\u0633\u0648\u0631\u0629 ' + s.id),
+            normalizeArabic('سورة ' + s.id),
         ];
         let best = -1;
         for (const c of candidates) {
@@ -221,7 +229,7 @@ export function surahAudioUrl(reciterId: string, surahId: number): string {
 /** Number -> Arabic-Indic numeral, used for in-line ayah markers. */
 export function toArabicDigits(n: number): string {
     return n.toString().replace(/\d/g, d =>
-        '\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669'[+d]);
+        '٠١٢٣٤٥٦٧٨٩'[+d]);
 }
 
 export function getSurah(surahId: number): SurahMeta | undefined {
@@ -249,37 +257,107 @@ export function totalAyat(): number {
 /** Total number of Madinah Mushaf pages (604 for the standard Hafs layout). */
 export const TOTAL_MUSHAF_PAGES = 604;
 
-/** Lazy page -> [QuranAyah] index, built once on first call. Walks every
- *  surah's text row and groups by the `page` field, so lookups are O(1) and
- *  a page render never has to scan 114 files again. */
-let pageIndex: Map<number, QuranAyah[]> | null = null;
+// --- OPTIMIZED Page Loading ----------------------------------------------
 
-async function buildPageIndex(): Promise<Map<number, QuranAyah[]>> {
-    if (pageIndex) return pageIndex;
-    const idx = new Map<number, QuranAyah[]>();
-    for (const s of SURAHS) {
-        const arr = await loadSurah(s.id);
-        for (const a of arr) {
-            const bucket = idx.get(a.page);
-            if (bucket) bucket.push(a);
-            else idx.set(a.page, [a]);
+/**
+ * Surah page ranges: maps each surah to its first and last page.
+ * Built once from the surah index (firstPage field).
+ */
+interface SurahPageRange {
+    surahId: number;
+    firstPage: number;
+    lastPage: number;
+}
+
+let surahPageRanges: SurahPageRange[] | null = null;
+
+function getSurahPageRanges(): SurahPageRange[] {
+    if (surahPageRanges) return surahPageRanges;
+    surahPageRanges = SURAHS.map((s, i) => {
+        const nextSurah = SURAHS[i + 1];
+        const lastPage = nextSurah ? nextSurah.firstPage - 1 : TOTAL_MUSHAF_PAGES;
+        return {
+            surahId: s.id,
+            firstPage: s.firstPage,
+            lastPage,
+        };
+    });
+    return surahPageRanges;
+}
+
+/**
+ * Returns the surah IDs that appear on a given page.
+ * Uses binary search for O(log n) lookup.
+ */
+export function getSurahsForPage(page: number): number[] {
+    const ranges = getSurahPageRanges();
+    const result: number[] = [];
+    
+    // Binary search to find the first surah that could be on this page
+    let left = 0;
+    let right = ranges.length - 1;
+    
+    while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+        const range = ranges[mid];
+        
+        if (page < range.firstPage) {
+            right = mid - 1;
+        } else if (page > range.lastPage) {
+            left = mid + 1;
+        } else {
+            // Found a surah on this page, but there might be more
+            // Add this surah
+            result.push(range.surahId);
+            
+            // Check previous surahs (a surah can span multiple pages)
+            let i = mid - 1;
+            while (i >= 0 && ranges[i].lastPage >= page) {
+                if (ranges[i].firstPage <= page) {
+                    result.unshift(ranges[i].surahId);
+                }
+                i--;
+            }
+            
+            // Check next surahs
+            i = mid + 1;
+            while (i < ranges.length && ranges[i].firstPage <= page) {
+                result.push(ranges[i].surahId);
+                i++;
+            }
+            
+            return result;
         }
     }
-    pageIndex = idx;
-    return idx;
+    
+    return result;
 }
 
-/** Resets the lazy page index (test-only; production never mutates it). */
-export function _resetPageIndexForTests(): void {
-    pageIndex = null;
-}
-
-/** All ayahs that share the given Madinah Mushaf page number, ordered by
- *  surah/ayah. Returns [] if `page` is out of range. */
+/**
+ * OPTIMIZED: Returns all ayahs for a specific page by only loading
+ * the surahs that appear on that page, instead of loading all 114 surahs.
+ */
 export async function getPageAyahs(page: number): Promise<QuranAyah[]> {
     if (page < 1 || page > TOTAL_MUSHAF_PAGES) return [];
-    const idx = await buildPageIndex();
-    return idx.get(page) ?? [];
+    
+    const surahIds = getSurahsForPage(page);
+    const ayahs: QuranAyah[] = [];
+    
+    // Load only the surahs needed for this page
+    for (const surahId of surahIds) {
+        const surahAyahs = await loadSurah(surahId);
+        // Filter ayahs for this specific page
+        const pageAyahs = surahAyahs.filter(a => a.page === page);
+        ayahs.push(...pageAyahs);
+    }
+    
+    // Sort by surah and ayah number for consistent ordering
+    ayahs.sort((a, b) => {
+        if (a.surahId !== b.surahId) return a.surahId - b.surahId;
+        return a.number - b.number;
+    });
+    
+    return ayahs;
 }
 
 /** Surah ids that appear on a given page, in order, deduped.
@@ -295,4 +373,29 @@ export function getPageSurahIds(ayahs: QuranAyah[]): number[] {
         }
     }
     return out;
+}
+
+// --- Prefetching Support -------------------------------------------------
+
+/**
+ * Prefetches surah data for faster page loading.
+ * Call this when the app starts or when the user opens the Quran screen.
+ */
+export async function prefetchSurahData(surahIds: number[]): Promise<void> {
+    const promises = surahIds.map(id => loadSurah(id).catch(() => undefined));
+    await Promise.all(promises);
+}
+
+/**
+ * Prefetches data for a range of pages.
+ * Useful for preloading adjacent pages.
+ */
+export async function prefetchPageRange(startPage: number, endPage: number): Promise<void> {
+    const surahIds = new Set<number>();
+    for (let page = startPage; page <= endPage; page++) {
+        if (page >= 1 && page <= TOTAL_MUSHAF_PAGES) {
+            getSurahsForPage(page).forEach(id => surahIds.add(id));
+        }
+    }
+    await prefetchSurahData(Array.from(surahIds));
 }

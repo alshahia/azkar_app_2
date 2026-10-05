@@ -11,7 +11,7 @@ interface MainLayoutProps {
 const MainLayout: React.FC<MainLayoutProps> = ({ children, activeScreen }) => {
   return (
     <div className="flex flex-col h-full">
-      <main className="flex-grow overflow-y-auto">
+      <main id="main-content" tabIndex={-1} className="flex-grow overflow-y-auto">
         {children}
       </main>
       <BottomNavBar activeScreen={activeScreen} />

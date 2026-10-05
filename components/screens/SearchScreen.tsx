@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useAppContext } from '../../context/AppContext';
+import { useNavigationStore } from '../../stores/useNavigationStore';
 import { ArrowLeftIcon, MagnifyingGlassIcon, ChevronRightIcon, DocumentTextIcon, FolderIcon, BookOpenIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from '../../hooks/useTranslation';
 import { azkarRepository } from '../../data/azkarRepository';
@@ -59,7 +59,7 @@ export const _computeHighlightsForTest = (
     queryTokens: string[],
 ): Array<[number, number]> => {
     if (!rawAyahText || queryTokens.length === 0) return [];
-    const SPLIT = /[\s\u060C\u061B\u061F.,;:!?()\[\]{}"`]+/;
+    const SPLIT = /[\s\u060C\u061B\u061F.,;:!?()[\]{}"`]+/;
     const out: Array<[number, number]> = [];
     let i = 0;
     const len = rawAyahText.length;
@@ -84,7 +84,7 @@ export const _computeHighlightsForTest = (
 void CLOSED_FORMS;
 
 const SearchScreen: React.FC = () => {
-    const { navigate } = useAppContext();
+    const navigate = useNavigationStore((state) => state.navigate);
     const { t } = useTranslation();
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<{ categories: Category[], azkar: UserZikr[] }>({ categories: [], azkar: [] });
@@ -118,6 +118,16 @@ const SearchScreen: React.FC = () => {
         }
     }, []);
 
+    // Terminate the worker on unmount so it does not leak between visits.
+    useEffect(() => {
+        return () => {
+            if (workerRef.current) {
+                workerRef.current.terminate();
+                workerRef.current = null;
+            }
+        };
+    }, []);
+
     const surahsById = useMemo(() => {
         const m = new Map<number, typeof SURAHS[number]>();
         for (const s of SURAHS) m.set(s.id, s);
@@ -126,11 +136,11 @@ const SearchScreen: React.FC = () => {
 
     useEffect(() => {
         if (activeTab !== 'quran' && activeTab !== 'all') {
-            setQuranHits([]);
+            setTimeout(() => setQuranHits([]), 0);
             return;
         }
         if (!query.trim()) {
-            setQuranHits([]);
+            setTimeout(() => setQuranHits([]), 0);
             return;
         }
         const seq = ++quranSeqRef.current;
@@ -203,10 +213,10 @@ const SearchScreen: React.FC = () => {
     const hasResults = results.categories.length > 0 || results.azkar.length > 0 || quranHits.length > 0;
 
     return (
-        <div className="h-full flex flex-col bg-gray-50 dark:bg-transparent">
-            <div className="p-4 bg-white dark:bg-[#1A3129] shadow-sm dark:shadow-none z-10">
+        <div className="h-full flex flex-col bg-surface dark:bg-transparent">
+            <div className="p-4 bg-surface-card dark:bg-surface-card shadow-sm dark:shadow-none z-10">
                 <div className="flex items-center space-x-3 rtl:space-x-reverse mb-4">
-                    <button onClick={() => navigate('home')} aria-label="رجوع" className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <button onClick={() => navigate('home')} aria-label="رجوع" className="p-2 rounded-full hover:bg-surface-card-2 dark:hover:bg-midnight-800 transition-colors">
                         <ArrowLeftIcon className="w-6 h-6 text-gray-800 dark:text-white rtl:rotate-180" />
                     </button>
                     <div className="flex-1 relative">
@@ -216,8 +226,8 @@ const SearchScreen: React.FC = () => {
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             placeholder={t('search_placeholder_quran_azkar')}
-                            className="w-full bg-gray-100 dark:bg-[#12241C] text-gray-900 dark:text-white rounded-xl py-3 pl-4 pr-10 rtl:pr-10 rtl:pl-4 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                            autoFocus
+                            aria-label={t('search_placeholder_quran_azkar')}
+                            className="w-full bg-surface-card-2 dark:bg-surface text-gray-900 dark:text-white rounded-xl py-3 pl-4 pr-10 rtl:pr-10 rtl:pl-4 focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                     </div>
                 </div>
@@ -227,11 +237,12 @@ const SearchScreen: React.FC = () => {
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
+                            aria-pressed={activeTab === tab}
+                            className={`px-4 py-1.5 min-h-[40px] rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
 
                                 activeTab === tab
                                     ? 'bg-primary-500 text-white'
-                                    : 'bg-gray-100 dark:bg-[#12241C] text-gray-600 dark:text-gray-400'
+                                    : 'bg-surface-card-2 dark:bg-surface text-gray-600 dark:text-gray-400'
 
                             }`}
                         >
@@ -269,7 +280,7 @@ const SearchScreen: React.FC = () => {
                                     <button
                                         key={hit.surah + ':' + hit.ayah}
                                         onClick={() => handleQuranHitClick(hit.surah, hit.ayah)}
-                                        className="w-full bg-white dark:bg-[#1A3129] p-4 rounded-xl text-right border border-gray-100 dark:border-none shadow-sm dark:shadow-none hover:shadow-md transition-all"
+                                        className="w-full bg-surface-card dark:bg-surface-card p-4 rounded-xl text-right border border-gray-100 dark:border-none shadow-sm dark:shadow-none hover:shadow-md transition-all"
                                     >
                                         <div className="flex items-start justify-between mb-2">
                                             <span className="text-[10px] bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 px-2 py-0.5 rounded-md">
@@ -296,7 +307,7 @@ const SearchScreen: React.FC = () => {
                                 <button
                                     key={cat.id}
                                     onClick={() => handleCategoryClick(cat.id)}
-                                    className="w-full bg-white dark:bg-[#1A3129] p-4 rounded-xl flex items-center justify-between border border-gray-100 dark:border-none shadow-sm dark:shadow-none hover:shadow-md transition-all"
+                                    className="w-full bg-surface-card dark:bg-surface-card p-4 rounded-xl flex items-center justify-between border border-gray-100 dark:border-none shadow-sm dark:shadow-none hover:shadow-md transition-all"
                                 >
                                     <div className="flex items-center space-x-3 rtl:space-x-reverse">
                                         <div className="bg-primary-100 dark:bg-primary-900/30 p-2 rounded-full text-primary-600 dark:text-primary-400">
@@ -320,10 +331,10 @@ const SearchScreen: React.FC = () => {
                                 <button
                                     key={`${zikr.id}_${idx}`}
                                     onClick={() => handleZikrClick(zikr)}
-                                    className="w-full bg-white dark:bg-[#1A3129] p-4 rounded-xl text-right border border-gray-100 dark:border-none shadow-sm dark:shadow-none hover:shadow-md transition-all group"
+                                    className="w-full bg-surface-card dark:bg-surface-card p-4 rounded-xl text-right border border-gray-100 dark:border-none shadow-sm dark:shadow-none hover:shadow-md transition-all group"
                                 >
                                     <div className="flex items-start justify-between mb-2">
-                                        <span className="text-[10px] bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-md">
+                                        <span className="text-[10px] bg-surface-card-2 dark:bg-midnight-800 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-md">
                                             {(zikr as any).categoryTitle}
                                         </span>
                                         <DocumentTextIcon className="w-4 h-4 text-gray-300 group-hover:text-primary-500 transition-colors" />

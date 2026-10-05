@@ -78,6 +78,28 @@ function isFiniteRange(r: RepeatRange): boolean {
 
 const RepeatSettingsContext = createContext<RepeatSettingsApi | null>(null);
 
+/**
+ * Safe no-op default used by the per-provider error boundary in App.tsx.
+ * If RepeatSettingsProvider crashes, the boundary re-supplies this value
+ * so consumers keep working: range is null, count is 0 (inactive), all
+ * setters silently no-op. The Quran reader still plays normally — it
+ * just doesn't honor repeat ranges, which is a strictly degraded but
+ * functional mode.
+ */
+export const NOOP_REPEAT_SETTINGS: RepeatSettingsApi = {
+    range: null,
+    count: 0,
+    delayMs: 0,
+    isActive: false,
+    isInRange: () => false,
+    setRange: () => {},
+    setCount: () => {},
+    setDelayMs: () => {},
+    clear: () => {},
+};
+
+export { RepeatSettingsContext };
+
 export const RepeatSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [range, setRangeState] = useState<RepeatRange | null>(null);
     const [count, setCountState] = useState<number>(0);

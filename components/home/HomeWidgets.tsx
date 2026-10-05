@@ -1,10 +1,12 @@
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { ShareIcon, ArrowPathIcon, ChevronLeftIcon, ChevronRightIcon, ArrowsPointingOutIcon, SparklesIcon, MoonIcon, SunIcon, BookOpenIcon, MusicalNoteIcon, PlayIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
 import { MosqueIcon } from '../common/CustomIcons';
-import { useAppContext } from '../../context/AppContext';
-import { getQuotesRepository, getSalawatRepository } from '../../data/repository';
-import { Quote, Salawat } from '../../types';
+import { useNavigationStore } from '../../stores/useNavigationStore';
+import { usePreferencesStore } from '../../stores/usePreferencesStore';
+import { useProgressStore } from '../../stores/useProgressStore';
+import { quotesRepository, salawatRepository } from '../../data/repository';
+import { Quote, Salawat, Zikr } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 import Skeleton from '../common/Skeleton';
 import { GLOBAL_TASBEEH_ID } from '../../constants';
@@ -17,7 +19,7 @@ import { STATIC_QUOTES } from '../../data/static/quotes';
 
 // --- Helper: Container Wrapper ---
 const WidgetContainer: React.FC<{ children: React.ReactNode, title?: string, icon?: React.ReactNode, className?: string, headerAction?: React.ReactNode }> = ({ children, title, icon, className = "", headerAction }) => (
-    <div className={`bg-white dark:bg-[#1A3129] rounded-2xl border border-gray-100 dark:border-primary-500/10 shadow-sm dark:shadow-none p-5 mb-4 overflow-hidden relative ${className}`}>
+    <div className={`bg-surface-card dark:bg-surface-card rounded-2xl border border-gray-100 dark:border-primary-500/10 shadow-sm dark:shadow-none p-5 mb-4 overflow-hidden relative ${className}`}>
         {(title || icon) && (
             <div className="flex items-center justify-between mb-4 z-10 relative">
                 <div className="flex items-center space-x-2 rtl:space-x-reverse">
@@ -36,7 +38,7 @@ const WidgetContainer: React.FC<{ children: React.ReactNode, title?: string, ico
 // --- Continue Listening Widget (M1-T5): exact resume of the last
 // recitation session, persisted through the storage adapter kv. ---
 export const ContinueListeningWidget: React.FC = () => {
-    const { navigate } = useAppContext();
+    const navigate = useNavigationStore((state) => state.navigate);
     const { t } = useTranslation();
     const { listen, play } = useQuranAudio();
     if (!listen) return null;
@@ -49,7 +51,7 @@ export const ContinueListeningWidget: React.FC = () => {
     return (
         <button
             onClick={resume}
-            className="w-full rounded-2xl p-4 mb-4 bg-white dark:bg-[#1A3129] border border-primary-100 dark:border-primary-500/20 shadow-sm dark:shadow-none flex items-center gap-3 cursor-pointer transition-transform active:scale-[0.98]"
+            className="w-full rounded-2xl p-4 mb-4 bg-surface-card dark:bg-surface-card border border-primary-100 dark:border-primary-500/20 shadow-sm dark:shadow-none flex items-center gap-3 cursor-pointer transition-transform active:scale-[0.98]"
             aria-label={t('home_continue_listening')}
         >
             <div className="p-2.5 rounded-full bg-primary-600 text-white shrink-0">
@@ -73,14 +75,13 @@ export const ContinueListeningWidget: React.FC = () => {
 
 // --- 0. Smart Suggestion Widget (Context Aware) ---
 export const SmartSuggestionWidget: React.FC = () => {
-    const { navigate } = useAppContext();
+    const navigate = useNavigationStore((state) => state.navigate);
     const [suggestion, setSuggestion] = useState<{
         title: string;
         subtitle: string;
         icon: any;
         action: () => void;
         gradient: string;
-        bgClass: string;
     } | null>(null);
 
     useEffect(() => {
@@ -90,14 +91,15 @@ export const SmartSuggestionWidget: React.FC = () => {
 
         // Priority 1: Friday (Jummah)
         if (day === 5 && hour > 4 && hour < 17) {
-            setSuggestion({
+            setTimeout(() => {
+                setSuggestion({
                 title: "يوم الجمعة",
                 subtitle: "سنن وأذكار يوم الجمعة المباركة",
                 icon: <MosqueIcon className="w-8 h-8 text-white" />,
                 action: () => navigate('azkarList', { categoryId: 'jummah' }),
                 gradient: "from-primary-500 to-primary-700",
-                bgClass: "bg-primary-500"
-            });
+                            });
+            }, 0);
             return;
         }
 
@@ -106,48 +108,51 @@ export const SmartSuggestionWidget: React.FC = () => {
         // dark-mode surface color, indigo-600 reads as deep twilight).
         // This is one instance of the convention; the rule is ratified
         // in DESIGN.md (Colors → Time-of-Day Gradients) under Pass 3.1.
-        if (hour >= 21 || hour < 4) {
-             setSuggestion({
+        if (hour >= 21 || hour < 5) {
+            setTimeout(() => {
+                setSuggestion({
                 title: "أذكار النوم",
                 subtitle: "باسمك ربي وضعت جنبي...",
                 icon: <MoonIcon className="w-8 h-8 text-indigo-100" />,
                 action: () => navigate('azkarList', { categoryId: 'sleep' }),
                 gradient: "from-midnight-900 to-indigo-600",
-                bgClass: "bg-midnight-900"
-            });
+                            });
+            }, 0);
             return;
         }
 
         // Priority 3: Morning/Evening (Already covered by header, but maybe suggest something specific inside?)
         // Let's suggest "Tasbeeh" if middle of day
         if (hour >= 11 && hour < 15) {
-             setSuggestion({
+             setTimeout(() => {
+                setSuggestion({
                 title: "وقت الضحى/الظهر",
                 subtitle: "اجعل لسانك رطباً بذكر الله",
-                icon: <SunIcon className="w-8 h-8 text-orange-100" />,
+                icon: <SunIcon className="w-8 h-8 text-emerald-100" />,
                 action: () => navigate('azkarList', { categoryId: 'tasbeeh' }),
-                gradient: "from-orange-400 to-amber-500",
-                bgClass: "bg-orange-500"
-            });
+                gradient: "from-emerald-500 to-emerald-700",
+                            });
+             }, 0);
             return;
         }
         
         // Default: Quranic Duas
-        setSuggestion({
+         setTimeout(() => {
+             setSuggestion({
              title: "أدعية قرآنية",
              subtitle: "ربنا آتنا في الدنيا حسنة",
              icon: <BookOpenIcon className="w-8 h-8 text-primary-100" />,
              action: () => navigate('azkarList', { categoryId: 'quranic' }),
-             gradient: "from-primary-500 to-primary-600",
-             bgClass: "bg-primary-600"
-        });
+             gradient: hour >= 17 ? "from-indigo-600 to-purple-700" : "from-emerald-500 to-emerald-700",
+                     });
+         }, 0);
 
-    }, []);
+    }, [navigate]);
 
     if (!suggestion) return null;
 
     return (
-        <div onClick={suggestion.action} className={`rounded-2xl p-5 mb-4 text-white shadow-lg cursor-pointer bg-gradient-to-r ${suggestion.gradient} relative overflow-hidden group transition-transform active:scale-[0.98]`}>
+        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); suggestion.action(); } }} onClick={suggestion.action} className={`rounded-2xl p-5 mb-4 text-white shadow-lg cursor-pointer bg-gradient-to-r ${suggestion.gradient} relative overflow-hidden group transition-transform active:scale-[0.98]`}>
             {/* Decoration */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-10 -mt-10 transition-transform group-hover:scale-110"></div>
             <div className="absolute bottom-0 left-0 w-24 h-24 bg-black opacity-5 rounded-full -ml-8 -mb-8"></div>
@@ -172,19 +177,20 @@ export const SmartSuggestionWidget: React.FC = () => {
 // --- 1. Quranic Verse Widget ---
 export const QuranicVerseWidget: React.FC = () => {
     const { t } = useTranslation();
-    const { categories, navigate } = useAppContext();
+    const categories = usePreferencesStore((state) => state.categories);
+    const navigate = useNavigationStore((state) => state.navigate);
     const quranicVerses = useMemo(() => {
         const cat = categories.find(c => c.id === 'quranic_verses');
         return cat ? cat.azkar : [];
     }, [categories]);
 
-    const [verse, setVerse] = useState<any>(null);
+    const [verse, setVerse] = useState<Zikr | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (quranicVerses.length > 0) {
-            setVerse(quranicVerses[Math.floor(Math.random() * quranicVerses.length)]);
-            setLoading(false);
+            setTimeout(() => setVerse(quranicVerses[Math.floor(Math.random() * quranicVerses.length)]), 0);
+            setTimeout(() => setLoading(false), 0);
         }
     }, [quranicVerses]);
 
@@ -192,15 +198,15 @@ export const QuranicVerseWidget: React.FC = () => {
         setVerse(quranicVerses[Math.floor(Math.random() * quranicVerses.length)]);
     };
 
-    const handleShare = async () => {
+    const handleShare = () => {
         if (verse) {
-           navigate('shareEditor', { text: verse.arabic, source: verse.reference });
+            navigate('shareEditor', { text: verse.arabic, source: verse.reference });
         }
     };
 
     if (loading) {
         return (
-            <WidgetContainer className="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-[#1A3129] dark:to-[#12241C] border-none">
+            <WidgetContainer className="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-surface-card dark:to-surface border-none">
                 <div className="flex justify-between items-start mb-4">
                     <Skeleton className="h-6 w-32" />
                     <Skeleton className="h-5 w-5 rounded-full" />
@@ -221,7 +227,7 @@ export const QuranicVerseWidget: React.FC = () => {
     if (!verse) return null;
 
     return (
-        <WidgetContainer className="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-[#1A3129] dark:to-[#12241C] border-none">
+        <WidgetContainer className="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-surface-card dark:to-surface border-none">
             <div className="flex justify-between items-start mb-4">
                 <span className="text-primary-600 dark:text-primary-400 font-bold text-lg">{t('home_widget_quran')}</span>
                 <button onClick={handleShare} aria-label="مشاركة"><ShareIcon className="w-5 h-5 text-primary-600/50 hover:text-primary-600" /></button>
@@ -248,7 +254,7 @@ export const QuranicVerseWidget: React.FC = () => {
 // --- 2. Asmaul Husna Widget ---
 export const AsmaulHusnaWidget: React.FC = () => {
     const { t } = useTranslation();
-    const { categories } = useAppContext();
+    const categories = usePreferencesStore((state) => state.categories);
     const names = useMemo(() => {
         const cat = categories.find(c => c.id === 'names_of_allah');
         return cat ? cat.azkar : [];
@@ -259,8 +265,8 @@ export const AsmaulHusnaWidget: React.FC = () => {
 
     useEffect(() => {
         if(names.length > 0) {
-            setIndex(Math.floor(Math.random() * names.length));
-            setLoading(false);
+            setTimeout(() => setIndex(Math.floor(Math.random() * names.length)), 0);
+            setTimeout(() => setLoading(false), 0);
         }
     }, [names]);
 
@@ -304,13 +310,13 @@ export const AsmaulHusnaWidget: React.FC = () => {
                 <div className="w-12 h-1 bg-primary-100 dark:bg-primary-900 rounded-full mt-4 mb-6"></div>
                 
                 <div className="flex items-center space-x-8 rtl:space-x-reverse">
-                    <button onClick={prevName} aria-label="الاسم السابق" className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 dark:bg-gray-800 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors">
+                    <button onClick={prevName} aria-label="الاسم السابق" className="w-10 h-10 flex items-center justify-center rounded-full bg-surface-card-2 dark:bg-midnight-800 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors">
                         <ChevronRightIcon className="w-5 h-5 text-gray-400" />
                     </button>
                     <button onClick={randomName} aria-label="اسم عشوائي" className="w-12 h-12 flex items-center justify-center rounded-full bg-white dark:bg-gray-700 shadow-md dark:shadow-none hover:shadow-lg text-primary-500 transition-all active:scale-95">
                         <ArrowPathIcon className="w-6 h-6" />
                     </button>
-                    <button onClick={nextName} aria-label="الاسم التالي" className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 dark:bg-gray-800 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors">
+                    <button onClick={nextName} aria-label="الاسم التالي" className="w-10 h-10 flex items-center justify-center rounded-full bg-surface-card-2 dark:bg-midnight-800 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors">
                         <ChevronLeftIcon className="w-5 h-5 text-gray-400" />
                     </button>
                 </div>
@@ -322,7 +328,8 @@ export const AsmaulHusnaWidget: React.FC = () => {
 // --- 3. Tasbeeh Widget ---
 export const TasbeehWidget: React.FC = () => {
     const { t } = useTranslation();
-    const { incrementProgress, navigate } = useAppContext();
+    const incrementProgress = useProgressStore((state) => state.incrementProgress);
+    const navigate = useNavigationStore((state) => state.navigate);
     const [count, setCount] = useState(0);
     const target = 33;
     const progressPercent = Math.min((count / target) * 100, 100);
@@ -353,7 +360,7 @@ export const TasbeehWidget: React.FC = () => {
                 </button>
             }
         >
-            <div className="flex flex-col items-center justify-center p-6 bg-white dark:bg-[#1A3129]">
+            <div className="flex flex-col items-center justify-center p-6 bg-surface-card dark:bg-surface-card">
                 <div className="flex justify-between w-full items-center mb-4 px-2">
                     <h3 className="font-bold text-primary-600 dark:text-primary-400">{t('home_widget_tasbeeh')}</h3>
                     <div className="flex space-x-3 rtl:space-x-reverse">
@@ -372,7 +379,7 @@ export const TasbeehWidget: React.FC = () => {
                                 className={`text-right text-xs font-bold py-2 px-3 rounded-lg transition-colors ${
                                     idx === phraseIndex 
                                     ? 'bg-primary-500 text-white shadow-md' 
-                                    : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                                    : 'bg-surface-card-2 dark:bg-midnight-800 text-gray-500 dark:text-gray-400'
                                 }`}
                             >
                                 {p}
@@ -380,7 +387,7 @@ export const TasbeehWidget: React.FC = () => {
                         ))}
                     </div>
 
-                    <div className="relative w-32 h-32 flex items-center justify-center cursor-pointer active:scale-95 transition-transform" onClick={handleTap}>
+                    <div className="relative w-32 h-32 flex items-center justify-center cursor-pointer active:scale-95 transition-transform" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleTap(); } }} onClick={handleTap}>
                         <svg className="w-full h-full transform -rotate-90">
                             <circle
                                 cx="64" cy="64" r={radius}
@@ -414,8 +421,8 @@ export const TasbeehWidget: React.FC = () => {
 // --- 4. Salawat Widget ---
 export const SalawatWidget: React.FC = () => {
     const { t } = useTranslation();
-    const { navigate } = useAppContext();
-    const repo = useMemo(() => getSalawatRepository(), []);
+    const navigate = useNavigationStore((state) => state.navigate);
+    const repo = salawatRepository;
     const [currentSalawat, setCurrentSalawat] = useState<Salawat | null>(null);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(false);
@@ -430,7 +437,7 @@ export const SalawatWidget: React.FC = () => {
         };
     }, []);
 
-    const refreshSalawat = async () => {
+    const refreshSalawat = useCallback(async () => {
         setLoading(true);
         setLoadError(false);
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -447,11 +454,11 @@ export const SalawatWidget: React.FC = () => {
                 setLoading(false);
             }
         }, 300);
-    };
+    }, [repo]);
 
     useEffect(() => {
-        refreshSalawat();
-    }, [repo]);
+        setTimeout(() => refreshSalawat(), 0);
+    }, [refreshSalawat]);
 
     const handleShare = () => {
         if(currentSalawat) navigate('shareEditor', { text: currentSalawat.text, source: 'الصلاة على النبي' });
@@ -508,9 +515,9 @@ export const SalawatWidget: React.FC = () => {
 
 // --- 5. Info Widget (Islamic Quotes) ---
 export const InfoWidget: React.FC = () => {
-    const { navigate } = useAppContext();
+    const navigate = useNavigationStore((state) => state.navigate);
     const { t } = useTranslation();
-    const repo = useMemo(() => getQuotesRepository(), []);
+    const repo = quotesRepository;
     const [currentQuote, setCurrentQuote] = useState<Quote | null>(null);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(false);
@@ -525,7 +532,7 @@ export const InfoWidget: React.FC = () => {
         };
     }, []);
 
-    const refreshQuote = async () => {
+    const refreshQuote = useCallback(async () => {
         setLoading(true);
         setLoadError(false);
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -542,11 +549,11 @@ export const InfoWidget: React.FC = () => {
                 setLoading(false);
             }
         }, 300);
-    };
+    }, [repo]);
 
     useEffect(() => {
-        refreshQuote();
-    }, [repo]);
+        setTimeout(() => refreshQuote(), 0);
+    }, [refreshQuote]);
 
     const handleShare = () => {
         if(currentQuote) navigate('shareEditor', { text: currentQuote.text, source: currentQuote.author });
@@ -609,7 +616,7 @@ export const InfoWidget: React.FC = () => {
 // keeps the app open across a Hijri-day boundary (which they usually
 // won't see — the app foregrounds the digest at launch).
 export const TodayDigestWidget: React.FC = () => {
-    const { progress } = useAppContext();
+    const progress = useProgressStore((state) => state.progress);
     const [quote, setQuote] = useState<Quote | null>(null);
     const [onThisDay, setOnThisDay] = useState<OnThisDayEntry[]>([]);
     const [hijriLabel, setHijriLabel] = useState<string>('');
@@ -646,7 +653,7 @@ export const TodayDigestWidget: React.FC = () => {
 
     return (
         <WidgetContainer
-            className="bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 dark:from-[#2a1f12] dark:via-[#1f1a14] dark:to-[#1a1418] border-none"
+            className="bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 dark:from-surface-card dark:via-surface dark:to-midnight-950 border-none"
             icon={<CalendarDaysIcon className="w-4 h-4 text-amber-600 dark:text-amber-400" />}
             title="اليوم"
         >

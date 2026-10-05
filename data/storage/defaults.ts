@@ -7,6 +7,10 @@ import type { UserPreferences, UserStats } from '../../types';
  *  every call-site. */
 export const defaultPreferences: UserPreferences = {
     darkMode: true,
+    // Default dark surface identity (see DarkStyle in types.ts). The user
+    // can swap to any of the five from Settings → المظهر; 'cosmic' is the
+    // Cosmic Indigo · Deep Space · Gold identity from the prototypes.
+    darkStyle: 'cosmic',
     theme: 'emerald',
     notifications: true,
     morningReminderEnabled: true,
@@ -16,11 +20,11 @@ export const defaultPreferences: UserPreferences = {
     fontSize: 2,
     favorites: [],
     language: 'ar',
-    // Default to 'focus' — a single zikr with three actions, not the
-    // 5-widget dashboard. The dashboard remains available via Settings
-    // for users who want the richer Explore surface, but no longer
-    // competes for attention with the primary task on first open.
-    homeLayout: 'focus',
+    // Default to 'dashboard' — the full 5-widget Explore surface
+    // (Welcome, Smart Suggestion, Prayer Times, Quranic Verse, Asma ul
+    // Husna, …). The other layouts (focus, stream, simple) remain
+    // available via Settings for users who want a narrower surface.
+    homeLayout: 'dashboard',
     apiKey: '',
     voiceName: 'Charon',
     audioAutoSave: true,

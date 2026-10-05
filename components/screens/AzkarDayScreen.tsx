@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useAppContext } from '../../context/AppContext';
+import { useNavigationStore } from '../../stores/useNavigationStore';
+import { usePreferencesStore } from '../../stores/usePreferencesStore';
 import { ICONS } from '../../constants';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { StopIcon, SunIcon, MoonIcon } from '@heroicons/react/24/solid';
@@ -14,7 +15,13 @@ interface AzkarDayScreenProps {
 }
 
 const AzkarDayScreen: React.FC<AzkarDayScreenProps> = ({ isEmbedded = false }) => {
-    const { navigate, favorites, toggleFavorite, fontSize, categories, apiKey, voiceName } = useAppContext();
+    const navigate = useNavigationStore((state) => state.navigate);
+    const favorites = usePreferencesStore((state) => state.favorites);
+    const toggleFavorite = usePreferencesStore((state) => state.toggleFavorite);
+    const fontSize = usePreferencesStore((state) => state.fontSize);
+    const categories = usePreferencesStore((state) => state.categories);
+    const apiKey = usePreferencesStore((state) => state.apiKey);
+    const voiceName = usePreferencesStore((state) => state.voiceName);
     const { t } = useTranslation();
     const toast = useToast();
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -43,7 +50,7 @@ const AzkarDayScreen: React.FC<AzkarDayScreenProps> = ({ isEmbedded = false }) =
                 setIsPlaying(false);
             }
         };
-    }, [currentIndex]);
+    }, [currentIndex, isPlaying]);
 
     // Unmount safety: the cleanup above can read a stale isPlaying closure,
     // so always stop here once playback actually started
@@ -108,9 +115,9 @@ const AzkarDayScreen: React.FC<AzkarDayScreenProps> = ({ isEmbedded = false }) =
     if (!currentZikr) {
         return (
             <div className={`flex flex-col ${isEmbedded ? 'h-auto' : 'h-full justify-center p-4 text-center'}`}>
-                <div className="bg-[#1A3129] p-6 rounded-lg">
-                    <h2 className="text-xl font-bold text-white mb-2">{t('azkar_day_title')}</h2>
-                    <p className="text-gray-400">لا توجد أذكار محملة لهذا اليوم.</p>
+                <div className="bg-surface-card text-gray-900 dark:text-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)] dark:shadow-none p-6 rounded-2xl">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('azkar_day_title')}</h2>
+                    <p className="text-gray-600 dark:text-gray-400">لا توجد أذكار محملة لهذا اليوم.</p>
                 </div>
             </div>
         );
@@ -140,52 +147,52 @@ const AzkarDayScreen: React.FC<AzkarDayScreenProps> = ({ isEmbedded = false }) =
     const isFavorite = favorites.includes(currentZikr.id);
 
     return (
-        <div className={`flex flex-col ${isEmbedded ? 'h-auto' : 'h-full justify-between p-4'}`}>
-            <div>
+        <div className={`flex flex-col ${isEmbedded ? 'h-auto' : 'h-full p-4'}`}>
+            <div className={isEmbedded ? '' : 'flex-grow overflow-y-auto'}>
                  <header className="mb-4 flex items-center justify-between">
                     <div>
                         <div className="flex items-center space-x-2 rtl:space-x-reverse mb-1">
                             {isMorning ? <SunIcon className="w-5 h-5 text-orange-400" /> : <MoonIcon className="w-5 h-5 text-indigo-400" />}
-                            <span className="text-sm text-gray-400 font-medium">{activeCategory?.title}</span>
+                            <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">{activeCategory?.title}</span>
                         </div>
-                        <h2 className="text-3xl font-bold text-white">{t('azkar_day_title')}</h2>
+                        <h2 className="text-3xl font-bold text-gray-900 dark:text-white">{t('azkar_day_title')}</h2>
                     </div>
                     <div className="text-right">
-                        <span className="text-2xl font-bold text-primary-500">{currentIndex + 1}</span>
+                        <span className="text-2xl font-bold text-primary-600 dark:text-primary-500">{currentIndex + 1}</span>
                         <span className="text-gray-500 text-sm">/{dailyAzkar.length}</span>
                     </div>
                 </header>
-                <div className="w-full bg-gray-700 rounded-full h-1.5 mb-8">
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mb-8">
                     <div className="bg-primary-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${progressPercentage}%` }}></div>
                 </div>
 
-                <div className="bg-[#1A3129] p-6 rounded-lg text-center shadow-lg transition-all duration-300 relative overflow-hidden">
+                <div className="bg-surface-card text-gray-900 dark:text-gray-100 p-6 rounded-3xl text-center shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)] dark:shadow-none transition-all duration-300 relative overflow-hidden">
                     {/* Background Pattern */}
                     <div className="absolute top-0 right-0 w-20 h-20 bg-primary-500/5 rounded-bl-full -mr-4 -mt-4"></div>
                     
-                    <p className={`${arabicTextClass} font-serif text-white mb-6 leading-loose transition-all duration-300`}>{currentZikr.arabic}</p>
+                    <p className={`${arabicTextClass} font-serif text-gray-900 dark:text-white mb-6 leading-loose transition-all duration-300`}>{currentZikr.arabic}</p>
                     
-                    {currentZikr.transliteration && <p className="text-gray-300 italic mb-4">{currentZikr.transliteration}</p>}
+                    {currentZikr.transliteration && <p className="text-gray-600 dark:text-gray-300 italic mb-4">{currentZikr.transliteration}</p>}
                     
                     {currentZikr.translation && (
-                        <p className={`${translationTextClass} text-gray-400 mb-6 transition-all duration-300 border-t border-gray-700 pt-4`}>
+                        <p className={`${translationTextClass} text-gray-600 dark:text-gray-400 mb-6 transition-all duration-300 border-t border-gray-200 dark:border-gray-700 pt-4`}>
                             {currentZikr.translation}
                         </p>
                     )}
                     
                     {(currentZikr.benefit || currentZikr.reference) && (
-                        <div className="text-xs text-primary-500/80 bg-primary-900/20 p-3 rounded-lg inline-block">
+                        <div className="text-xs text-primary-700 dark:text-primary-500/80 bg-primary-100/40 dark:bg-primary-900/20 p-3 rounded-lg inline-block">
                             {currentZikr.benefit && <p className="mb-1">{currentZikr.benefit}</p>}
                             {currentZikr.reference && <p className="italic opacity-70">{currentZikr.reference}</p>}
                         </div>
                     )}
                 </div>
 
-                <div className="flex justify-around items-center mt-6 border-t border-gray-700 pt-4">
+                <div className="flex justify-around items-center mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
                     <button 
                         onClick={handlePlayAudio} 
                         aria-label={isPlaying ? 'إيقاف الصوت' : 'تشغيل الصوت'}
-                        className={`flex-1 py-4 transition-colors ${isPlaying || isAudioLoading ? 'text-primary-500' : 'text-gray-400 hover:text-white'}`}
+                        className={`flex-1 py-4 transition-colors ${isPlaying || isAudioLoading ? 'text-primary-600 dark:text-primary-500' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
                         disabled={isAudioLoading}
                     >
                         {isAudioLoading ? (
@@ -196,24 +203,24 @@ const AzkarDayScreen: React.FC<AzkarDayScreenProps> = ({ isEmbedded = false }) =
                             <ICONS.PlayIcon className="w-6 h-6 mx-auto" />
                         )}
                     </button>
-                    <div className="w-px h-8 bg-gray-700"></div>
-                    <button onClick={() => shareText(activeCategory?.title || 'أذكار اليوم', currentZikr.arabic)} aria-label="مشاركة" className="flex-1 py-4 text-gray-400 hover:text-white transition-colors">
+                    <div className="w-px h-8 bg-gray-300 dark:bg-gray-700"></div>
+                    <button onClick={() => shareText(activeCategory?.title || 'أذكار اليوم', currentZikr.arabic)} aria-label="مشاركة" className="flex-1 py-4 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                         <ICONS.ShareIcon className="w-6 h-6 mx-auto" />
                     </button>
-                    <div className="w-px h-8 bg-gray-700"></div>
-                    <button onClick={() => toggleFavorite(currentZikr.id)} aria-label={isFavorite ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة'} className="flex-1 py-4 text-gray-400 hover:text-white transition-colors">
+                    <div className="w-px h-8 bg-gray-300 dark:bg-gray-700"></div>
+                    <button onClick={() => toggleFavorite(currentZikr.id)} aria-label={isFavorite ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة'} className="flex-1 py-4 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                         <ICONS.HeartIcon className={`w-6 h-6 mx-auto ${isFavorite ? 'text-red-500 fill-current' : ''}`} />
                     </button>
                 </div>
             </div>
 
             <div className={`flex items-center justify-between mt-8 ${isEmbedded ? 'pb-16' : ''}`}>
-                <button onClick={handleBack} aria-label="رجوع" className="p-4 rounded-full bg-[#1A3129] text-white hover:bg-[#203c31] transition-colors">
+                <button onClick={handleBack} aria-label="رجوع" className="p-4 rounded-full bg-surface-card-2 dark:bg-midnight-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-midnight-700 transition-colors">
                     <ArrowLeftIcon className="w-6 h-6 rtl:rotate-180" />
                 </button>
                 <button 
                     onClick={handleNext} 
-                    className="px-12 py-4 rounded-full bg-primary-500 text-white font-bold text-lg hover:bg-primary-600 transition-colors shadow-lg shadow-primary-500/20"
+                    className="px-12 py-4 rounded-full bg-primary-500 text-white font-bold text-lg hover:bg-primary-600 transition-colors shadow-lg shadow-primary-500/30"
                 >
                     {t('azkar_day_next_button')}
                 </button>

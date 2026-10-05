@@ -4,6 +4,7 @@ import { PrayerTimes } from 'adhan';
 import { Capacitor } from '@capacitor/core';
 import { pickVotd, votdTitle } from '../utils/votd';
 import { loadSurah } from './QuranService';
+import { logger } from '../utils/logger';
 
 export const NotificationService = {
     async checkPermissions(): Promise<boolean> {
@@ -12,7 +13,7 @@ export const NotificationService = {
             const status = await LocalNotifications.checkPermissions();
             return status.display === 'granted';
         } catch (error) {
-            console.error('Error checking notification permissions:', error);
+            logger.error('Error checking notification permissions:', { message: error instanceof Error ? error.message : String(error) });
             return false;
         }
     },
@@ -23,7 +24,7 @@ export const NotificationService = {
             const result = await LocalNotifications.requestPermissions();
             return result.display === 'granted';
         } catch (error) {
-            console.error('Error requesting notification permissions:', error);
+            logger.error('Error requesting notification permissions:', { message: error instanceof Error ? error.message : String(error) });
             return false;
         }
     },
@@ -56,9 +57,9 @@ export const NotificationService = {
                     }
                 ]
             });
-            console.log(`Reminder ${id} scheduled for ${hour}:${minute} with category ${categoryId}`);
+            logger.info(`Reminder ${id} scheduled for ${hour}:${minute} with category ${categoryId}`);
         } catch (error) {
-            console.error(`Error scheduling notification ${id}:`, error);
+            logger.error(`Error scheduling notification ${id}:`, { message: error instanceof Error ? error.message : String(error) });
         }
     },
 
@@ -123,10 +124,10 @@ export const NotificationService = {
 
             if (notifications.length > 0) {
                 await LocalNotifications.schedule({ notifications });
-                console.log(`Scheduled ${notifications.length} prayer notifications`);
+                logger.info(`Scheduled ${notifications.length} prayer notifications`);
             }
         } catch (error) {
-            console.error("Error scheduling prayer reminders:", error);
+            logger.error("Error scheduling prayer reminders:", { message: error instanceof Error ? error.message : String(error) });
         }
     },
 
@@ -140,10 +141,10 @@ export const NotificationService = {
             
             if (prayerIds.length > 0) {
                 await LocalNotifications.cancel({ notifications: prayerIds });
-                console.log("Cancelled prayer notifications");
+                logger.info("Cancelled prayer notifications");
             }
         } catch (error) {
-            console.error("Error canceling prayer reminders:", error);
+            logger.error("Error canceling prayer reminders:", { message: error instanceof Error ? error.message : String(error) });
         }
     },
 
@@ -154,10 +155,10 @@ export const NotificationService = {
             const exists = pending.notifications.some(n => n.id === id);
             if (exists) {
                 await LocalNotifications.cancel({ notifications: [{ id }] });
-                console.log(`Reminder ${id} cancelled`);
+                logger.info(`Reminder ${id} cancelled`);
             }
         } catch (error) {
-            console.error(`Error canceling notification ${id}:`, error);
+            logger.error(`Error canceling notification ${id}:`, { message: error instanceof Error ? error.message : String(error) });
         }
     },
 
@@ -169,7 +170,7 @@ export const NotificationService = {
                 await LocalNotifications.cancel(pending);
             }
         } catch (error) {
-            console.error('Error canceling notifications:', error);
+            logger.error('Error canceling notifications:', { message: error instanceof Error ? error.message : String(error) });
         }
     },
 
@@ -192,7 +193,7 @@ export const NotificationService = {
             await this.cancelReminder(VOTD_ID);
             const votd = pickVotd(now);
             if (!votd) {
-                console.warn('VOTD: no Islamic calendar in this engine, skipping schedule.');
+                logger.warn('VOTD: no Islamic calendar in this engine, skipping schedule.');
                 return;
             }
             const surahName = votdTitle(votd);
@@ -206,7 +207,7 @@ export const NotificationService = {
                 const text = ayahs[votd.ayah - 1]?.text ?? '';
                 if (text) bodyText = text.length > 200 ? text.slice(0, 197) + '\u2026' : text;
             } catch (e) {
-                console.warn('VOTD: surah text load failed, falling back to default body.', e);
+                logger.warn('VOTD: surah text load failed, falling back to default body.', { message: e instanceof Error ? e.message : String(e) });
             }
             await LocalNotifications.schedule({
                 notifications: [
@@ -225,9 +226,9 @@ export const NotificationService = {
                     },
                 ],
             });
-            console.log(`VOTD scheduled for ${hour}:${minute} -> ${surahName}`);
+            logger.info(`VOTD scheduled for ${hour}:${minute} -> ${surahName}`);
         } catch (error) {
-            console.error('Error scheduling VOTD:', error);
+            logger.error('Error scheduling VOTD:', { message: error instanceof Error ? error.message : String(error) });
         }
     },
 

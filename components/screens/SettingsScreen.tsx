@@ -1,20 +1,71 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useAppContext } from '../../context/AppContext';
-import { ArrowLeftIcon, ChevronRightIcon, MoonIcon, BellIcon, EnvelopeIcon, InformationCircleIcon, SpeakerWaveIcon, SwatchIcon, ArchiveBoxArrowDownIcon, ArrowUpTrayIcon, PaintBrushIcon, FingerPrintIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { useNavigationStore } from '../../stores/useNavigationStore';
+import { usePreferencesStore } from '../../stores/usePreferencesStore';
+import { ArrowLeftIcon, ChevronRightIcon, MoonIcon, BellIcon, EnvelopeIcon, InformationCircleIcon, SpeakerWaveIcon, SwatchIcon, ArchiveBoxArrowDownIcon, ArrowUpTrayIcon, PaintBrushIcon, FingerPrintIcon, TrashIcon, SparklesIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useToast } from '../common/Toast';
-import { HomeLayout, AppTheme } from '../../types';
+import { HomeLayout, AppTheme, DarkStyle } from '../../types';
 import { getStorage } from '../../data/storage';
 import { previewBackupCounts } from '../../data/backup';
+import { defaultPreferences } from '../../data/storage/defaults';
 import {
     getCacheStats, getCacheStatsByReciter, removeReciterAudio, clearCache, formatBytes,
     type ReciterCacheStats,
 } from '../../services/audioCache';
 import { getReciter } from '../../services/reciterCatalog';
 
+// Swatch colors mirror the [data-theme='…'] primary-500 scales in index.css —
+// keep the two in sync when a theme's canonical accent value changes.
+const THEME_SWATCHES: Array<{ id: AppTheme; nameAr: string; hex: string }> = [
+    { id: 'emerald', nameAr: 'زمردي', hex: '#10b981' },
+    { id: 'blue', nameAr: 'أزرق', hex: '#3b82f6' },
+    { id: 'rose', nameAr: 'وردي', hex: '#f43f5e' },
+    { id: 'amber', nameAr: 'كهرماني', hex: '#f59e0b' },
+    { id: 'purple', nameAr: 'بنفسجي', hex: '#a855f7' },
+    { id: 'cyan', nameAr: 'سماوي', hex: '#06b6d4' },
+];
+
+const SettingItem: React.FC<{ icon: React.ElementType, label: string, value?: string, hasToggle?: boolean, isChecked?: boolean, onToggle?: () => void, onClick?: () => void }> = ({ icon: Icon, label, value, hasToggle, isChecked, onToggle, onClick }) => {
+    const Container = hasToggle ? 'div' : 'button';
+    return (
+        <Container 
+            onClick={hasToggle ? undefined : onClick} 
+            className={'w-full flex items-center justify-between p-4 mb-2 bg-surface-card dark:bg-surface-card rounded-2xl transition-colors hover:bg-surface-card-2 dark:hover:bg-surface-card-2 shadow-sm dark:shadow-none border border-gray-100 dark:border-white/10 ' + (hasToggle ? '' : 'cursor-pointer')}
+        >
+            <div className="flex items-center space-x-4 rtl:space-x-reverse">
+                <Icon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+                <span className="text-gray-900 dark:text-white">{label}</span>
+            </div>
+            <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                {value && <span className="text-gray-500 dark:text-gray-400">{value}</span>}
+                {hasToggle ? (
+                    <label className="relative inline-flex items-center cursor-pointer min-h-[40px]">
+                        <input type="checkbox" checked={isChecked} onChange={onToggle} aria-label={label} role="switch" aria-checked={isChecked} className="sr-only peer" />
+                        <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] rtl:after:right-[2px] rtl:after:left-auto after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
+                    </label>
+                ) : (
+                    <ChevronRightIcon className="w-5 h-5 text-gray-400 dark:text-gray-500 rtl:rotate-180" />
+                )}
+            </div>
+        </Container>
+    );
+};
+
 const SettingsScreen: React.FC = () => {
-    const { navigate, darkMode, toggleDarkMode, fontSize, setFontSize, homeLayout, setHomeLayout, theme, setTheme, hapticsEnabled, toggleHaptics } = useAppContext();
+    const navigate = useNavigationStore((state) => state.navigate);
+    const darkMode = usePreferencesStore((state) => state.darkMode);
+    const toggleDarkMode = usePreferencesStore((state) => state.toggleDarkMode);
+    const darkStyle = usePreferencesStore((state) => state.darkStyle);
+    const setDarkStyle = usePreferencesStore((state) => state.setDarkStyle);
+    const fontSize = usePreferencesStore((state) => state.fontSize);
+    const setFontSize = usePreferencesStore((state) => state.setFontSize);
+    const homeLayout = usePreferencesStore((state) => state.homeLayout);
+    const setHomeLayout = usePreferencesStore((state) => state.setHomeLayout);
+    const theme = usePreferencesStore((state) => state.theme);
+    const setTheme = usePreferencesStore((state) => state.setTheme);
+    const hapticsEnabled = usePreferencesStore((state) => state.hapticsEnabled);
+    const toggleHaptics = usePreferencesStore((state) => state.toggleHaptics);
     const { t } = useTranslation();
     const toast = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -139,6 +190,23 @@ const SettingsScreen: React.FC = () => {
         reader.readAsText(file);
     };
 
+    // Reset preferences to the storage adapter's own defaults. This must write
+    // through the adapter and not merely the zustand store: AppInitializer
+    // re-hydrates preferences from storage on every boot, so a store-only reset
+    // silently reverted on the next launch. Favorites, progress and stats live
+    // in other records and are deliberately untouched.
+    const handleResetPreferences = async () => {
+        const confirmed = await toast.confirm('سيتم إرجاع جميع الإعدادات إلى الوضع الافتراضي (المظهر، الخط، الإشعارات، الصوت). لن تُحذف أذكارك المفضلة أو تقدمك. هل تريد المتابعة؟');
+        if (!confirmed) return;
+        try {
+            await getStorage().savePreferences(defaultPreferences);
+            window.location.reload();
+        } catch (error) {
+            console.error('Reset preferences failed:', error);
+            toast.show('تعذّرت إعادة تعيين الإعدادات. حاول مرة أخرى.', { variant: 'error' });
+        }
+    };
+
     // M1-T7: per-reciter audio cache overview + reclaim.
     const [reciterStats, setReciterStats] = useState<ReciterCacheStats[]>([]);
     const [audioStats, setAudioStats] = useState<{ entries: number; totalBytes: number }>({ entries: 0, totalBytes: 0 });
@@ -154,7 +222,7 @@ const SettingsScreen: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        void refreshAudioStats();
+        setTimeout(() => { void refreshAudioStats(); }, 0);
     }, [refreshAudioStats]);
 
     const handleRemoveReciter = async (reciterId: string) => {
@@ -171,32 +239,6 @@ const SettingsScreen: React.FC = () => {
         await refreshAudioStats();
     };
 
-    const SettingItem: React.FC<{ icon: React.ElementType, label: string, value?: string, hasToggle?: boolean, isChecked?: boolean, onToggle?: () => void, onClick?: () => void }> = ({ icon: Icon, label, value, hasToggle, isChecked, onToggle, onClick }) => {
-        const Container = hasToggle ? 'div' : 'button';
-        return (
-            <Container 
-                onClick={hasToggle ? undefined : onClick} 
-                className={'w-full flex items-center justify-between p-4 mb-2 bg-white dark:bg-[#1A3129] rounded-lg transition-colors hover:bg-gray-50 dark:hover:bg-[#203c31] shadow-sm dark:shadow-none border border-gray-100 dark:border-[#111827]/30 ' + (hasToggle ? '' : 'cursor-pointer')}
-            >
-                <div className="flex items-center space-x-4 rtl:space-x-reverse">
-                    <Icon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
-                    <span className="text-gray-900 dark:text-white">{label}</span>
-                </div>
-                <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                    {value && <span className="text-gray-500 dark:text-gray-400">{value}</span>}
-                    {hasToggle ? (
-                        <label className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" checked={isChecked} onChange={onToggle} className="sr-only peer" />
-                            <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] rtl:after:right-[2px] rtl:after:left-auto after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
-                        </label>
-                    ) : (
-                        <ChevronRightIcon className="w-5 h-5 text-gray-400 dark:text-gray-500 rtl:rotate-180" />
-                    )}
-                </div>
-            </Container>
-        );
-    };
-
     return (
         <div className="p-4 h-full flex flex-col">
             <header className="flex items-center mb-6 relative">
@@ -210,38 +252,83 @@ const SettingsScreen: React.FC = () => {
                 
                 <h2 className="text-lg font-semibold text-primary-600 dark:text-primary-400 mb-2">{t('settings_preferences')}</h2>
                 <SettingItem icon={MoonIcon} label={t('settings_dark_mode')} hasToggle isChecked={darkMode} onToggle={toggleDarkMode} />
+                <div className="p-4 mb-2 bg-surface-card dark:bg-surface-card border border-gray-100 dark:border-transparent shadow-sm dark:shadow-none rounded-lg">
+                    <div className="flex items-center space-x-4 rtl:space-x-reverse mb-2">
+                        <SparklesIcon className="w-6 h-6 text-gold" />
+                        <span className="text-gray-900 dark:text-white font-medium">{t('settings_dark_style')}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 leading-relaxed">
+                        اختر هوية سطحك المفضلة — كل نمط يأتي بزوج (فاتح / داكن) متّسق.
+                    </p>
+                    <div className="grid grid-cols-5 gap-2">
+                        {([
+                            { id: 'verdant',  label: t('settings_dark_style_verdant'),  light: '#F6F8F0', dark: '#022C22', gold: '#D4AF37' },
+                            { id: 'cosmic',   label: t('settings_dark_style_cosmic'),   light: '#FCF0E8', dark: '#0B0B2A', gold: '#E5B768' },
+                            { id: 'forest',   label: t('settings_dark_style_forest'),   light: '#E8F4E8', dark: '#0A2818', gold: '#50C878' },
+                            { id: 'coral',    label: t('settings_dark_style_coral'),    light: '#FCE6DE', dark: '#3B0F1A', gold: '#FB7185' },
+                            { id: 'obsidian', label: t('settings_dark_style_obsidian'), light: '#F0F0EB', dark: '#000000', gold: '#E5B768' },
+                        ] as { id: DarkStyle; label: string; light: string; dark: string; gold: string }[]).map(s => {
+                            const isSelected = darkStyle === s.id;
+                            return (
+                                <button
+                                    key={s.id}
+                                    type="button"
+                                    onClick={() => setDarkStyle(s.id)}
+                                    aria-label={s.label}
+                                    aria-pressed={isSelected}
+                                    className={`flex flex-col items-center gap-1.5 p-1.5 rounded-xl transition-all ${
+                                        isSelected
+                                            ? 'ring-2 ring-gold ring-offset-2 ring-offset-white dark:ring-offset-surface scale-[1.02]'
+                                            : 'hover:scale-[1.02] opacity-80 hover:opacity-100'
+                                    }`}
+                                >
+                                    <div
+                                        className="w-full h-14 rounded-lg overflow-hidden border border-black/10 dark:border-white/10 relative"
+                                        style={{ background: `linear-gradient(180deg, ${s.light} 50%, ${s.dark} 50%)` }}
+                                    >
+                                        <div
+                                            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full shadow-sm"
+                                            style={{ backgroundColor: s.gold }}
+                                        />
+                                    </div>
+                                    <span
+                                        className={`text-[10px] font-medium leading-tight text-center ${
+                                            isSelected ? 'text-gold-deep dark:text-gold' : 'text-gray-700 dark:text-gray-300'
+                                        }`}
+                                    >
+                                        {s.label}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
                 <SettingItem icon={FingerPrintIcon} label="الاهتزاز (Haptics)" hasToggle isChecked={hapticsEnabled} onToggle={toggleHaptics} />
                 <SettingItem icon={BellIcon} label="تخصيص الإشعارات" onClick={() => navigate('notificationSettings')} />
                 <SettingItem icon={SpeakerWaveIcon} label="إعدادات الصوت" onClick={() => navigate('audioSettings')} />
                 
-                <div className="p-4 mb-2 bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-[#111827]/30 shadow-sm dark:shadow-none rounded-lg">
+                <div className="p-4 mb-2 bg-surface-card dark:bg-surface-card border border-gray-100 dark:border-white/10 shadow-sm dark:shadow-none rounded-lg">
                     <div className="flex items-center space-x-4 rtl:space-x-reverse mb-3">
                         <PaintBrushIcon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
                         <span className="text-gray-900 dark:text-white font-medium">لون التطبيق</span>
                     </div>
                     <div className="grid grid-cols-6 gap-2">
-                        {(['emerald', 'blue', 'rose', 'amber', 'purple', 'cyan'] as AppTheme[]).map(t => (
+                        {THEME_SWATCHES.map(s => (
                             <button
-                                key={t}
-                                onClick={() => setTheme(t)}
-                                aria-label={`لون ${t}`}
-                                className={`h-12 rounded-xl border-2 transition-all flex items-center justify-center ${theme === t ? 'border-primary-500 scale-105 shadow-md' : 'border-transparent opacity-80 hover:opacity-100'}`}
-                                style={{ 
-                                    backgroundColor: 
-                                        t === 'emerald' ? '#10b981' : 
-                                        t === 'blue' ? '#3b82f6' :
-                                        t === 'rose' ? '#f43f5e' : 
-                                        t === 'amber' ? '#f59e0b' :
-                                        t === 'purple' ? '#a855f7' : '#06b6d4'
-                                }}
+                                key={s.id}
+                                onClick={() => setTheme(s.id)}
+                                aria-label={`لون ${s.nameAr}`}
+                                aria-pressed={theme === s.id}
+                                className={`h-12 rounded-xl border-2 transition-all flex items-center justify-center ${theme === s.id ? 'border-primary-500 scale-105 shadow-md' : 'border-transparent opacity-80 hover:opacity-100'}`}
+                                style={{ backgroundColor: s.hex }}
                             >
-                                {theme === t && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                                {theme === s.id && <div className="w-2 h-2 bg-white rounded-full"></div>}
                             </button>
                         ))}
                     </div>
                 </div>
 
-                <div className="p-4 mb-2 bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-[#111827]/30 shadow-sm dark:shadow-none rounded-lg">
+                <div className="p-4 mb-2 bg-surface-card dark:bg-surface-card border border-gray-100 dark:border-white/10 shadow-sm dark:shadow-none rounded-lg">
                     <div className="flex items-center space-x-4 rtl:space-x-reverse mb-3">
                         <SwatchIcon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
                         <span className="text-gray-900 dark:text-white font-medium">{t('settings_layout_title')}</span>
@@ -271,9 +358,9 @@ const SettingsScreen: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="p-4 mb-2 bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-[#111827]/30 shadow-sm dark:shadow-none rounded-lg">
+                <div className="p-4 mb-2 bg-surface-card dark:bg-surface-card border border-gray-100 dark:border-white/10 shadow-sm dark:shadow-none rounded-lg">
                     <span className="text-gray-900 dark:text-white font-medium mb-4 block">{t('settings_font_size')}</span>
-                    <div className="h-20 bg-gray-50 dark:bg-[#12241C] rounded-lg flex items-center justify-center p-2 mb-4 overflow-hidden">
+                    <div className="h-20 bg-surface dark:bg-surface rounded-lg flex items-center justify-center p-2 mb-4 overflow-hidden">
                         <p className={`${getPreviewClass(fontSize)} text-gray-900 dark:text-white font-serif text-center transition-all duration-200`}>
                             سُبْحَانَ اللَّهِ
                         </p>
@@ -287,6 +374,7 @@ const SettingsScreen: React.FC = () => {
                             step="1"
                             value={fontSize} 
                             onChange={(e) => setFontSize(parseInt(e.target.value))} 
+                            aria-label={t('settings_font_size')}
                             className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary-500" 
                         />
                         <span className="text-2xl font-medium text-gray-900 dark:text-white">A</span>
@@ -296,6 +384,13 @@ const SettingsScreen: React.FC = () => {
                 <h2 className="text-lg font-semibold text-primary-600 dark:text-primary-400 mt-6 mb-2">إدارة البيانات</h2>
                 <SettingItem icon={ArchiveBoxArrowDownIcon} label="نسخ احتياطي للبيانات" onClick={handleBackup} />
                 <SettingItem icon={ArrowUpTrayIcon} label="استعادة البيانات" onClick={handleRestoreClick} />
+                <button
+                    onClick={handleResetPreferences}
+                    className="w-full flex items-center justify-center gap-2 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30 font-bold py-3 rounded-2xl transition mb-2"
+                >
+                    <ArrowPathIcon className="w-5 h-5" />
+                    <span>إعادة تعيين الإعدادات</span>
+                </button>
                 {/* Hidden File Input */}
                 <input 
                     type="file" 
@@ -306,7 +401,7 @@ const SettingsScreen: React.FC = () => {
                 />
 
                 <h2 className="text-lg font-semibold text-primary-600 dark:text-primary-400 mt-6 mb-2">{t('quran_audio_storage_title')}</h2>
-                <div className="p-4 mb-2 bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-[#111827]/30 shadow-sm dark:shadow-none rounded-lg">
+                <div className="p-4 mb-2 bg-surface-card dark:bg-surface-card border border-gray-100 dark:border-white/10 shadow-sm dark:shadow-none rounded-lg">
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center space-x-4 rtl:space-x-reverse">
                             <SpeakerWaveIcon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
@@ -325,7 +420,7 @@ const SettingsScreen: React.FC = () => {
                             {reciterStats.map(row => {
                                 const reciter = getReciter(row.reciterId);
                                 return (
-                                    <li key={row.reciterId} className="flex items-center justify-between gap-2 bg-gray-50 dark:bg-[#12241C] rounded-xl px-3 py-2">
+                                    <li key={row.reciterId} className="flex items-center justify-between gap-2 bg-surface dark:bg-surface rounded-xl px-3 py-2">
                                         <div className="min-w-0 text-right rtl:text-right">
                                             <p className="text-sm font-bold text-gray-800 dark:text-gray-100 truncate">
                                                 {reciter?.name ?? row.reciterId}

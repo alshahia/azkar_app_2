@@ -1,128 +1,264 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, cleanup, act } from '@testing-library/react';
-import React from 'react';
+import React, { useEffect } from 'react';
 import VerseActionModalContainer, { useVerseAction, type VerseActionTarget } from '../../components/quran/VerseActionModalContainer';
 import type { VerseActionApi } from '../../components/quran/VerseActionModalContainer';
-import { AppContext } from '../../context/AppContext';
 import { QuranAudioProvider, useQuranAudio } from '../../context/QuranAudioContext';
 import { RepeatSettingsProvider, useRepeatSettings } from '../../context/RepeatSettingsContext';
-import type { AppContextType } from '../../types';
 
 // VerseActionModalContainer (M3-T1) - single verse-actions surface.
 // Pure unit tests: modal API and rendering are verified here.
 // The cards (long-press / tafsir / seek) are exercised in integration.
 
-function makeContext(overrides: Partial<AppContextType> = {}): AppContextType {
+// Mock the Zustand stores
+const mocks = vi.hoisted(() => {
     return {
+        quranBookmarks: [] as Array<{ surah: number; ayah: number; createdAt: number }>,
+        addBookmark: vi.fn().mockResolvedValue(undefined),
+        removeBookmark: vi.fn().mockResolvedValue(undefined),
         navigate: vi.fn(),
-        favorites: [],
-        toggleFavorite: vi.fn(),
         darkMode: false,
-        toggleDarkMode: vi.fn(),
-        theme: 'emerald',
-        setTheme: vi.fn(),
-        notifications: false,
-        toggleNotifications: vi.fn(),
-        morningReminderEnabled: false,
-        setMorningReminderEnabled: vi.fn(),
-        morningReminderTime: '06:00 AM',
-        setMorningReminderTime: vi.fn(),
-        eveningReminderEnabled: false,
-        setEveningReminderEnabled: vi.fn(),
-        setEveningReminderTime: vi.fn(),
-        eveningReminderTime: '06:00 PM',
+        theme: 'emerald' as const,
+        darkStyle: 'cosmic' as const,
+        tafsirId: 'muyassar',
+        mushafMode: 'modern' as const,
+        mushafTajweed: false,
+        wakeLockEnabled: true,
+        votdEnabled: true,
+        votdTime: '06:00 AM',
         fontSize: 18,
-        setFontSize: vi.fn(),
-        progress: {},
+        language: 'ar' as const,
+        homeLayout: 'dashboard' as const,
+        notifications: false,
+        morningReminderEnabled: false,
+        morningReminderTime: '06:00 AM',
+        eveningReminderEnabled: false,
+        eveningReminderTime: '06:00 PM',
+        customReminders: [] as Array<{ id: number; categoryId: string; categoryTitle: string; time: string; enabled: boolean }>,
+        location: null as { latitude: number; longitude: number } | null,
+        prayerNotificationsEnabled: false,
+        stats: { streak: 0, totalReads: 0, lastActiveDate: '', timezone: null },
+        incrementStreak: vi.fn().mockReturnValue({ kind: 'same-day', streak: 0 }),
+        incrementTotalReads: vi.fn(),
+        progress: {} as Record<string, number>,
         updateProgress: vi.fn(),
         incrementProgress: vi.fn(),
-        language: 'ar',
-        setLanguage: vi.fn(),
-        homeLayout: 'dashboard',
-        setHomeLayout: vi.fn(),
-        categories: [],
+        categories: [] as Array<{ id: string; title: string; count: number; icon: React.ComponentType<{ className?: string }>; azkar: Array<{ id: number; arabic: string; transliteration: string | null; translation: string | null; benefit: string | null; reference: string | null; count: number }>; isUserCreated?: boolean }>,
         refreshData: vi.fn(),
         editZikr: vi.fn(),
         deleteZikr: vi.fn(),
         apiKey: '',
-        setApiKey: vi.fn(),
         voiceName: '',
-        setVoiceName: vi.fn(),
         audioAutoSave: false,
-        setAudioAutoSave: vi.fn(),
         audioLoopDefault: false,
-        setAudioLoopDefault: vi.fn(),
         hapticsEnabled: false,
-        toggleHaptics: vi.fn(),
-        customReminders: [],
+        favorites: [] as number[],
+        toggleFavorite: vi.fn(),
         addCustomReminder: vi.fn(),
         removeCustomReminder: vi.fn(),
-        location: null,
+        setDarkStyle: vi.fn(),
+        setTheme: vi.fn(),
+        toggleNotifications: vi.fn(),
+        setMorningReminderEnabled: vi.fn(),
+        setMorningReminderTime: vi.fn(),
+        setEveningReminderEnabled: vi.fn(),
+        setEveningReminderTime: vi.fn(),
+        setFontSize: vi.fn(),
+        setLanguage: vi.fn(),
+        setHomeLayout: vi.fn(),
+        setApiKey: vi.fn(),
+        setVoiceName: vi.fn(),
+        setAudioAutoSave: vi.fn(),
+        setAudioLoopDefault: vi.fn(),
+        toggleHaptics: vi.fn(),
         setLocation: vi.fn(),
-        prayerNotificationsEnabled: false,
-        setPrayerNotificationsEnabled: vi.fn(),
-        stats: { streak: 0, totalReads: 0, lastActiveDate: '', timezone: null },
-        incrementStreak: vi.fn().mockReturnValue({ kind: 'same-day', streak: 0 }),
-        incrementTotalReads: vi.fn(),
-        quranBookmarks: [],
-        addQuranBookmark: vi.fn().mockResolvedValue(undefined),
-        removeQuranBookmark: vi.fn().mockResolvedValue(undefined),
-        quranLastRead: null,
-        setQuranLastRead: vi.fn().mockResolvedValue(undefined),
-        clearQuranLastRead: vi.fn().mockResolvedValue(undefined),
-        mushafMode: 'modern',
+        setPrayerNotifications: vi.fn(),
         setMushafMode: vi.fn().mockResolvedValue(undefined),
-        mushafTajweed: false,
         setMushafTajweed: vi.fn().mockResolvedValue(undefined),
-        tafsirId: 'muyassar',
         setTafsirId: vi.fn().mockResolvedValue(undefined),
-        wakeLockEnabled: true,
         setWakeLockEnabled: vi.fn(),
-        votdEnabled: true,
         setVotdEnabled: vi.fn(),
-        votdTime: '06:00 AM',
         setVotdTime: vi.fn(),
-        quranReadHistory: [],
-        appendQuranHistory: vi.fn(),
-        ...overrides,
+        setLastSeenVersion: vi.fn(),
+        setWhatsNewOpen: vi.fn(),
+        setShareEditorOpen: vi.fn(),
+        showToast: vi.fn(),
+        setGlobalLoading: vi.fn(),
     };
-}
+});
+
+vi.mock('../../stores/usePreferencesStore', () => ({
+    usePreferencesStore: (selector: (state: any) => any) => {
+        const state = {
+            darkMode: mocks.darkMode,
+            theme: mocks.theme,
+            darkStyle: mocks.darkStyle,
+            tafsirId: mocks.tafsirId,
+            mushafMode: mocks.mushafMode,
+            mushafTajweed: mocks.mushafTajweed,
+            wakeLockEnabled: mocks.wakeLockEnabled,
+            votdEnabled: mocks.votdEnabled,
+            votdTime: mocks.votdTime,
+            fontSize: mocks.fontSize,
+            language: mocks.language,
+            homeLayout: mocks.homeLayout,
+            notifications: mocks.notifications,
+            morningReminderEnabled: mocks.morningReminderEnabled,
+            morningReminderTime: mocks.morningReminderTime,
+            eveningReminderEnabled: mocks.eveningReminderEnabled,
+            eveningReminderTime: mocks.eveningReminderTime,
+            customReminders: mocks.customReminders,
+            location: mocks.location,
+            prayerNotificationsEnabled: mocks.prayerNotificationsEnabled,
+            categories: mocks.categories,
+            refreshData: mocks.refreshData,
+            editZikr: mocks.editZikr,
+            deleteZikr: mocks.deleteZikr,
+            apiKey: mocks.apiKey,
+            voiceName: mocks.voiceName,
+            audioAutoSave: mocks.audioAutoSave,
+            audioLoopDefault: mocks.audioLoopDefault,
+            hapticsEnabled: mocks.hapticsEnabled,
+            favorites: mocks.favorites,
+            toggleFavorite: mocks.toggleFavorite,
+            addCustomReminder: mocks.addCustomReminder,
+            removeCustomReminder: mocks.removeCustomReminder,
+            setDarkStyle: mocks.setDarkStyle,
+            setTheme: mocks.setTheme,
+            toggleNotifications: mocks.toggleNotifications,
+            setMorningReminderEnabled: mocks.setMorningReminderEnabled,
+            setMorningReminderTime: mocks.setMorningReminderTime,
+            setEveningReminderEnabled: mocks.setEveningReminderEnabled,
+            setEveningReminderTime: mocks.setEveningReminderTime,
+            setFontSize: mocks.setFontSize,
+            setLanguage: mocks.setLanguage,
+            setHomeLayout: mocks.setHomeLayout,
+            setApiKey: mocks.setApiKey,
+            setVoiceName: mocks.setVoiceName,
+            setAudioAutoSave: mocks.setAudioAutoSave,
+            setAudioLoopDefault: mocks.setAudioLoopDefault,
+            toggleHaptics: mocks.toggleHaptics,
+            setLocation: mocks.setLocation,
+            setPrayerNotifications: mocks.setPrayerNotifications,
+            setMushafMode: mocks.setMushafMode,
+            setMushafTajweed: mocks.setMushafTajweed,
+            setTafsirId: mocks.setTafsirId,
+            setWakeLockEnabled: mocks.setWakeLockEnabled,
+            setVotdEnabled: mocks.setVotdEnabled,
+            setVotdTime: mocks.setVotdTime,
+            setLastSeenVersion: mocks.setLastSeenVersion,
+        };
+        return selector(state);
+    },
+}));
+
+vi.mock('../../stores/useProgressStore', () => ({
+    useProgressStore: (selector: (state: any) => any) => {
+        const state = {
+            stats: mocks.stats,
+            incrementStreak: mocks.incrementStreak,
+            incrementTotalReads: mocks.incrementTotalReads,
+            progress: mocks.progress,
+            updateProgress: mocks.updateProgress,
+            incrementProgress: mocks.incrementProgress,
+        };
+        return selector(state);
+    },
+}));
+
+vi.mock('../../stores/useNavigationStore', () => ({
+    useNavigationStore: (selector: (state: any) => any) => {
+        const state = {
+            navigate: mocks.navigate,
+        };
+        return selector(state);
+    },
+}));
+
+vi.mock('../../stores/useQuranStore', () => ({
+    useQuranStore: (selector: (state: any) => any) => {
+        const state = {
+            bookmarks: mocks.quranBookmarks,
+            addBookmark: mocks.addBookmark,
+            removeBookmark: mocks.removeBookmark,
+        };
+        return selector(state);
+    },
+}));
+
+vi.mock('../../stores/useUIStore', () => ({
+    useUIStore: (selector: (state: any) => any) => {
+        const state = {
+            setWhatsNewOpen: mocks.setWhatsNewOpen,
+            setShareEditorOpen: mocks.setShareEditorOpen,
+            showToast: mocks.showToast,
+            setGlobalLoading: mocks.setGlobalLoading,
+        };
+        return selector(state);
+    },
+}));
 
 function makeTarget(surah: number, ayah: number, text = 'قُلْ هُوَ ٱللَّهُ أَحَدٌ'): VerseActionTarget {
     return { surah, ayah, text };
 }
 
-function Tree({ children, ctx }: { children: React.ReactNode; ctx: AppContextType }) {
+function Tree({ children }: { children: React.ReactNode }) {
     return (
-        <AppContext.Provider value={ctx}>
-            <QuranAudioProvider>
-                <RepeatSettingsProvider>
-                    {children}
-                </RepeatSettingsProvider>
-            </QuranAudioProvider>
-        </AppContext.Provider>
+        <QuranAudioProvider>
+            <RepeatSettingsProvider>
+                {children}
+            </RepeatSettingsProvider>
+        </QuranAudioProvider>
     );
+}
+
+function stubLabels() {
+    return {
+        title: 'إجراءات الآية',
+        play: 'تشغيل',
+        bookmark: 'حفظ',
+        bookmarkRemove: 'إزالة الحفظ',
+        tafsir: 'التفسير',
+        copy: 'نسخ',
+        copyLink: 'نسخ الرابط',
+        share: 'مشاركة',
+        mushaf: 'افتح المصحف',
+        repeat: 'تكرار',
+        close: 'إغلاق',
+    };
 }
 
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe('VerseActionModalContainer', () => {
-    it('throws a descriptive Error when called outside the provider', () => {
-        // Capture the throw synchronously by running the hook directly via a
-        // minimal harness; this avoids the React error-boundary dance.
-        let caught: unknown = null;
+    it('returns a noop API instead of throwing when called outside the provider', () => {
+        let captured: VerseActionApi | null = null;
         function Probe() {
-            try { useVerseAction(); } catch (e) { caught = e; }
+            const api = useVerseAction();
+            useEffect(() => {
+                captured = api;
+            }, [api]);
             return null;
         }
-        render(<Tree ctx={makeContext()}><Probe /></Tree>);
-        expect(caught).toBeInstanceOf(Error);
-        expect((caught as Error).message).toMatch(/VerseActionModalContainer/);
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        expect(() => render(<Tree><Probe /></Tree>)).not.toThrow();
+        expect(captured).not.toBeNull();
+        expect(() => {
+            captured!.open({ surah: 1, ayah: 1, text: 'x' });
+            captured!.close();
+            captured!.openTafsir();
+            captured!.toggleBookmark();
+        }).not.toThrow();
+        expect(captured!.isOpen).toBe(false);
+        expect(captured!.target).toBeNull();
+        expect(warnSpy).toHaveBeenCalled();
+        const messages = warnSpy.mock.calls.map(c => String(c[0]));
+        expect(messages.join('\n')).toMatch(/VerseActionModalContainer/);
     });
 
     it('renders nothing when closed (null target)', () => {
         const { container } = render(
-            <Tree ctx={makeContext()}>
+            <Tree>
                 <VerseActionModalContainer
                     ayahLookup={() => undefined}
                     openTafsir={() => {}}
@@ -148,7 +284,7 @@ describe('VerseActionModalContainer', () => {
             );
         }
         const { container, getByTestId } = render(
-            <Tree ctx={makeContext()}>
+            <Tree>
                 <VerseActionModalContainer
                     ayahLookup={() => undefined}
                     openTafsir={() => {}}
@@ -170,10 +306,19 @@ describe('VerseActionModalContainer', () => {
     it('toggleBookmark adds a bookmark when none exists', () => {
         const add = vi.fn().mockResolvedValue(undefined);
         const remove = vi.fn().mockResolvedValue(undefined);
-        let apiRef!: VerseActionApi;
-        function Ref() { apiRef = useVerseAction() as VerseActionApi; return null; }
+        mocks.addBookmark = add;
+        mocks.removeBookmark = remove;
+        mocks.quranBookmarks = [];
+        const apiRef = { current: null as VerseActionApi | null };
+        function Ref() {
+            const api = useVerseAction();
+            useEffect(() => {
+                apiRef.current = api;
+            }, [api]);
+            return null;
+        }
         const { getByTestId } = render(
-            <Tree ctx={makeContext({ addQuranBookmark: add, removeQuranBookmark: remove, quranBookmarks: [] })}>
+            <Tree>
                 <VerseActionModalContainer
                     ayahLookup={() => undefined}
                     openTafsir={() => {}}
@@ -181,22 +326,28 @@ describe('VerseActionModalContainer', () => {
                     openRepeatRange={() => {}}
                     labels={stubLabels()}
                 >
-                    <button data-testid="open" onClick={() => apiRef.open(makeTarget(112, 1))}>open</button>
+                    <button data-testid="open" onClick={() => apiRef.current?.open(makeTarget(112, 1))}>open</button>
                     <Ref />
                 </VerseActionModalContainer>
             </Tree>,
         );
         act(() => { getByTestId('open').click(); });
-        act(() => { apiRef.toggleBookmark(); });
-        expect(apiRef.isOpen).toBe(false);
+        act(() => { apiRef.current?.toggleBookmark(); });
+        expect(apiRef.current?.isOpen).toBe(false);
         expect(add).toHaveBeenCalled();
     });
 
     it('close() clears the isOpen flag returned by useVerseAction', () => {
-        let apiRef!: VerseActionApi;
-        function Ref() { apiRef = useVerseAction() as VerseActionApi; return null; }
+        const apiRef = { current: null as VerseActionApi | null };
+        function Ref() {
+            const api = useVerseAction();
+            useEffect(() => {
+                apiRef.current = api;
+            }, [api]);
+            return null;
+        }
         const { getByTestId } = render(
-            <Tree ctx={makeContext()}>
+            <Tree>
                 <VerseActionModalContainer
                     ayahLookup={() => undefined}
                     openTafsir={() => {}}
@@ -204,40 +355,19 @@ describe('VerseActionModalContainer', () => {
                     openRepeatRange={() => {}}
                     labels={stubLabels()}
                 >
-                    <button data-testid="open" onClick={() => apiRef.open(makeTarget(2, 5))}>open</button>
-                    <button data-testid="close" onClick={() => apiRef.close()}>close</button>
+                    <button data-testid="open" onClick={() => apiRef.current?.open(makeTarget(2, 5))}>open</button>
+                    <button data-testid="close" onClick={() => apiRef.current?.close()}>close</button>
                     <Ref />
                 </VerseActionModalContainer>
             </Tree>,
         );
         act(() => { getByTestId('open').click(); });
-        expect(apiRef.isOpen).toBe(true);
+        expect(apiRef.current?.isOpen).toBe(true);
         act(() => { getByTestId('close').click(); });
-        expect(apiRef.isOpen).toBe(false);
-        expect(apiRef.target).toBeNull();
+        expect(apiRef.current?.isOpen).toBe(false);
+        expect(apiRef.current?.target).toBeNull();
     });
 });
-
-function Probe() {
-    useVerseAction();
-    return null;
-}
-
-function stubLabels() {
-    return {
-        title: 'إجراءات الآية',
-        play: 'تشغيل',
-        bookmark: 'حفظ',
-        bookmarkRemove: 'إزالة الحفظ',
-        tafsir: 'التفسير',
-        copy: 'نسخ',
-        copyLink: 'نسخ الرابط',
-        share: 'مشاركة',
-        mushaf: 'افتح المصحف',
-        repeat: 'تكرار',
-        close: 'إغلاق',
-    };
-}
 
 describe('VerseActionModalContainer - context hook smoke', () => {
     it('useQuranAudio and useRepeatSettings work inside the provider tree', () => {
@@ -247,7 +377,7 @@ describe('VerseActionModalContainer - context hook smoke', () => {
             return null;
         }
         expect(() => render(
-            <Tree ctx={makeContext()}><Smoke /></Tree>,
+            <Tree><Smoke /></Tree>,
         )).not.toThrow();
     });
 });

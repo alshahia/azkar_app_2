@@ -42,6 +42,11 @@ const AudioMiniPlayer: React.FC = () => {
     const playbackRef = useRef(playback);
     useEffect(() => { playbackRef.current = playback; }, [playback]);
 
+    // Latest repeat settings for the same reason: the (re)bind effect reads
+    // them from the onEnded closure without re-binding on settings changes.
+    const repeatRef = useRef(repeat);
+    useEffect(() => { repeatRef.current = repeat; }, [repeat]);
+
     const surah = playback ? getSurah(playback.surahId) : undefined;
     const reciter = getReciter(reciterId);
     const seq = playback?.seq ?? 0;
@@ -133,6 +138,7 @@ const AudioMiniPlayer: React.FC = () => {
             repeatRemainingRef.current = next;
             const cmd = playbackRef.current;
             if (!cmd) return false;
+            const { delayMs } = repeatRef.current;
             // restart from the beginning of the same ayah; resumePositionMs
             // stays 0 so we replay from the start, not where we paused.
             const restart = () => {
@@ -145,8 +151,8 @@ const AudioMiniPlayer: React.FC = () => {
                     advance();
                 }
             };
-            if (repeat.delayMs > 0) {
-                window.setTimeout(restart, repeat.delayMs);
+            if (delayMs > 0) {
+                window.setTimeout(restart, delayMs);
             } else {
                 restart();
             }
@@ -155,7 +161,8 @@ const AudioMiniPlayer: React.FC = () => {
         const onEnded = () => {
             flushPosition();
             const cmd = playbackRef.current;
-            if (cmd && repeat.isActive && repeat.isInRange(cmd.surahId, cmd.ayahNumber) && scheduleRepeat()) {
+            const { isActive, isInRange } = repeatRef.current;
+            if (cmd && isActive && isInRange(cmd.surahId, cmd.ayahNumber) && scheduleRepeat()) {
                 return;
             }
             advance();
@@ -270,7 +277,7 @@ const AudioMiniPlayer: React.FC = () => {
                     className="fixed bottom-20 inset-x-0 z-30 px-3"
                     style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
                 >
-                    <div className="max-w-md mx-auto bg-white/95 dark:bg-[#1A3129]/95 backdrop-blur-xl border border-primary-200 dark:border-primary-500/30 shadow-2xl rounded-2xl px-4 py-3">
+                    <div className="max-w-md mx-auto bg-white/95 dark:bg-surface-card/95 backdrop-blur-xl border border-primary-200 dark:border-primary-500/30 shadow-2xl rounded-2xl px-4 py-3">
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={toggle}

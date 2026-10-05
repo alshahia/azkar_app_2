@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { HomeIcon, ListBulletIcon, HeartIcon, Cog6ToothIcon, BookOpenIcon } from '@heroicons/react/24/outline';
-import { useAppContext } from '../../context/AppContext';
+import { useNavigationStore } from '../../stores/useNavigationStore';
 import type { Screen } from '../../types';
 import { useTranslation } from '../../hooks/useTranslation';
 
@@ -38,12 +38,12 @@ const NavItem: React.FC<{
 };
 
 const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeScreen }) => {
-  const { navigate } = useAppContext();
+  const navigate = useNavigationStore((state) => state.navigate);
   const { t } = useTranslation();
 
   return (
-    <div className="bg-white/85 dark:bg-midnight-950/85 backdrop-blur-xl shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)] border-t border-white/50 dark:border-white/5 transition-all duration-300 pb-safe">
-      <div className="flex justify-around items-center h-18 max-w-md mx-auto px-1">
+    <div className="bg-white/85 dark:bg-midnight-950/85 backdrop-blur-xl shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)] dark:shadow-none border-t border-white/50 dark:border-white/5 transition-all duration-300 pb-safe">
+      <div className="flex justify-around items-center h-[4.5rem] max-w-md mx-auto px-1">
         <NavItem
           icon={HomeIcon}
           label={t('nav_home')}

@@ -1,8 +1,7 @@
-
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { XMarkIcon, SparklesIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
-import { useAppContext } from '../../context/AppContext';
+import { usePreferencesStore } from '../../stores/usePreferencesStore';
 import { GeminiService } from '../../services/GeminiService';
 
 interface ExplainZikrModalProps {
@@ -15,7 +14,8 @@ interface ExplainZikrModalProps {
 }
 
 const ExplainZikrModal: React.FC<ExplainZikrModalProps> = ({ isOpen, onClose, zikrText, benefit, reference }) => {
-    const { apiKey, darkMode } = useAppContext();
+    const apiKey = usePreferencesStore((state) => state.apiKey);
+    const darkMode = usePreferencesStore((state) => state.darkMode);
     const [explanation, setExplanation] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -32,18 +32,7 @@ const ExplainZikrModal: React.FC<ExplainZikrModalProps> = ({ isOpen, onClose, zi
         return () => window.removeEventListener('keydown', onKey);
     }, [isOpen, onClose]);
 
-    useEffect(() => {
-        if (isOpen && zikrText) {
-            fetchExplanation();
-        } else {
-            // Reset state on close; also invalidate any in-flight request
-            requestIdRef.current++;
-            setExplanation(null);
-            setError(null);
-        }
-    }, [isOpen, zikrText, benefit, reference]);
-
-    const fetchExplanation = async () => {
+    const fetchExplanation = useCallback(async () => {
         const requestId = ++requestIdRef.current;
         setLoading(true);
         setError(null);
@@ -79,7 +68,20 @@ const ExplainZikrModal: React.FC<ExplainZikrModalProps> = ({ isOpen, onClose, zi
                 setLoading(false);
             }
         }
-    };
+    }, [apiKey, zikrText, benefit, reference]);
+
+    useEffect(() => {
+        if (isOpen && zikrText) {
+            setTimeout(() => fetchExplanation(), 0);
+        } else {
+            // Reset state on close; also invalidate any in-flight request
+            requestIdRef.current++;
+            setTimeout(() => {
+                setExplanation(null);
+                setError(null);
+            }, 0);
+        }
+    }, [isOpen, zikrText, fetchExplanation]);
 
     if (!isOpen) return null;
 
@@ -87,16 +89,20 @@ const ExplainZikrModal: React.FC<ExplainZikrModalProps> = ({ isOpen, onClose, zi
         <div 
             className={`fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4 ${darkMode ? 'dark' : ''}`}
             onClick={onClose}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClose(); }}
         >
+            {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
             <div
                 role="dialog"
                 aria-modal="true"
                 aria-label="شرح الذكر"
-                className="bg-white dark:bg-[#1A3129] w-full max-w-lg sm:rounded-2xl rounded-t-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-slide-up-mobile sm:animate-fade-in-up transition-colors duration-300"
+                className="bg-surface-card dark:bg-surface-card w-full max-w-lg sm:rounded-2xl rounded-t-[2rem] shadow-2xl dark:shadow-none overflow-hidden flex flex-col max-h-[85vh] animate-slide-up-mobile sm:animate-fade-in-up transition-colors duration-300"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-white dark:bg-[#1A3129] sticky top-0 z-10">
+                <div className="p-5 border-b border-surface-card-2 dark:border-midnight-800 flex justify-between items-center bg-surface-card dark:bg-surface-card sticky top-0 z-10">
                     <div className="flex items-center space-x-2 rtl:space-x-reverse text-primary-600 dark:text-primary-400">
                         <SparklesIcon className="w-6 h-6 animate-pulse-slow" />
                         <h2 className="text-lg font-bold text-gray-900 dark:text-white">شرح وتدبر</h2>
@@ -104,7 +110,7 @@ const ExplainZikrModal: React.FC<ExplainZikrModalProps> = ({ isOpen, onClose, zi
                     <button 
                         onClick={onClose}
                         aria-label="إغلاق" 
-                        className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500"
+                        className="p-2 rounded-full hover:bg-surface-card-2 dark:hover:bg-midnight-800 transition-colors text-gray-500"
                     >
                         <XMarkIcon className="w-6 h-6" />
                     </button>
@@ -133,7 +139,7 @@ const ExplainZikrModal: React.FC<ExplainZikrModalProps> = ({ isOpen, onClose, zi
                             </p>
                             {(error === "API_KEY_MISSING" || error === "OFFLINE_AND_NOT_CACHED") && (
                                 <button 
-                                    className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-6 py-2 rounded-full text-sm font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" 
+                                    className="bg-surface-card-2 dark:bg-midnight-800 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-full text-sm font-bold hover:bg-surface-card dark:hover:bg-midnight-900 transition-colors" 
                                     onClick={onClose}
                                 >
                                     حسناً
@@ -155,8 +161,8 @@ const ExplainZikrModal: React.FC<ExplainZikrModalProps> = ({ isOpen, onClose, zi
                             </div>
 
                             {/* Footer Disclaimer */}
-                            <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 text-center">
-                                <p className="text-[10px] text-gray-400 flex items-center justify-center space-x-1 rtl:space-x-reverse">
+                            <div className="mt-8 pt-6 border-t border-surface-card-2 dark:border-midnight-800 text-center">
+                                <p className="text-[10px] text-gray-500 dark:text-gray-400 flex items-center justify-center space-x-1 rtl:space-x-reverse">
                                     <SparklesIcon className="w-3 h-3" />
                                     <span>تم التوليد بواسطة Gemini AI</span>
                                 </p>

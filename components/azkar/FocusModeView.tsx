@@ -1,10 +1,11 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Zikr } from '../../types';
-import { ChevronLeftIcon, ChevronRightIcon, PlayIcon, StopIcon } from '@heroicons/react/24/solid';
-import { ShareIcon, HeartIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect } from 'react';
+import type { Zikr } from '../../types';
+import { ChevronLeftIcon, ChevronRightIcon, PlayIcon, StopIcon, CheckIcon } from '@heroicons/react/24/solid';
+import { HeartIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
-import { useAppContext } from '../../context/AppContext';
+import { usePreferencesStore } from '../../stores/usePreferencesStore';
+import { useProgressStore } from '../../stores/useProgressStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HapticService } from '../../services/HapticService';
 
@@ -12,7 +13,6 @@ interface FocusModeViewProps {
     azkar: Zikr[];
     sessionProgress: {[key: number]: number};
     onUpdateSession: (id: number, count: number) => void;
-    onGlobalAccumulate: (id: number, amount: number) => void;
     playingZikrId: number | null;
     isAudioLoading: boolean;
     onPlay: (zikr: Zikr) => void;
@@ -23,13 +23,15 @@ const FocusModeView: React.FC<FocusModeViewProps> = ({
     azkar,
     sessionProgress,
     onUpdateSession,
-    onGlobalAccumulate,
     playingZikrId,
     isAudioLoading,
     onPlay,
     onStop
 }) => {
-    const { favorites, toggleFavorite, fontSize, incrementProgress } = useAppContext();
+    const favorites = usePreferencesStore((state) => state.favorites);
+    const toggleFavorite = usePreferencesStore((state) => state.toggleFavorite);
+    const fontSize = usePreferencesStore((state) => state.fontSize);
+    const incrementProgress = useProgressStore((state) => state.incrementProgress);
     
     // Find the first incomplete zikr to start with, or defaults to 0
     const firstIncompleteIndex = azkar.findIndex(z => (sessionProgress[z.id] || 0) < z.count);
@@ -41,7 +43,7 @@ const FocusModeView: React.FC<FocusModeViewProps> = ({
     useEffect(() => {
         if (azkar.length > 0 && currentIndex >= azkar.length) {
             const resetIndex = azkar.findIndex(z => (sessionProgress[z.id] || 0) < z.count);
-            setCurrentIndex(resetIndex >= 0 ? resetIndex : 0);
+            setTimeout(() => setCurrentIndex(resetIndex >= 0 ? resetIndex : 0), 0);
         }
     }, [azkar, currentIndex, sessionProgress]);
 
@@ -50,10 +52,10 @@ const FocusModeView: React.FC<FocusModeViewProps> = ({
         if (playingZikrId) {
             const index = azkar.findIndex(z => z.id === playingZikrId);
             if (index !== -1 && index !== currentIndex) {
-                setCurrentIndex(index);
+                setTimeout(() => setCurrentIndex(index), 0);
             }
         }
-    }, [playingZikrId, azkar]);
+    }, [playingZikrId, azkar, currentIndex]);
 
     // Defensive early-return: never dereference an out-of-range current zikr
     if (!currentZikr) {
@@ -153,16 +155,19 @@ const FocusModeView: React.FC<FocusModeViewProps> = ({
                             transition: { duration: 0.3 }
                         } as any}
                         onClick={handleTap}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleTap(); }}
                         className={`
-                            w-full max-w-sm bg-white dark:bg-[#1A3129] 
-                            rounded-[2.5rem] shadow-xl dark:shadow-none border border-gray-100 dark:border-primary-900/30
+                            w-full max-w-sm bg-surface-card dark:bg-surface-card 
+                            rounded-[2.5rem] shadow-xl dark:shadow-none border border-gray-100 dark:border-midnight-800
                             p-6 flex flex-col justify-between items-center text-center
                             min-h-[60vh] relative overflow-hidden cursor-pointer
                             ${isCompleted ? 'ring-2 ring-primary-500 dark:ring-primary-400' : ''}
                         `}
                     >
                         {/* Background Decoration */}
-                        <div className="absolute top-0 left-0 w-full h-2 bg-gray-100 dark:bg-gray-800">
+                        <div className="absolute top-0 left-0 w-full h-2 bg-surface-card-2 dark:bg-midnight-800">
                             <motion.div 
                                 className="h-full bg-primary-500"
                                 {...{
@@ -175,10 +180,10 @@ const FocusModeView: React.FC<FocusModeViewProps> = ({
 
                         {/* Top Controls */}
                         <div className="w-full flex justify-between items-start mt-2 mb-4">
-                            <button onClick={(e) => { e.stopPropagation(); toggleFavorite(currentZikr.id); }} aria-label={isFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}>
+                            <button onClick={(e) => { e.stopPropagation(); toggleFavorite(currentZikr.id); }} aria-label={isFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"} className="p-2 rounded-full hover:bg-surface-card-2 dark:hover:bg-midnight-800 transition-colors">
                                 {isFavorite ? <HeartSolid className="w-6 h-6 text-red-500" /> : <HeartIcon className="w-6 h-6 text-gray-400" />}
                             </button>
-                            <button onClick={handlePlayClick} disabled={isAudioLoading} aria-label={isPlaying ? "إيقاف" : "تشغيل"} className={`${isPlaying ? 'text-primary-500' : 'text-gray-400'}`}>
+                            <button onClick={handlePlayClick} disabled={isAudioLoading} aria-label={isPlaying ? "إيقاف" : "تشغيل"} className={`p-2 ${isPlaying ? 'text-primary-500' : 'text-gray-400'}`}>
                                 {isAudioLoading ? (
                                     <div className="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                                 ) : isPlaying ? (
@@ -208,10 +213,10 @@ const FocusModeView: React.FC<FocusModeViewProps> = ({
                                 w-20 h-20 rounded-full flex items-center justify-center text-3xl font-bold font-mono transition-all duration-300
                                 ${isCompleted 
                                     ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/30 scale-110' 
-                                    : 'bg-gray-50 dark:bg-gray-800 text-primary-600 dark:text-primary-400'
+                                    : 'bg-surface-card-2 dark:bg-midnight-800 text-primary-600 dark:text-primary-400'
                                 }
                             `}>
-                                {isCompleted ? <span className="text-2xl">✓</span> : remaining}
+                                {isCompleted ? <CheckIcon className="w-8 h-8" /> : remaining}
                             </div>
                             <p className="text-xs text-gray-400 mt-2">
                                 {isCompleted ? 'مكتمل' : 'اضغط للعد'}
@@ -220,7 +225,7 @@ const FocusModeView: React.FC<FocusModeViewProps> = ({
 
                         {/* Source */}
                         {currentZikr.reference && (
-                            <p className="text-[10px] text-gray-300 dark:text-gray-600 mt-2">{currentZikr.reference}</p>
+                            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-2">{currentZikr.reference}</p>
                         )}
 
                     </motion.div>

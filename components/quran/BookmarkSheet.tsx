@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { XMarkIcon, BookmarkIcon, TrashIcon } from '@heroicons/react/24/outline';
 import type { QuranBookmark } from '../../types';
-import { getSurah, SURAHS } from '../../services/QuranService';
+import { getSurah } from '../../services/QuranService';
 
 interface BookmarkSheetProps {
     open: boolean;
@@ -19,6 +19,23 @@ interface BookmarkSheetProps {
 const BookmarkSheet: React.FC<BookmarkSheetProps> = ({ open, bookmarks, onClose, onJump, onRemove }) => {
     const sorted = [...bookmarks].sort((a, b) => b.createdAt - a.createdAt);
 
+    // Escape closes the sheet, focus lands inside it on open, and focus returns
+    // to the trigger on close. The backdrop click closes it too.
+    const sheetRef = useRef<HTMLDivElement | null>(null);
+    useEffect(() => {
+        if (!open) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        document.addEventListener('keydown', onKey);
+        const previous = document.activeElement as HTMLElement | null;
+        sheetRef.current?.focus();
+        return () => {
+            document.removeEventListener('keydown', onKey);
+            previous?.focus?.();
+        };
+    }, [open, onClose]);
+
     return (
         <AnimatePresence>
             {open && (
@@ -29,17 +46,22 @@ const BookmarkSheet: React.FC<BookmarkSheetProps> = ({ open, bookmarks, onClose,
                         onClick={onClose}
                     />
                     <motion.div
-                        className="fixed bottom-0 inset-x-0 z-50 bg-white dark:bg-[#12241C] rounded-t-3xl shadow-2xl max-h-[75vh] overflow-y-auto"
+                        ref={sheetRef}
+                        tabIndex={-1}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="علاماتي المرجعية"
+                        className="fixed bottom-0 inset-x-0 z-50 mx-auto w-full max-w-md bg-surface-card dark:bg-surface rounded-t-3xl shadow-2xl max-h-[75vh] overflow-y-auto outline-none"
                         initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
                         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
                     >
-                        <div className="sticky top-0 bg-white dark:bg-[#12241C] px-5 pt-4 pb-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                        <div className="sticky top-0 bg-surface-card dark:bg-surface px-5 pt-4 pb-3 border-b border-surface-card-2 dark:border-midnight-800 flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <BookmarkIcon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                                <BookmarkIcon aria-hidden="true" className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                                 <h3 className="font-bold text-gray-800 dark:text-gray-100">علاماتي المرجعية</h3>
                             </div>
-                            <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800" aria-label="إغلاق">
-                                <XMarkIcon className="w-5 h-5" />
+                            <button onClick={onClose} className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-surface-card-2 dark:hover:bg-midnight-800" aria-label="إغلاق">
+                                <XMarkIcon aria-hidden="true" className="w-5 h-5" />
                             </button>
                         </div>
                         <div className="p-3">
@@ -51,10 +73,10 @@ const BookmarkSheet: React.FC<BookmarkSheetProps> = ({ open, bookmarks, onClose,
                                 const s = getSurah(b.surah);
                                 const arabicAyah = b.ayah.toString().replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[+d]);
                                 return (
-                                    <div key={b.surah + '-' + b.ayah} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-[#1A3129]">
+                                    <div key={b.surah + '-' + b.ayah} className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-card-2 dark:hover:bg-surface-card">
                                         <button
                                             onClick={() => { onJump(b.surah, b.ayah); onClose(); }}
-                                            className="flex-1 text-right rtl:text-right"
+                                            className="flex-1 min-h-[44px] text-right rtl:text-right"
                                         >
                                             <p className="font-quran text-lg text-gray-800 dark:text-gray-100">
                                                 {s ? s.name : ('سورة ' + b.surah)}
@@ -63,10 +85,10 @@ const BookmarkSheet: React.FC<BookmarkSheetProps> = ({ open, bookmarks, onClose,
                                         </button>
                                         <button
                                             onClick={() => onRemove(b.surah, b.ayah)}
-                                            className="p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500"
+                                            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500"
                                             aria-label="حذف العلامة"
                                         >
-                                            <TrashIcon className="w-4 h-4" />
+                                            <TrashIcon aria-hidden="true" className="w-4 h-4" />
                                         </button>
                                     </div>
                                 );

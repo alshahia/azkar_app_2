@@ -58,7 +58,11 @@ const AudioDownloadSheet: React.FC<AudioDownloadSheetProps> = ({
 
     useEffect(() => {
         if (!open) return;
-        refresh();
+        // Defer the cache-stat setState calls past the effect boundary
+        // (react-hooks/set-state-in-effect); the sheet just shows
+        // last-known values for one tick.
+        const id = window.setTimeout(() => { refresh(); }, 0);
+        return () => window.clearTimeout(id);
     }, [open, refresh]);
 
     const pausedRef = useRef(false);
@@ -108,6 +112,24 @@ const AudioDownloadSheet: React.FC<AudioDownloadSheetProps> = ({
 
     const pct = progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
 
+    // Escape closes the sheet - except while a download is running, matching the
+    // backdrop behaviour. Focus lands inside on open and returns to the trigger
+    // on close.
+    const sheetRef = useRef<HTMLDivElement | null>(null);
+    useEffect(() => {
+        if (!open) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && !progress.active) onClose();
+        };
+        document.addEventListener('keydown', onKey);
+        const previous = document.activeElement as HTMLElement | null;
+        sheetRef.current?.focus();
+        return () => {
+            document.removeEventListener('keydown', onKey);
+            previous?.focus?.();
+        };
+    }, [open, onClose, progress.active]);
+
     return (
         <AnimatePresence>
             {open && (
@@ -118,19 +140,24 @@ const AudioDownloadSheet: React.FC<AudioDownloadSheetProps> = ({
                         onClick={progress.active ? undefined : onClose}
                     />
                     <motion.div
-                        className="fixed bottom-0 inset-x-0 z-50 bg-white dark:bg-[#12241C] rounded-t-3xl shadow-2xl max-h-[85vh] overflow-y-auto"
+                        ref={sheetRef}
+                        tabIndex={-1}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label={t('quran_audio_offline_title')}
+                        className="fixed bottom-0 inset-x-0 z-50 mx-auto w-full max-w-md bg-surface-card dark:bg-surface rounded-t-3xl shadow-2xl max-h-[85vh] overflow-y-auto outline-none"
                         initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
                         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
                     >
-                        <div className="sticky top-0 bg-white dark:bg-[#12241C] px-5 pt-4 pb-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                        <div className="sticky top-0 bg-surface-card dark:bg-surface px-5 pt-4 pb-3 border-b border-surface-card-2 dark:border-midnight-800 flex items-center justify-between">
                             <h3 className="font-bold text-gray-800 dark:text-gray-100">{t('quran_audio_offline_title')}</h3>
                             <button
                                 onClick={onClose}
-                                className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                                className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-surface-card-2 dark:hover:bg-midnight-800"
                                 aria-label={t('quran_close')}
                                 disabled={progress.active}
                             >
-                                <XMarkIcon className="w-5 h-5" />
+                                <XMarkIcon aria-hidden="true" className="w-5 h-5" />
                             </button>
                         </div>
 
@@ -157,8 +184,15 @@ const AudioDownloadSheet: React.FC<AudioDownloadSheetProps> = ({
                                     {reciterName} - {t('quran_audio_surah_cached_prefix')}{' '}{surahCachedCount}/{surahAyat.length}
                                 </p>
                                 {progress.active && (
-                                    <div className="mb-3">
-                                        <div className="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                                    <div
+                                        className="mb-3"
+                                        role="progressbar"
+                                        aria-valuenow={pct}
+                                        aria-valuemin={0}
+                                        aria-valuemax={100}
+                                        aria-label={t('quran_audio_download_surah')}
+                                    >
+                                        <div className="w-full h-2 bg-surface-card-2 dark:bg-midnight-800 rounded-full overflow-hidden">
                                             <motion.div
                                                 className="h-full bg-primary-500"
                                                 initial={{ width: 0 }}
@@ -174,7 +208,7 @@ const AudioDownloadSheet: React.FC<AudioDownloadSheetProps> = ({
                                 {progress.active && (
                                     <button
                                         onClick={handlePause}
-                                        className="w-full flex items-center justify-center gap-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-bold py-2.5 rounded-2xl active:scale-95 transition mt-2"
+                                        className="w-full flex items-center justify-center gap-2 bg-surface-card-2 dark:bg-midnight-800 text-gray-700 dark:text-gray-200 font-bold py-2.5 rounded-2xl active:scale-95 transition mt-2"
                                     >
                                         <PauseIcon className="w-4 h-4" />
                                         <span>{t('quran_audio_pause_download')}</span>
@@ -212,7 +246,7 @@ const AudioDownloadSheet: React.FC<AudioDownloadSheetProps> = ({
                             </section>
 
                             {/* Note + clear */}
-                            <section className="border-t border-gray-100 dark:border-gray-800 pt-4 space-y-3">
+                            <section className="border-t border-surface-card-2 dark:border-midnight-800 pt-4 space-y-3">
                                 <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
                                     <CloudArrowDownIcon className="w-4 h-4 inline-block align-middle ml-1" />
                                     {t('quran_audio_autocache_note')}

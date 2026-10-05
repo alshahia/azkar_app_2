@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { UserZikr } from '../../types';
 import { TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { useAppContext } from '../../context/AppContext';
+import { usePreferencesStore } from '../../stores/usePreferencesStore';
 
 interface EditZikrModalProps {
     isOpen: boolean;
@@ -14,7 +13,7 @@ interface EditZikrModalProps {
 }
 
 const EditZikrModal: React.FC<EditZikrModalProps> = ({ isOpen, onClose, zikr, onSave, onDelete }) => {
-    const { darkMode } = useAppContext();
+    const darkMode = usePreferencesStore((state) => state.darkMode);
 
     // Close on Escape while open
     useEffect(() => {
@@ -35,17 +34,19 @@ const EditZikrModal: React.FC<EditZikrModalProps> = ({ isOpen, onClose, zikr, on
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     useEffect(() => {
-        setMounted(true);
+        setTimeout(() => setMounted(true), 0);
         return () => setMounted(false);
     }, []);
 
     useEffect(() => {
         if (isOpen) {
-            setArabic(zikr.arabic);
-            setTranslation(zikr.translation || '');
-            setReference(zikr.reference || '');
-            setCount(zikr.count);
-            setShowDeleteConfirm(false); // Reset on open
+            setTimeout(() => {
+                setArabic(zikr.arabic);
+                setTranslation(zikr.translation || '');
+                setReference(zikr.reference || '');
+                setCount(zikr.count);
+                setShowDeleteConfirm(false); // Reset on open
+            }, 0);
         }
     }, [zikr, isOpen]);
 
@@ -86,22 +87,24 @@ const EditZikrModal: React.FC<EditZikrModalProps> = ({ isOpen, onClose, zikr, on
     const modalContent = (
         <div 
             className={`fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 ${darkMode ? 'dark' : ''}`} 
-            onClick={onClose}
+            onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClose(); }}
         >
             <div
                 role="dialog"
                 aria-modal="true"
                 aria-label="تعديل الذكر"
-                className="bg-white dark:bg-[#1A3129] w-full max-w-sm rounded-2xl shadow-xl dark:shadow-none overflow-hidden flex flex-col max-h-[90vh] animate-fade-in-up transition-colors duration-300"
-                onClick={e => e.stopPropagation()}
+                className="bg-surface-card dark:bg-surface-card w-full max-w-sm rounded-2xl shadow-xl dark:shadow-none overflow-hidden flex flex-col max-h-[90vh] animate-fade-in-up transition-colors duration-300"
             >
                 {/* Header */}
-                <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-white dark:bg-[#1A3129] transition-colors">
+                <div className="p-4 border-b border-gray-100 dark:border-midnight-800 flex justify-between items-center bg-surface-card dark:bg-surface-card transition-colors">
                     <h2 className="text-lg font-bold text-gray-900 dark:text-white">تعديل الذكر</h2>
                     <button 
                         onClick={onClose} 
                         aria-label="إغلاق"
-                        className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        className="p-2 rounded-full hover:bg-surface-card-2 dark:hover:bg-midnight-900 transition-colors"
                         type="button"
                     >
                         <XMarkIcon className="w-6 h-6 text-gray-500 dark:text-gray-400" />
@@ -109,60 +112,64 @@ const EditZikrModal: React.FC<EditZikrModalProps> = ({ isOpen, onClose, zikr, on
                 </div>
                 
                 {/* Body */}
-                <div className="p-4 overflow-y-auto space-y-4 bg-white dark:bg-[#1A3129] transition-colors">
+                <div className="p-4 overflow-y-auto space-y-4 bg-surface-card dark:bg-surface-card transition-colors">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <label htmlFor="edit-zikr-arabic" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             نص الذكر
                         </label>
                         <textarea
+                            id="edit-zikr-arabic"
                             rows={4}
                             value={arabic}
                             onChange={(e) => setArabic(e.target.value)}
-                            className="w-full bg-gray-50 dark:bg-[#12241C] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-primary-500 font-serif text-lg transition-colors"
+                            className="w-full bg-surface dark:bg-surface text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-primary-500 font-serif text-lg transition-colors"
                             dir="rtl"
                         />
                     </div>
                     
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <label htmlFor="edit-zikr-translation" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             الترجمة / المعنى
                         </label>
                         <input
+                            id="edit-zikr-translation"
                             type="text"
                             value={translation}
                             onChange={(e) => setTranslation(e.target.value)}
-                            className="w-full bg-gray-50 dark:bg-[#12241C] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-primary-500 transition-colors"
+                            className="w-full bg-surface dark:bg-surface text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-primary-500 transition-colors"
                         />
                     </div>
 
                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <label htmlFor="edit-zikr-reference" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             المصدر
                         </label>
                         <input
+                            id="edit-zikr-reference"
                             type="text"
                             value={reference}
                             onChange={(e) => setReference(e.target.value)}
-                            className="w-full bg-gray-50 dark:bg-[#12241C] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-primary-500 transition-colors"
+                            className="w-full bg-surface dark:bg-surface text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-primary-500 transition-colors"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <label htmlFor="edit-zikr-count" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             العدد
                         </label>
                         <input
+                            id="edit-zikr-count"
                             type="number"
                             min="1"
                             value={count}
                             onChange={(e) => setCount(parseInt(e.target.value) || 1)}
-                            className="w-full bg-gray-50 dark:bg-[#12241C] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-primary-500 text-center transition-colors"
+                            className="w-full bg-surface dark:bg-surface text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-primary-500 text-center transition-colors"
                         />
                     </div>
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-[#12241C] flex justify-between items-center transition-colors">
+                <div className="p-4 border-t border-gray-100 dark:border-midnight-800 bg-surface dark:bg-surface flex justify-between items-center transition-colors">
                     {showDeleteConfirm ? (
                         <div className="flex items-center w-full justify-between animate-fade-in bg-red-50 dark:bg-red-900/20 p-2 rounded-lg border border-red-200 dark:border-red-800">
                             <span className="text-red-600 dark:text-red-400 font-bold text-sm">هل أنت متأكد؟</span>
@@ -170,14 +177,14 @@ const EditZikrModal: React.FC<EditZikrModalProps> = ({ isOpen, onClose, zikr, on
                                 <button 
                                     type="button"
                                     onClick={cancelDelete}
-                                    className="px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-md text-sm border border-gray-300 dark:border-gray-600 hover:bg-gray-50"
+                                    className="px-3 py-2 bg-surface-card dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-md text-sm border border-gray-300 dark:border-gray-600 hover:bg-surface-card-2"
                                 >
                                     إلغاء
                                 </button>
                                 <button 
                                     type="button"
                                     onClick={confirmDelete}
-                                    className="px-3 py-1.5 bg-red-500 text-white rounded-md text-sm font-bold shadow-sm hover:bg-red-600"
+                                    className="px-3 py-2 bg-red-500 text-white rounded-md text-sm font-bold shadow-sm hover:bg-red-600"
                                 >
                                     حذف نهائي
                                 </button>
@@ -188,7 +195,7 @@ const EditZikrModal: React.FC<EditZikrModalProps> = ({ isOpen, onClose, zikr, on
                             <button 
                                 type="button"
                                 onClick={handleDeleteClick}
-                                className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg transition-colors flex items-center space-x-1 rtl:space-x-reverse"
+                                className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-2.5 rounded-lg transition-colors flex items-center space-x-1 rtl:space-x-reverse"
                             >
                                 <TrashIcon className="w-5 h-5" />
                                 <span className="text-sm font-medium">حذف</span>
@@ -196,7 +203,7 @@ const EditZikrModal: React.FC<EditZikrModalProps> = ({ isOpen, onClose, zikr, on
                             <button 
                                 type="button"
                                 onClick={handleSave}
-                                className="bg-primary-500 hover:bg-primary-600 text-white px-6 py-2 rounded-lg font-bold shadow-md transition-transform active:scale-95"
+                                className="bg-primary-500 hover:bg-primary-600 text-white px-6 py-3 rounded-lg font-bold shadow-md transition-transform active:scale-95"
                             >
                                 حفظ
                             </button>

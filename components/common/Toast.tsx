@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
 
@@ -42,6 +43,22 @@ interface ToastContextValue {
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
+
+/**
+ * Safe no-op default used by the per-provider error boundary in App.tsx.
+ * If ToastProvider itself crashes (e.g. a render-time exception in a
+ * downstream selector), the boundary re-supplies this value so consumers
+ * keep working: toasts silently no-op, confirmations auto-cancel as
+ * false, and promptChoice resolves null. The screen continues to render
+ * instead of unmounting.
+ */
+export const NOOP_TOAST: ToastContextValue = {
+    show: () => {},
+    confirm: () => Promise.resolve(false),
+    promptChoice: () => Promise.resolve(null),
+};
+
+export { ToastContext };
 
 /**
  * Hook for showing a transient toast or a modal confirmation.
@@ -134,9 +151,11 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 {items.map(item => (
                     <div
                         key={item.id}
-                        role="status"
+                        role="button"
                         dir="rtl"
                         onClick={() => removeToast(item.id)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') removeToast(item.id); }}
+                        tabIndex={0}
                         className={'pointer-events-auto px-4 py-3 rounded-xl shadow-lg font-medium text-sm text-center transition-opacity duration-200 cursor-pointer ' + variantClass(item.variant)}
                     >
                         {item.message}
@@ -168,15 +187,23 @@ const ConfirmSheet: React.FC<ConfirmSheetProps> = ({ pending, onResolve }) => {
 
     return (
         <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="confirm-message"
             className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm"
-            onClick={() => onResolve(false)}
         >
+            {/* Full-bleed dismiss target: a real button keeps the
+                click-to-close affordance AT-legible instead of being a
+                role-less div with a mouse-only handler. */}
+            <button
+                type="button"
+                tabIndex={-1}
+                aria-label={t('toast_cancel_action')}
+                onClick={() => onResolve(false)}
+                className="absolute inset-0 w-full h-full cursor-default"
+            />
             <div
-                className="bg-white dark:bg-[#1A3129] w-full max-w-sm mx-auto rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl"
-                onClick={e => e.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="confirm-message"
+                className="relative bg-surface-card dark:bg-surface-card w-full max-w-sm mx-auto rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl"
                 dir="rtl"
             >
                 <p id="confirm-message" className="text-gray-900 dark:text-white text-base font-medium mb-6 text-center leading-relaxed">
@@ -186,7 +213,7 @@ const ConfirmSheet: React.FC<ConfirmSheetProps> = ({ pending, onResolve }) => {
                     <button
                         type="button"
                         onClick={() => onResolve(false)}
-                        className="flex-1 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-bold transition-colors hover:bg-gray-50 dark:hover:bg-[#203c31]"
+                        className="flex-1 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-bold transition-colors hover:bg-surface-card-2 dark:hover:bg-surface-card-2"
                     >
                         {pending.cancelLabel || t('toast_cancel_action')}
                     </button>
@@ -211,10 +238,12 @@ interface ChoiceSheetProps {
 const choiceClass = (kind: ToastChoice['kind']): string => {
     if (kind === 'primary') return 'bg-primary-500 hover:bg-primary-600 text-white shadow-md shadow-primary-500/20';
     if (kind === 'danger') return 'bg-red-500 hover:bg-red-600 text-white shadow-md shadow-red-500/20';
-    return 'border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#203c31]';
+    return 'border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-surface-card-2 dark:hover:bg-surface-card-2';
 };
 
 const ChoiceSheet: React.FC<ChoiceSheetProps> = ({ pending, onResolve }) => {
+    const { t } = useTranslation();
+
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onResolve(null);
@@ -225,15 +254,23 @@ const ChoiceSheet: React.FC<ChoiceSheetProps> = ({ pending, onResolve }) => {
 
     return (
         <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="choice-message"
             className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm"
-            onClick={() => onResolve(null)}
         >
+            {/* Full-bleed dismiss target: a real button keeps the
+                click-to-close affordance AT-legible instead of being a
+                role-less div with a mouse-only handler. */}
+            <button
+                type="button"
+                tabIndex={-1}
+                aria-label={t('toast_cancel_action')}
+                onClick={() => onResolve(null)}
+                className="absolute inset-0 w-full h-full cursor-default"
+            />
             <div
-                className="bg-white dark:bg-[#1A3129] w-full max-w-sm mx-auto rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl"
-                onClick={e => e.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="choice-message"
+                className="relative bg-surface-card dark:bg-surface-card w-full max-w-sm mx-auto rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl"
                 dir="rtl"
             >
                 <p id="choice-message" className="text-gray-900 dark:text-white text-base font-medium mb-6 text-center leading-relaxed">

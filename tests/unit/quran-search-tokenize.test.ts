@@ -1,6 +1,5 @@
-
 import { describe, it, expect } from 'vitest';
-import { tokenizeAyah, stripClitic, normalizeWord, CLITICS } from '../../workers/quranSearchTokens';
+import { tokenizeAyah, stripClitic, normalizeWord, stripMarks, CLITICS, STOP_WORDS, CLOSED_FORMS } from '../../workers/quranSearchTokens';
 
 describe('quranSearchTokens - tokenizeAyah', () => {
     it('strips Quranic marks and folds alef variants', () => {
@@ -26,8 +25,6 @@ describe('quranSearchTokens - tokenizeAyah', () => {
     });
 
     it('does NOT strip the bare article ال (closed forms stay whole)', () => {
-        // Users actively query 'الرحمن' / 'الرحيم'; stripping 'ال' would
-        // collapse them and lose recall. Confirmed closed forms stay whole.
         expect(tokenizeAyah('الرحمن')).toEqual(['الرحمن']);
         expect(tokenizeAyah('الرحيم')).toEqual(['الرحيم']);
         expect(tokenizeAyah('الله')).toEqual(['الله']);
@@ -50,9 +47,6 @@ describe('quranSearchTokens - tokenizeAyah', () => {
     });
 
     it('preserves order of stems within an ayah', () => {
-        // 'لله' has the preposition ل + closed form الله. With no multi-char
-        // clitic prefix that matches ('ل' is filtered as a stop word; 'ال' is
-        // not in CLITICS), the tokenize stays as 'لله'.
         const out = tokenizeAyah('الحمد لله رب العالمين');
         expect(out).toEqual(['الحمد', 'لله', 'رب', 'العالمين']);
     });
@@ -67,5 +61,20 @@ describe('quranSearchTokens - tokenizeAyah', () => {
 
     it('normalizeWord produces the same form as tokenizeAyah-then-join', () => {
         expect(normalizeWord('بِسْمِ')).toBe('بسم');
+    });
+
+    it('stripMarks removes diacritics', () => {
+        expect(stripMarks('بِسْمِ')).toBe('بسم');
+    });
+
+    it('STOP_WORDS contains common Arabic stop words', () => {
+        expect(STOP_WORDS.has('و')).toBe(true);
+        expect(STOP_WORDS.has('ف')).toBe(true);
+        expect(STOP_WORDS.has('ب')).toBe(true);
+    });
+
+    it('CLOSED_FORMS contains closed form words', () => {
+        expect(CLOSED_FORMS.has('الله')).toBe(true);
+        expect(CLOSED_FORMS.has('الرحمن')).toBe(true);
     });
 });

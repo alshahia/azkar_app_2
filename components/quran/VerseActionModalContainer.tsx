@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
     XMarkIcon,
@@ -12,11 +12,37 @@ import {
 } from '@heroicons/react/24/outline';
 import { BookmarkIcon as BookmarkSolid } from '@heroicons/react/24/solid';
 import type { QuranAyah } from '../../services/QuranService';
-import { useAppContext } from '../../context/AppContext';
+import { useQuranStore } from '../../stores/useQuranStore';
 import { useQuranAudio } from '../../context/QuranAudioContext';
-import { useTranslation } from '../../hooks/useTranslation';
 import { copyText, shareText } from '../../utils/share';
-import { copyMultiple as copyMultipleUtil, shareMultiple as shareMultipleUtil } from '../../utils/shareRange';
+
+// Mirrors the dev-detection pattern used in services/CrashReporter.ts so we
+// don't regress on noisy production logs. process.env is replaced at build
+// time by Vite for the browser bundle, so this resolves to false in prod.
+const isDev = typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'production';
+
+/**
+ * Stable noop API returned by useVerseAction() when the hook runs outside a
+ * <VerseActionModalContainer> provider. This is a defensive fallback for the
+ * rare but real cases where the provider is missing:
+ *   - a stale service worker chunk calls useVerseAction() from a location
+ *     that the current code no longer renders the modal from (pre-fix
+ *     layout), so React would otherwise crash the whole reader,
+ *   - a future refactor accidentally hoists a useVerseAction() call above
+ *     the provider,
+ *   - a third-party embed renders SurahReaderScreen without the modal.
+ * Every method is intentionally empty: long-press etc. silently no-op
+ * rather than tearing down the screen. The object is frozen so a stray
+ * mutation in the consumer can't poison the shared fallback.
+ */
+export const NOOP_VERSE_ACTION: Readonly<VerseActionApi> = Object.freeze({
+    open: () => {},
+    close: () => {},
+    isOpen: false,
+    target: null,
+    openTafsir: () => {},
+    toggleBookmark: () => {},
+});
 
 /**
  * VerseActionModalContainer (M3-T1).
@@ -61,14 +87,29 @@ export interface VerseActionApi {
 const Ctx = createContext<VerseActionApi | null>(null);
 
 export function useVerseAction(): VerseActionApi {
-    const ctx = useContext(Ctx);
-    if (!ctx) throw new Error('useVerseAction must be used within VerseActionModalContainer');
-    return ctx;
+    // Defensive: a corrupted SW cache, a future refactor that hoists the
+    // call above the provider, or a third-party embed rendering
+    // SurahReaderScreen without the modal all make useContext resolve to
+    // null, so we return a stable noop API instead of crashing the reader.
+    // The noop fallback keeps the screen interactive — long-press silently
+    // does nothing instead of nuking the page.
+    const ctxOrNull = useContext(Ctx);
+    if (!ctxOrNull) {
+        if (isDev) {
+            console.warn('[useVerseAction] no <VerseActionModalContainer> provider found; using noop fallback.');
+        }
+        return NOOP_VERSE_ACTION as VerseActionApi;
+    }
+    return ctxOrNull;
 }
 
 interface VerseActionModalContainerProps {
-    /** Full ayah metadata. Used by the tafsir action to read text + page. */
-    ayahLookup: (surah: number, ayah: number) => QuranAyah | undefined;
+    /**
+     * Full ayah metadata. Unused today (the tafsir action reads the text from
+     * the target), but kept in the public contract - existing callers and tests
+     * still pass it - so it is optional.
+     */
+    ayahLookup?: (surah: number, ayah: number) => QuranAyah | undefined;
     openTafsir: (surah: number, ayah: number) => void;
     /** Optional: jump to a specific Mushaf page. Default goes to page 1. */
     jumpToMushaf: (surah: number) => void;
@@ -94,17 +135,19 @@ interface VerseActionModalContainerProps {
 
 export const VerseActionModalContainer: React.FC<{ children: React.ReactNode } & VerseActionModalContainerProps> = ({
     children,
-    ayahLookup,
+    // Kept in the public prop contract (existing callers and tests pass it) and
+    // intentionally unused for now - the underscore alias documents that.
+    ayahLookup: _ayahLookup,
     openTafsir,
     jumpToMushaf,
     openRepeatRange,
     onToast,
     labels,
 }) => {
-    const { quranBookmarks, addQuranBookmark, removeQuranBookmark } = useAppContext();
+    const bookmarks = useQuranStore((state) => state.bookmarks);
+    const addBookmark = useQuranStore((state) => state.addBookmark);
+    const removeBookmark = useQuranStore((state) => state.removeBookmark);
     const { play } = useQuranAudio();
-    const { t } = useTranslation();
-    void t; // keep eslint happy; future t() calls live here.
 
     const [target, setTarget] = useState<VerseActionTarget | null>(null);
 
@@ -120,12 +163,12 @@ export const VerseActionModalContainer: React.FC<{ children: React.ReactNode } &
         },
         toggleBookmark: () => {
             if (!target) return;
-            const isMarked = quranBookmarks.some(b => b.surah === target.surah && b.ayah === target.ayah);
-            if (isMarked) removeQuranBookmark(target.surah, target.ayah);
-            else addQuranBookmark({ surah: target.surah, ayah: target.ayah, createdAt: Date.now() });
+            const isMarked = bookmarks.some(b => b.surah === target.surah && b.ayah === target.ayah);
+            if (isMarked) removeBookmark(target.surah, target.ayah);
+            else addBookmark({ surah: target.surah, ayah: target.ayah, createdAt: Date.now() });
             setTarget(null);
         },
-    }), [target, quranBookmarks, addQuranBookmark, removeQuranBookmark, openTafsir]);
+    }), [target, bookmarks, addBookmark, removeBookmark, openTafsir]);
 
     const onPlay = useCallback(() => {
         if (!target) return;
@@ -165,13 +208,24 @@ export const VerseActionModalContainer: React.FC<{ children: React.ReactNode } &
         setTarget(null);
     }, [target]);
 
-    const isBookmarked = !!target && quranBookmarks.some(b => b.surah === target.surah && b.ayah === target.ayah);
+    const isBookmarked = !!target && bookmarks.some(b => b.surah === target.surah && b.ayah === target.ayah);
 
-    // Suppress unused warning for utility imports whose type bridge is
-    // exercised only by callers (Copy range + Share range) in the follow-up
-    // pass.
-    void copyMultipleUtil; void shareMultipleUtil;
-    const _ = ayahLookup; void _;
+    // Escape closes the sheet, focus lands inside it on open and returns to the
+    // trigger on close. The backdrop click closes it as well.
+    const sheetRef = useRef<HTMLDivElement | null>(null);
+    useEffect(() => {
+        if (!target) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setTarget(null);
+        };
+        document.addEventListener('keydown', onKey);
+        const previous = document.activeElement as HTMLElement | null;
+        sheetRef.current?.focus();
+        return () => {
+            document.removeEventListener('keydown', onKey);
+            previous?.focus?.();
+        };
+    }, [target]);
 
     return (
         <Ctx.Provider value={api}>
@@ -185,21 +239,24 @@ export const VerseActionModalContainer: React.FC<{ children: React.ReactNode } &
                             onClick={() => setTarget(null)}
                         />
                         <motion.div
-                            className="fixed inset-x-3 bottom-3 z-50 bg-white dark:bg-[#12241C] rounded-2xl shadow-2xl max-w-md mx-auto overflow-hidden"
+                            ref={sheetRef}
+                            tabIndex={-1}
+                            className="fixed inset-x-3 bottom-3 z-50 bg-surface-card dark:bg-surface rounded-2xl shadow-2xl max-w-md mx-auto overflow-hidden outline-none"
                             initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }}
                             transition={{ type: 'spring', damping: 25, stiffness: 250 }}
                             role="dialog"
+                            aria-modal="true"
                             aria-label={labels.title}
                             dir="rtl"
                         >
-                            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+                            <div className="flex items-center justify-between px-4 py-3 border-b border-surface-card-2 dark:border-midnight-800">
                                 <p className="font-quran text-base text-gray-800 dark:text-gray-100 truncate">
                                     {labels.title}
                                 </p>
                                 <button
                                     onClick={() => setTarget(null)}
                                     aria-label={labels.close}
-                                    className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                                    className="p-1.5 rounded-full hover:bg-surface-card-2 dark:hover:bg-midnight-800"
                                 >
                                     <XMarkIcon className="w-5 h-5" />
                                 </button>
@@ -235,7 +292,7 @@ const ActionTile: React.FC<ActionTileProps> = ({ icon, label, onClick }) => (
     <button
         type="button"
         onClick={onClick}
-        className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border border-gray-100 dark:border-gray-800 hover:border-primary-300 dark:hover:border-primary-500/40 hover:bg-gray-50 dark:hover:bg-[#1A3129] active:scale-95 transition"
+        className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border border-surface-card-2 dark:border-midnight-800 hover:border-primary-300 dark:hover:border-primary-500/40 hover:bg-surface-card-2 dark:hover:bg-surface-card active:scale-95 transition"
     >
         {icon}
         <span>{label}</span>

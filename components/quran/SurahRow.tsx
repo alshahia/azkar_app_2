@@ -1,4 +1,5 @@
 import React from 'react';
+import { BookmarkIcon } from '@heroicons/react/24/solid';
 import OrnamentNumber from './OrnamentNumber';
 import { SurahMeta } from '../../services/QuranService';
 
@@ -17,7 +18,7 @@ const SurahRow: React.FC<SurahRowProps> = ({ surah, onOpen, bookmarkCount = 0 })
     return (
         <button
             onClick={onOpen}
-            className="w-full flex items-center gap-4 p-3 rounded-2xl bg-white dark:bg-[#1A3129] border border-gray-100 dark:border-primary-500/10 hover:border-primary-300 dark:hover:border-primary-500/30 active:scale-[0.98] transition-all shadow-sm dark:shadow-none text-right rtl:text-right"
+            className="w-full flex items-center gap-4 p-3 rounded-2xl bg-surface-card dark:bg-surface-card border border-gray-100 dark:border-primary-500/10 hover:border-primary-300 dark:hover:border-primary-500/30 active:scale-[0.98] transition-all shadow-sm dark:shadow-none text-right rtl:text-right"
         >
             <OrnamentNumber number={surah.id} />
             <div className="flex-1 min-w-0">
@@ -38,8 +39,9 @@ const SurahRow: React.FC<SurahRowProps> = ({ surah, onOpen, bookmarkCount = 0 })
                     {surah.ayahCount} آية
                 </span>
                 {bookmarkCount > 0 && (
-                    <span className="text-[10px] text-primary-600 dark:text-primary-400 font-bold">
-                        ★ {bookmarkCount}
+                    <span className="inline-flex items-center gap-0.5 text-[10px] text-primary-600 dark:text-primary-400 font-bold">
+                        <BookmarkIcon aria-hidden="true" className="w-3 h-3" />
+                        <span className="tabular-nums">{bookmarkCount}</span>
                     </span>
                 )}
             </div>

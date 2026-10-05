@@ -66,7 +66,7 @@ describe('findUpcomingPrayerWithinWindow', () => {
         // dhuhr is in 20s, fajr is 5 minutes past — fajr's |msUntil| >
         // dhuhr's |msUntil|, so dhuhr wins as "the soonest moment".
         const fajrOffset = -5 * 60_000; // 5 min in the past
-        const dhuhrOffset = 20_000;     // 20s in the future
+        const _dhuhrOffset = 20_000;     // 20s in the future
         const fajrPadded = new Date(now_helper(FAJR, fajrOffset));
         // Build times where dhuhr is 20s from now and fajr is 5min in the past
         const now = new Date('2026-09-06T12:30:20Z');

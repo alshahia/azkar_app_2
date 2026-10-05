@@ -1,12 +1,12 @@
 
 import React from 'react';
-import { useAppContext } from '../../context/AppContext';
+import { useNavigationStore } from '../../stores/useNavigationStore';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from '../../hooks/useTranslation';
 import { CONTENT_SOURCES } from '../../data/static/licenses';
 
 const AboutUsScreen: React.FC = () => {
-    const { navigate } = useAppContext();
+    const navigate = useNavigationStore((state) => state.navigate);
     const { t } = useTranslation();
 
     return (
@@ -22,10 +22,10 @@ const AboutUsScreen: React.FC = () => {
                 <div className="my-8">
                     <img src="/images/icon-192.png" alt="App Logo" className="w-24 h-24 mx-auto mb-4 rounded-2xl shadow-lg" />
                     <h2 className="text-xl font-bold text-primary-600 dark:text-primary-400">تطبيق أذكار</h2>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">الإصدار 1.0.0</p>
+                    <p className="text-gray-500 dark:text-gray-300 text-sm">الإصدار 1.0.0</p>
                 </div>
 
-                <div className="bg-white dark:bg-[#1A3129] p-6 rounded-xl shadow-sm dark:shadow-none border border-gray-100 dark:border-none text-right">
+                <div className="bg-surface-card dark:bg-surface-card p-6 rounded-xl shadow-sm dark:shadow-none border border-gray-100 dark:border-none text-right">
                     <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                         تطبيق أذكار هو رفيقك اليومي للحفاظ على وردك من الأذكار والأدعية. تم تصميم التطبيق ليكون سهلاً، جميلاً، ومساعداً لك في رحلتك الإيمانية.
                     </p>
@@ -35,7 +35,7 @@ const AboutUsScreen: React.FC = () => {
                 </div>
 
                 {/* Attribution - data-driven from data/static/licenses.ts */}
-                <div className="bg-white dark:bg-[#1A3129] p-6 rounded-xl shadow-sm dark:shadow-none border border-gray-100 dark:border-none text-right">
+                <div className="bg-surface-card dark:bg-surface-card p-6 rounded-xl shadow-sm dark:shadow-none border border-gray-100 dark:border-none text-right">
                     <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4">المصادر والتراخيص</h3>
                     <ul className="space-y-4">
                         {CONTENT_SOURCES.map((source) => (
@@ -49,20 +49,20 @@ const AboutUsScreen: React.FC = () => {
                                     >
                                         {source.name}
                                     </a>
-                                    <span className="shrink-0 text-[10px] bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-full">
+                                    <span className="shrink-0 text-[10px] bg-surface-card-2 dark:bg-midnight-800 text-gray-500 dark:text-gray-300 px-2 py-0.5 rounded-full">
                                         {source.license}
                                     </span>
                                 </div>
-                                <p className="text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{source.usage}</p>
+                                <p className="text-gray-500 dark:text-gray-300 mt-1 leading-relaxed">{source.usage}</p>
                             </li>
                         ))}
                     </ul>
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-4 leading-relaxed text-center">
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-4 leading-relaxed text-center">
                         جميع المحتويات تُستخدم لأغراض غير تجارية مع نسبة المصدر، وجزى الله خيراً جميع من ساهم في إتاحتها.
                     </p>
                 </div>
 
-                <div className="text-sm text-gray-500 dark:text-gray-400">
+                <div className="text-sm text-gray-500 dark:text-gray-300">
                     <p>نسأل الله أن يتقبل منا ومنكم صالح الأعمال.</p>
                 </div>
             </div>

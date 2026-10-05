@@ -1,5 +1,5 @@
 
-/* Azkar App service worker (v4)
+/* Azkar App service worker (v5)
  *
  * History:
  *  v1: cache-only (too aggressive)
@@ -14,6 +14,11 @@
  *      to the cache put, and use event.waitUntil so the SW stays alive
  *      long enough to finish background writes. Background refreshes no
  *      longer race with the page consuming the cached body.
+ *  v5: cache-name bump (azkar-v4 -> azkar-v5). Self-heals users holding a
+ *      stale /assets/* bundle from a pre-fix build that referenced symbols
+ *      later removed from source. The activate handler already deletes every
+ *      cache whose name isn't the current CACHE_NAME, so a one-line bump
+ *      is enough; no fetch logic changed.
  *
  * Strategy:
  *  - Navigations (HTML): network-first with cache fallback -> updates ship
@@ -28,8 +33,14 @@
  *   "Failed to execute 'clone' on 'Response': Response body is already used"
  * Background cache writes are now attached to event.waitUntil so they are
  * not cancelled when the fetch handler returns.
+ *
+ * v5 change: CACHE_NAME only. Pairs with the predev hook in package.json
+ * that wipes node_modules/.vite/ on every `vite` start so a stale dev
+ * transform can never reach the browser in the first place. Production
+ * users get the fresh bundle on next page refresh; offline users get a
+ * one-shot re-prime of the app shell.
  */
-const CACHE_NAME = 'azkar-v4';
+const CACHE_NAME = 'azkar-v5';
 const APP_SHELL = ['/', '/index.html', '/manifest.json', '/images/icon-192.png'];
 
 self.addEventListener('install', event => {
